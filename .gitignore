@@ -1,0 +1,5 @@
+.vscode/
+.idea/
+vendor/
+signer-data
+/build/configs/*.local.*
