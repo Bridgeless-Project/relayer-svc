@@ -1,6 +1,6 @@
 -- +migrate Up
 
-CREATE TABLE deposits
+CREATE TABLE IF NOT EXISTS deposits
 (
     id                  BIGSERIAL PRIMARY KEY,
 
@@ -27,6 +27,12 @@ CREATE TABLE deposits
     CONSTRAINT unique_deposit UNIQUE (tx_hash, tx_nonce, chain_id)
 );
 
+CREATE TABLE IF NOT EXISTS latest_block
+(
+    latest_block INT NOT NULL
+);
+
 -- +migrate Down
 
 DROP TABLE deposits;
+DROP TABLE latest_block;
