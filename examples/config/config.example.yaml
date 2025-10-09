@@ -1,0 +1,35 @@
+log:
+  level: debug
+  disable_sentry: true
+
+db:
+  url: postgres://example:example@example-1-example:0000/example?sslmode=true
+
+listeners:
+  api_http_addr: :0000
+  api_grpc_addr: :0000
+
+
+observer:
+  rpc: ""
+  retry_attempts: 0
+  retry_timeout_sec: 0
+
+broadcaster:
+  rpc: ""
+
+chains:
+  list:
+    - id: "evm1"
+      type: "EVM"
+      rpc: "rpc"
+      wallet: "priv_key"
+      bridge_address: "0x00000000000000000000000"
+
+    - id: "evm2"
+      type: "EVM"
+      rpc: "rpc"
+      wallet: "priv_key"
+      bridge_address: "0x00000000000000000000000"
+
+
