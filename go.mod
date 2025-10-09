@@ -10,6 +10,7 @@ require (
 	github.com/ignite/cli v0.27.2
 	github.com/pkg/errors v0.9.1
 	gitlab.com/distributed_lab/ape v1.7.2
+	gitlab.com/distributed_lab/figure/v3 v3.1.4
 	gitlab.com/distributed_lab/kit v1.11.4
 	gitlab.com/distributed_lab/logan v3.8.1+incompatible
 	google.golang.org/genproto/googleapis/api v0.0.0-20251007200510-49b9836ed3ff
@@ -54,7 +55,6 @@ require (
 	github.com/tklauser/go-sysconf v0.3.11 // indirect
 	github.com/tklauser/numcpus v0.6.0 // indirect
 	gitlab.com/distributed_lab/figure v2.1.2+incompatible // indirect
-	gitlab.com/distributed_lab/figure/v3 v3.1.4 // indirect
 	gitlab.com/distributed_lab/lorem v0.2.0 // indirect
 	gitlab.com/distributed_lab/running v1.6.0 // indirect
 	go.uber.org/atomic v1.10.0 // indirect

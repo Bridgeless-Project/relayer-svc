@@ -29,7 +29,8 @@ CREATE TABLE IF NOT EXISTS deposits
 
 CREATE TABLE IF NOT EXISTS latest_block
 (
-    latest_block INT NOT NULL
+    id INT NOT NULL,
+    latest_block_id INT NOT NULL
 );
 
 -- +migrate Down

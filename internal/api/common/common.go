@@ -1,13 +1,8 @@
 package common
 
 import (
-	"net/http"
-	"strconv"
-
-	apiTypes "github.com/Bridgeless-Project/relayer-svc/internal/api/types"
 	database "github.com/Bridgeless-Project/relayer-svc/internal/db"
 	"github.com/Bridgeless-Project/relayer-svc/internal/types"
-	"github.com/go-chi/chi/v5"
 	validation "github.com/go-ozzo/ozzo-validation/v4"
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/encoding/protojson"
