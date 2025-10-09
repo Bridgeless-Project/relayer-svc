@@ -21,6 +21,64 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
+type WithdrawalStatus int32
+
+const (
+	WithdrawalStatus_WITHDRAWAL_STATUS_UNSPECIFIED WithdrawalStatus = 0
+	WithdrawalStatus_WITHDRAWAL_STATUS_PENDING     WithdrawalStatus = 1
+	WithdrawalStatus_WITHDRAWAL_STATUS_PROCESSING  WithdrawalStatus = 2
+	WithdrawalStatus_WITHDRAWAL_STATUS_PROCESSED   WithdrawalStatus = 3
+	WithdrawalStatus_WITHDRAWAL_STATUS_FAILED      WithdrawalStatus = 4
+	WithdrawalStatus_WITHDRAWAL_STATUS_INVALID     WithdrawalStatus = 5
+)
+
+// Enum value maps for WithdrawalStatus.
+var (
+	WithdrawalStatus_name = map[int32]string{
+		0: "WITHDRAWAL_STATUS_UNSPECIFIED",
+		1: "WITHDRAWAL_STATUS_PENDING",
+		2: "WITHDRAWAL_STATUS_PROCESSING",
+		3: "WITHDRAWAL_STATUS_PROCESSED",
+		4: "WITHDRAWAL_STATUS_FAILED",
+		5: "WITHDRAWAL_STATUS_INVALID",
+	}
+	WithdrawalStatus_value = map[string]int32{
+		"WITHDRAWAL_STATUS_UNSPECIFIED": 0,
+		"WITHDRAWAL_STATUS_PENDING":     1,
+		"WITHDRAWAL_STATUS_PROCESSING":  2,
+		"WITHDRAWAL_STATUS_PROCESSED":   3,
+		"WITHDRAWAL_STATUS_FAILED":      4,
+		"WITHDRAWAL_STATUS_INVALID":     5,
+	}
+)
+
+func (x WithdrawalStatus) Enum() *WithdrawalStatus {
+	p := new(WithdrawalStatus)
+	*p = x
+	return p
+}
+
+func (x WithdrawalStatus) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (WithdrawalStatus) Descriptor() protoreflect.EnumDescriptor {
+	return file_deposit_proto_enumTypes[0].Descriptor()
+}
+
+func (WithdrawalStatus) Type() protoreflect.EnumType {
+	return &file_deposit_proto_enumTypes[0]
+}
+
+func (x WithdrawalStatus) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use WithdrawalStatus.Descriptor instead.
+func (WithdrawalStatus) EnumDescriptor() ([]byte, []int) {
+	return file_deposit_proto_rawDescGZIP(), []int{0}
+}
+
 type DepositIdentifier struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	TxHash        string                 `protobuf:"bytes,1,opt,name=tx_hash,json=txHash,proto3" json:"tx_hash,omitempty"`
@@ -89,7 +147,14 @@ const file_deposit_proto_rawDesc = "" +
 	"\x11DepositIdentifier\x12\x17\n" +
 	"\atx_hash\x18\x01 \x01(\tR\x06txHash\x12\x19\n" +
 	"\btx_nonce\x18\x02 \x01(\x03R\atxNonce\x12\x19\n" +
-	"\bchain_id\x18\x03 \x01(\tR\achainIdB:Z8github.com/Bridgeless-Project/relayer-svc/internal/typesb\x06proto3"
+	"\bchain_id\x18\x03 \x01(\tR\achainId*\xd4\x01\n" +
+	"\x10WithdrawalStatus\x12!\n" +
+	"\x1dWITHDRAWAL_STATUS_UNSPECIFIED\x10\x00\x12\x1d\n" +
+	"\x19WITHDRAWAL_STATUS_PENDING\x10\x01\x12 \n" +
+	"\x1cWITHDRAWAL_STATUS_PROCESSING\x10\x02\x12\x1f\n" +
+	"\x1bWITHDRAWAL_STATUS_PROCESSED\x10\x03\x12\x1c\n" +
+	"\x18WITHDRAWAL_STATUS_FAILED\x10\x04\x12\x1d\n" +
+	"\x19WITHDRAWAL_STATUS_INVALID\x10\x05B:Z8github.com/Bridgeless-Project/relayer-svc/internal/typesb\x06proto3"
 
 var (
 	file_deposit_proto_rawDescOnce sync.Once
@@ -103,9 +168,11 @@ func file_deposit_proto_rawDescGZIP() []byte {
 	return file_deposit_proto_rawDescData
 }
 
+var file_deposit_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
 var file_deposit_proto_msgTypes = make([]protoimpl.MessageInfo, 1)
 var file_deposit_proto_goTypes = []any{
-	(*DepositIdentifier)(nil), // 0: deposit.DepositIdentifier
+	(WithdrawalStatus)(0),     // 0: deposit.WithdrawalStatus
+	(*DepositIdentifier)(nil), // 1: deposit.DepositIdentifier
 }
 var file_deposit_proto_depIdxs = []int32{
 	0, // [0:0] is the sub-list for method output_type
@@ -125,13 +192,14 @@ func file_deposit_proto_init() {
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_deposit_proto_rawDesc), len(file_deposit_proto_rawDesc)),
-			NumEnums:      0,
+			NumEnums:      1,
 			NumMessages:   1,
 			NumExtensions: 0,
 			NumServices:   0,
 		},
 		GoTypes:           file_deposit_proto_goTypes,
 		DependencyIndexes: file_deposit_proto_depIdxs,
+		EnumInfos:         file_deposit_proto_enumTypes,
 		MessageInfos:      file_deposit_proto_msgTypes,
 	}.Build()
 	File_deposit_proto = out.File
