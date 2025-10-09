@@ -1,0 +1,27 @@
+syntax = "proto3";
+
+package api;
+
+import "google/api/annotations.proto";
+import "google/protobuf/empty.proto";
+import "google/protobuf/any.proto";
+import "deposit.proto";
+import "protoc-gen-openapiv2/options/annotations.proto";
+
+
+option go_package = "github.com/Bridgeless-Project/relayer-svc/internal/api/types";
+
+
+service API {
+  rpc SubmitWithdrawal(deposit.DepositIdentifier) returns (google.protobuf.Empty) {
+    option (google.api.http) = {
+      post: "/submit"
+      body: "*"
+    };
+  }
+  rpc CheckHealth(google.protobuf.Empty) returns (google.protobuf.Empty) {
+    option (google.api.http) = {
+      get: "/health"
+    };
+  }
+}
