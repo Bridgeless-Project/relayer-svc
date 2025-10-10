@@ -4,7 +4,9 @@ import (
 	"context"
 	"time"
 
+	"github.com/Bridgeless-Project/relayer-svc/internal/core/chain"
 	"github.com/Bridgeless-Project/relayer-svc/internal/db"
+	"github.com/Bridgeless-Project/relayer-svc/internal/types"
 	"github.com/pkg/errors"
 	"github.com/tendermint/tendermint/rpc/client/http"
 	"github.com/tendermint/tendermint/rpc/core/types"
@@ -12,10 +14,11 @@ import (
 )
 
 type Observer struct {
-	client  *http.HTTP
-	retries int64
-	timeout time.Duration
-	logger  *logan.Entry
+	client      *http.HTTP
+	retries     int64
+	timeout     time.Duration
+	logger      *logan.Entry
+	clientsRepo chain.Repository
 
 	depositsDb db.DepositsQ
 	blockDb    db.BlocksQ
@@ -24,7 +27,7 @@ type Observer struct {
 }
 
 func New(client *http.HTTP, retries int64, timeout time.Duration, blocksDb db.BlocksQ,
-	depositsDb db.DepositsQ, logger *logan.Entry) *Observer {
+	depositsDb db.DepositsQ, logger *logan.Entry, depositChan chan db.Deposit, clientsRepo chain.Repository) *Observer {
 
 	return &Observer{
 		client:         client,
@@ -32,7 +35,8 @@ func New(client *http.HTTP, retries int64, timeout time.Duration, blocksDb db.Bl
 		timeout:        timeout,
 		blockDb:        blocksDb,
 		depositsDb:     depositsDb,
-		depositChannel: make(chan db.Deposit),
+		depositChannel: depositChan,
+		clientsRepo:    clientsRepo,
 		logger:         logger,
 	}
 }
@@ -74,14 +78,23 @@ func (o *Observer) fetchDeposits(ctx context.Context, startHeight int64) error {
 				}
 
 				for _, deposit := range deposits {
-					_, err := o.depositsDb.Insert(*deposit)
+					processed, err := o.IsProcessed(ctx, *deposit)
+					if err != nil {
+						return errors.Wrap(err, "failed to check if deposit is processed")
+					}
+					if processed {
+						continue
+					}
+
+					deposit.WithdrawalStatus = types.WithdrawalStatus_WITHDRAWAL_STATUS_PENDING
+					_, err = o.depositsDb.Insert(*deposit)
 					if err != nil {
 						return errors.Wrap(err, "failed to insert deposit")
 					}
 				}
 
-				for _, deposit := range deposits {
-					o.depositChannel <- *deposit
+				if err = o.blockDb.UpdateLatestBlockId(db.LatestBlock{BlockId: currentHeight}); err != nil {
+					return errors.Wrap(err, "failed to update latest block")
 				}
 
 				continue
@@ -135,4 +148,20 @@ func (o *Observer) fetchSubmitDepositEvents(ctx context.Context, height int64) (
 	}
 
 	return deposits, nil
+}
+
+func (o *Observer) IsProcessed(ctx context.Context, deposit db.Deposit) (bool, error) {
+	if deposit.WithdrawalTxHash == nil &&
+		deposit.WithdrawalStatus == types.WithdrawalStatus_WITHDRAWAL_STATUS_PROCESSED {
+
+		client, err := o.clientsRepo.Client(deposit.WithdrawalChainId)
+		if err != nil {
+			return false, errors.Wrap(err, "failed to get withdrawal chain client")
+		}
+		processed, err := client.IsProcessed(ctx, deposit)
+
+		return processed, errors.Wrap(err, "failed to check if deposit is processed")
+	}
+
+	return true, nil
 }

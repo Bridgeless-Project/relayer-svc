@@ -10,7 +10,7 @@ import (
 	"github.com/Bridgeless-Project/relayer-svc/internal/db"
 	"github.com/avast/retry-go"
 	"github.com/pkg/errors"
-	"github.com/tendermint/tendermint/abci/types"
+	abciTypes "github.com/tendermint/tendermint/abci/types"
 )
 
 func (o *Observer) doWithRetry(ctx context.Context, function func() error) error {
@@ -29,7 +29,7 @@ func (o *Observer) doWithRetry(ctx context.Context, function func() error) error
 	return nil
 }
 
-func parseDepositsFromTxResults(txs []*types.ResponseDeliverTx) ([]*db.Deposit, error) {
+func parseDepositsFromTxResults(txs []*abciTypes.ResponseDeliverTx) ([]*db.Deposit, error) {
 	var deposits []*db.Deposit
 
 	for _, tx := range txs {
