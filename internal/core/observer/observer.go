@@ -7,7 +7,7 @@ import (
 	"github.com/Bridgeless-Project/relayer-svc/internal/db"
 	"github.com/pkg/errors"
 	"github.com/tendermint/tendermint/rpc/client/http"
-	"github.com/tendermint/tendermint/rpc/coretypes"
+	"github.com/tendermint/tendermint/rpc/core/types"
 	"gitlab.com/distributed_lab/logan/v3"
 )
 
