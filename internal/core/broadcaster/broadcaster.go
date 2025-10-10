@@ -2,6 +2,7 @@ package broadcaster
 
 import (
 	"context"
+	"sync"
 
 	"github.com/Bridgeless-Project/relayer-svc/internal/core"
 	"github.com/Bridgeless-Project/relayer-svc/internal/core/chain"
@@ -19,6 +20,7 @@ type Broadcaster struct {
 
 	dbConn db.DepositsQ
 	logger *logan.Entry
+	cache  sync.Map
 }
 
 func New(coreConnector *connector.Connector, dbConn db.DepositsQ, clientsRepo chain.Repository,
@@ -28,6 +30,7 @@ func New(coreConnector *connector.Connector, dbConn db.DepositsQ, clientsRepo ch
 		clientsRepo:   clientsRepo,
 		depositChan:   depositChan,
 		dbConn:        dbConn,
+		logger:        logger,
 	}
 }
 
@@ -37,38 +40,63 @@ func (b *Broadcaster) Run(ctx context.Context) error {
 		case <-ctx.Done():
 			b.logger.Debug("context canceled. Stopping broadcaster")
 			return nil
-		case deposit := <-b.depositChan:
-			var withdrawalTxHash string
-			chainClient, err := b.clientsRepo.Client(deposit.WithdrawalChainId)
-			if err != nil {
-				return errors.Wrapf(err, "error getting chain client for chain id: %s", deposit.WithdrawalChainId)
+		case deposit, ok := <-b.depositChan:
+			if !ok {
+				ctx.Done()
+				b.logger.Debug("deposit channel is closed. Stopping broadcaster")
+				return nil
 			}
-			switch deposit.WithdrawalToken {
-			case core.DefaultNativeTokenAddress:
-				withdrawalTxHash, err = chainClient.WithdrawNative(deposit)
-				if err != nil {
-					return errors.Wrapf(err, "failed to withdraw deposit, identifier: %v ", deposit.DepositIdentifier)
-				}
 
-				err = b.dbConn.Transaction(func() error {
-					dbErr := b.dbConn.UpdateWithdrawalTx(deposit.DepositIdentifier, withdrawalTxHash)
-					if dbErr != nil {
-						return errors.Wrap(err, "failed to update withdrawal tx hash")
-					}
-
-					dbErr = b.dbConn.UpdateStatus(deposit.DepositIdentifier, types.WithdrawalStatus_WITHDRAWAL_STATUS_PROCESSED)
-					if dbErr != nil {
-						return errors.Wrap(err, "failed to update deposit status")
-					}
-
-					return nil
-				})
-
-				if err != nil {
-					return errors.Wrap(err, "failed to update deposit withdrawal details")
-				}
-
-			}
+			b.cache.Delete(deposit.DepositIdentifier.String())
 		}
 	}
+}
+
+func (b *Broadcaster) Broadcast(deposit db.Deposit) error {
+	if err := b.validateExistence(deposit); err != nil {
+		return err
+	}
+
+	b.cache.Store(deposit.DepositIdentifier.String(), struct{}{})
+	b.depositChan <- deposit
+
+	return nil
+}
+
+func (b *Broadcaster) processDeposit(ctx context.Context, deposit db.Deposit) error {
+	err := b.dbConn.UpdateStatus(deposit.DepositIdentifier, types.WithdrawalStatus_WITHDRAWAL_STATUS_PROCESSING)
+	if err != nil {
+		b.logger.Errorf("failed to, update deposit status error: %v", err)
+		return errWithdraw
+	}
+
+	client, err := b.clientsRepo.Client(deposit.WithdrawalChainId)
+	if err != nil {
+		return errors.Wrap(err, "failed to get withdrawal chain client")
+	}
+
+	var withdrawalTxHash string
+	switch deposit.WithdrawalToken {
+	case core.DefaultNativeTokenAddress:
+		withdrawalTxHash, err = client.WithdrawNative(ctx, deposit)
+		if err != nil {
+			b.logger.Errorf("failed to get withdrawal tx hash, error: %v", err)
+			return errWithdraw
+		}
+	default:
+
+	}
+
+	err = b.dbConn.UpdateWithdrawalTx(deposit.DepositIdentifier, withdrawalTxHash)
+	if err != nil {
+		b.logger.Errorf("failed to update withdrawal tx hash, error: %v", err)
+		return errWithdraw
+	}
+	err = b.dbConn.UpdateStatus(deposit.DepositIdentifier, types.WithdrawalStatus_WITHDRAWAL_STATUS_PROCESSED)
+	if err != nil {
+		b.logger.Errorf("failed to, update deposit status error: %v", err)
+		return errWithdraw
+	}
+
+	return nil
 }

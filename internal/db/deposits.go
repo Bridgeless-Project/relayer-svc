@@ -1,6 +1,8 @@
 package db
 
 import (
+	"fmt"
+
 	"github.com/Bridgeless-Project/relayer-svc/internal/types"
 	"github.com/pkg/errors"
 )
@@ -23,6 +25,10 @@ type DepositIdentifier struct {
 	TxHash  string `structs:"tx_hash" db:"tx_hash"`
 	TxNonce int64  `structs:"tx_nonce" db:"tx_nonce"`
 	ChainId string `structs:"chain_id" db:"chain_id"`
+}
+
+func (di *DepositIdentifier) String() string {
+	return fmt.Sprintf("%s/%s/%d", di.ChainId, di.TxHash, di.TxNonce)
 }
 
 type Deposit struct {

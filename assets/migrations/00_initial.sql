@@ -8,7 +8,7 @@ CREATE TABLE IF NOT EXISTS deposits
     tx_nonce            INT          NOT NULL,
     chain_id            VARCHAR(50)  NOT NULL,
 
-    depositor           VARCHAR(100),
+    depositor           VARCHAR(100) NOT NULL,
     receiver            VARCHAR(100) NOT NULL,
     deposit_amount      TEXT        NOT NULL,
     withdrawal_amount   TEXT       NOT NULL,
@@ -22,7 +22,7 @@ CREATE TABLE IF NOT EXISTS deposits
     withdrawal_status   int          NOT NULL,
 
     withdrawal_tx_hash  VARCHAR(100),
-    withdrawal_chain_id VARCHAR(50),
+    withdrawal_chain_id VARCHAR(50) NOT NULL,
 
     CONSTRAINT unique_deposit UNIQUE (tx_hash, tx_nonce, chain_id)
 );

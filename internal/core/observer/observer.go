@@ -82,7 +82,7 @@ func (o *Observer) fetchDeposits(ctx context.Context, startHeight int64) error {
 					if err != nil {
 						return errors.Wrap(err, "failed to check if deposit is processed")
 					}
-					if processed {
+					if processed || !o.clientsRepo.SupportsChain(deposit.WithdrawalChainId) {
 						continue
 					}
 
@@ -151,8 +151,9 @@ func (o *Observer) fetchSubmitDepositEvents(ctx context.Context, height int64) (
 }
 
 func (o *Observer) IsProcessed(ctx context.Context, deposit db.Deposit) (bool, error) {
-	if deposit.WithdrawalTxHash == nil &&
-		deposit.WithdrawalStatus == types.WithdrawalStatus_WITHDRAWAL_STATUS_PROCESSED {
+
+	// TODO: Add new field is_processed
+	if deposit.WithdrawalTxHash == nil {
 
 		client, err := o.clientsRepo.Client(deposit.WithdrawalChainId)
 		if err != nil {
