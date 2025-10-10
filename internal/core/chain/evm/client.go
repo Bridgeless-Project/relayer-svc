@@ -1,9 +1,9 @@
 package evm
 
 import (
-	"bytes"
 	"context"
 	"strings"
+	"sync/atomic"
 
 	"github.com/Bridgeless-Project/relayer-svc/internal/core"
 	"github.com/Bridgeless-Project/relayer-svc/internal/core/chain"
@@ -11,7 +11,7 @@ import (
 	"github.com/Bridgeless-Project/relayer-svc/internal/db"
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/pkg/errors"
 )
 
@@ -26,9 +26,10 @@ var events = []string{
 }
 
 type Client struct {
-	chain         Chain
-	contractABI   abi.ABI
-	depositEvents []abi.Event
+	chain          Chain
+	contractClient *contracts.Bridge
+	walletAddress  common.Address
+	nonce          atomic.Uint64
 }
 
 func (p *Client) IsProcessed(ctx context.Context, depositData db.Deposit) (bool, error) {
@@ -52,10 +53,25 @@ func NewBridgeClient(chain Chain) *Client {
 		depositEvents[i] = depositEvent
 	}
 
+	contractClient, err := contracts.NewBridge(chain.BridgeAddress, chain.Rpc)
+	if err != nil {
+		panic(errors.Wrap(err, "failed to init bridge client"))
+	}
+
+	walletAddress := crypto.PubkeyToAddress(chain.OperatorPrivKey.PublicKey)
+	nonce, err := chain.Rpc.NonceAt(context.Background(), walletAddress, nil)
+	if err != nil {
+		panic(errors.Wrapf(err, "failed to get nonce for chain %s", chain.Id))
+	}
+
+	atomicNonce := atomic.Uint64{}
+	atomicNonce.Store(nonce)
+
 	return &Client{
-		chain:         chain,
-		contractABI:   bridgeAbi,
-		depositEvents: depositEvents,
+		chain:          chain,
+		contractClient: contractClient,
+		walletAddress:  walletAddress,
+		nonce:          atomicNonce,
 	}
 }
 
@@ -65,21 +81,6 @@ func (p *Client) ChainId() string {
 
 func (p *Client) Type() chain.Type {
 	return chain.TypeEVM
-}
-
-func (p *Client) getDepositLogType(log *types.Log) string {
-	if log == nil || len(log.Topics) == 0 {
-		return ""
-	}
-
-	for _, event := range p.depositEvents {
-		isEqual := bytes.Equal(log.Topics[0].Bytes(), event.ID.Bytes())
-		if isEqual {
-			return event.Name
-		}
-	}
-
-	return ""
 }
 
 func (p *Client) AddressValid(addr string) bool {

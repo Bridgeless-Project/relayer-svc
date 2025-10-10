@@ -86,7 +86,7 @@ func parseSubmittedDeposit(attributes []Attribute) (*db.Deposit, error) {
 		case bridgeTypes.AttributeKeyWithdrawalAmount:
 			deposit.WithdrawalAmount = attribute.Value
 		case bridgeTypes.AttributeKeyDepositor:
-			deposit.Depositor = &attribute.Value
+			deposit.Depositor = attribute.Value
 		case bridgeTypes.AttributeKeyReceiver:
 			deposit.Receiver = attribute.Value
 		case bridgeTypes.AttributeKeyWithdrawalChainID:
@@ -99,7 +99,7 @@ func parseSubmittedDeposit(attributes []Attribute) (*db.Deposit, error) {
 			deposit.WithdrawalToken = attribute.Value
 		case bridgeTypes.AttributeKeySignature:
 			if attribute.Value != "" {
-				deposit.Signature = &attribute.Value
+				deposit.Signature = attribute.Value
 			}
 		case bridgeTypes.AttributeKeyIsWrapped:
 			isWrapped, err := strconv.ParseBool(attribute.Value)

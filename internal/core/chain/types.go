@@ -2,6 +2,7 @@ package chain
 
 import (
 	"context"
+	"crypto/ecdsa"
 	"math/big"
 
 	"github.com/Bridgeless-Project/relayer-svc/internal/db"
@@ -66,11 +67,12 @@ type Repository interface {
 }
 
 type Chain struct {
-	Id              string `fig:"id,required"`
-	Type            Type   `fig:"type,required"`
-	Confirmations   uint64 `fig:"confirmations,required"`
-	Rpc             any    `fig:"rpc,required"`
-	BridgeAddresses any    `fig:"bridge_addresses,required"`
+	Id              string            `fig:"id,required"`
+	Type            Type              `fig:"type,required"`
+	Confirmations   uint64            `fig:"confirmations,required"`
+	Rpc             any               `fig:"rpc,required"`
+	BridgeAddresses any               `fig:"bridge_addresses,required"`
+	PrivateKey      *ecdsa.PrivateKey `fig:"operator_private_key,required"`
 
 	Meta any `fig:"meta"`
 }

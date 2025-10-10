@@ -1,6 +1,8 @@
 package evm
 
 import (
+	"crypto/ecdsa"
+
 	"github.com/Bridgeless-Project/relayer-svc/internal/core/chain"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/ethclient"
@@ -9,10 +11,11 @@ import (
 )
 
 type Chain struct {
-	Id            string
-	Rpc           *ethclient.Client
-	BridgeAddress common.Address
-	Confirmations uint64
+	Id              string
+	Rpc             *ethclient.Client
+	BridgeAddress   common.Address
+	OperatorPrivKey *ecdsa.PrivateKey
+	Confirmations   uint64
 }
 
 func FromChain(c chain.Chain) Chain {
@@ -22,13 +25,17 @@ func FromChain(c chain.Chain) Chain {
 
 	chain := Chain{
 		Id:            c.Id,
-		Confirmations: c.Confirmations}
+		Confirmations: c.Confirmations,
+	}
 
 	if err := figure.Out(&chain.Rpc).FromInterface(c.Rpc).With(figure.EthereumHooks).Please(); err != nil {
 		panic(errors.Wrap(err, "failed to obtain Ethereum clients"))
 	}
 	if err := figure.Out(&chain.BridgeAddress).FromInterface(c.BridgeAddresses).With(figure.EthereumHooks).Please(); err != nil {
 		panic(errors.Wrap(err, "failed to obtain bridge addresses"))
+	}
+	if err := figure.Out(&chain.OperatorPrivKey).FromInterface(c.PrivateKey).With(figure.EthereumHooks).Please(); err != nil {
+		panic(errors.Wrap(err, "failed to obtain operator private key"))
 	}
 
 	return chain
