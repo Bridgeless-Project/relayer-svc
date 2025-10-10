@@ -47,6 +47,15 @@ func (b *Broadcaster) Run(ctx context.Context) error {
 				return nil
 			}
 
+			if err := b.processDeposit(ctx, deposit); err != nil {
+				b.logger.WithError(err).Error("error processing deposit")
+				err = b.dbConn.UpdateStatus(deposit.DepositIdentifier, types.WithdrawalStatus_WITHDRAWAL_STATUS_FAILED)
+				if err != nil {
+					b.logger.WithError(err).Error("error updating status")
+				}
+				b.cache.Delete(deposit.DepositIdentifier.String())
+				continue
+			}
 			b.cache.Delete(deposit.DepositIdentifier.String())
 		}
 	}
@@ -66,8 +75,7 @@ func (b *Broadcaster) Broadcast(deposit db.Deposit) error {
 func (b *Broadcaster) processDeposit(ctx context.Context, deposit db.Deposit) error {
 	err := b.dbConn.UpdateStatus(deposit.DepositIdentifier, types.WithdrawalStatus_WITHDRAWAL_STATUS_PROCESSING)
 	if err != nil {
-		b.logger.Errorf("failed to, update deposit status error: %v", err)
-		return errWithdraw
+		return errors.Wrap(err, "failed to, update deposit status")
 	}
 
 	client, err := b.clientsRepo.Client(deposit.WithdrawalChainId)
@@ -80,22 +88,35 @@ func (b *Broadcaster) processDeposit(ctx context.Context, deposit db.Deposit) er
 	case core.DefaultNativeTokenAddress:
 		withdrawalTxHash, err = client.WithdrawNative(ctx, deposit)
 		if err != nil {
-			b.logger.Errorf("failed to get withdrawal tx hash, error: %v", err)
-			return errWithdraw
+			return errors.Wrap(err, "failed to process withdrawal")
 		}
 	default:
+		if deposit.IsWrappedToken {
+			withdrawalTxHash, err = client.WithdrawWrapped(ctx, deposit)
+			if err != nil {
+				return errors.Wrap(err, "failed to process withdrawal")
+			}
+		}
 
+		withdrawalTxHash, err = client.WithdrawToken(ctx, deposit)
+		if err != nil {
+			return errors.Wrap(err, "failed to process withdrawal")
+		}
+	}
+
+	err = b.coreConnector.UpdateTxInfo(deposit)
+	if err != nil {
+		return errors.Wrap(err, "failed to update tx info")
 	}
 
 	err = b.dbConn.UpdateWithdrawalTx(deposit.DepositIdentifier, withdrawalTxHash)
 	if err != nil {
-		b.logger.Errorf("failed to update withdrawal tx hash, error: %v", err)
-		return errWithdraw
+		return errors.Wrap(err, "failed to update withdrawal tx hash")
 	}
+
 	err = b.dbConn.UpdateStatus(deposit.DepositIdentifier, types.WithdrawalStatus_WITHDRAWAL_STATUS_PROCESSED)
 	if err != nil {
-		b.logger.Errorf("failed to, update deposit status error: %v", err)
-		return errWithdraw
+		return errors.Wrap(err, "failed to update withdrawal status")
 	}
 
 	return nil

@@ -25,7 +25,7 @@ type observer struct {
 
 func (sc *observer) TendermintHttpClient() *http.HTTP {
 	cfg := sc.Config()
-	client, err := http.New(cfg.Addr)
+	client, err := http.New(cfg.Addr, "/websocket")
 	if err != nil {
 		panic(errors.Wrap(err, "failed to create tendermint http client"))
 	}

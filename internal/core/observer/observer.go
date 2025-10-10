@@ -4,6 +4,7 @@ import (
 	"context"
 	"time"
 
+	"github.com/Bridgeless-Project/relayer-svc/internal/core/broadcaster"
 	"github.com/Bridgeless-Project/relayer-svc/internal/core/chain"
 	"github.com/Bridgeless-Project/relayer-svc/internal/db"
 	"github.com/Bridgeless-Project/relayer-svc/internal/types"
@@ -23,21 +24,21 @@ type Observer struct {
 	depositsDb db.DepositsQ
 	blockDb    db.BlocksQ
 
-	depositChannel chan db.Deposit
+	broadcaster *broadcaster.Broadcaster
 }
 
 func New(client *http.HTTP, retries int64, timeout time.Duration, blocksDb db.BlocksQ,
-	depositsDb db.DepositsQ, logger *logan.Entry, depositChan chan db.Deposit, clientsRepo chain.Repository) *Observer {
+	depositsDb db.DepositsQ, logger *logan.Entry, clientsRepo chain.Repository, brcst *broadcaster.Broadcaster) *Observer {
 
 	return &Observer{
-		client:         client,
-		retries:        retries,
-		timeout:        timeout,
-		blockDb:        blocksDb,
-		depositsDb:     depositsDb,
-		depositChannel: depositChan,
-		clientsRepo:    clientsRepo,
-		logger:         logger,
+		client:      client,
+		retries:     retries,
+		timeout:     timeout,
+		blockDb:     blocksDb,
+		depositsDb:  depositsDb,
+		broadcaster: brcst,
+		clientsRepo: clientsRepo,
+		logger:      logger,
 	}
 }
 
@@ -90,6 +91,11 @@ func (o *Observer) fetchDeposits(ctx context.Context, startHeight int64) error {
 					_, err = o.depositsDb.Insert(*deposit)
 					if err != nil {
 						return errors.Wrap(err, "failed to insert deposit")
+					}
+
+					err = o.broadcaster.Broadcast(*deposit)
+					if err != nil {
+						return errors.Wrap(err, "failed to broadcast deposit")
 					}
 				}
 

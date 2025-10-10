@@ -2,11 +2,10 @@ package connector
 
 import (
 	"context"
-	"strings"
 
 	bridgetypes "github.com/Bridgeless-Project/bridgeless-core/v12/x/bridge/types"
-	"github.com/Bridgeless-Project/relayer-svc/internal/core"
 	"github.com/Bridgeless-Project/relayer-svc/internal/db"
+	"github.com/Bridgeless-Project/relayer-svc/internal/types"
 	"github.com/pkg/errors"
 )
 
@@ -23,12 +22,10 @@ func (c *Connector) GetDeposit(ctx context.Context, depositId db.DepositIdentifi
 		return nil, errors.Wrap(err, "failed to find specified transaction")
 	}
 
+	return txToDeposit(tx.Transaction), nil
 }
 
-func txToDeposit(tx *bridgetypes.Transaction) *db.Deposit {
-	depositor := tx.Depositor
-	signature := tx.Signature
-	withdrawal
+func txToDeposit(tx bridgetypes.Transaction) *db.Deposit {
 
 	return &db.Deposit{
 		DepositIdentifier: db.DepositIdentifier{
@@ -37,18 +34,26 @@ func txToDeposit(tx *bridgetypes.Transaction) *db.Deposit {
 			ChainId: tx.DepositChainId,
 		},
 		Depositor:         tx.Depositor,
-		DepositAmount:     "",
-		DepositToken:      "",
-		Receiver:          "",
-		WithdrawalToken:   "",
-		DepositBlock:      0,
-		CommissionAmount:  "",
-		ReferralId:        0,
-		WithdrawalStatus:  0,
-		WithdrawalTxHash:  nil,
-		WithdrawalChainId: "",
-		WithdrawalAmount:  "",
-		IsWrappedToken:    false,
-		Signature:         nil,
+		DepositAmount:     tx.DepositAmount,
+		DepositToken:      tx.DepositToken,
+		Receiver:          tx.Receiver,
+		WithdrawalToken:   tx.WithdrawalToken,
+		DepositBlock:      int64(tx.DepositBlock),
+		CommissionAmount:  tx.CommissionAmount,
+		ReferralId:        uint16(tx.ReferralId),
+		WithdrawalStatus:  types.WithdrawalStatus_WITHDRAWAL_STATUS_UNSPECIFIED,
+		WithdrawalTxHash:  nilOrNotEmpty(tx.WithdrawalTxHash),
+		WithdrawalChainId: tx.WithdrawalChainId,
+		WithdrawalAmount:  tx.WithdrawalAmount,
+		IsWrappedToken:    tx.IsWrapped,
+		Signature:         tx.Signature,
 	}
+}
+
+func nilOrNotEmpty(str string) *string {
+	if str == "" {
+		return nil
+	}
+
+	return &str
 }
