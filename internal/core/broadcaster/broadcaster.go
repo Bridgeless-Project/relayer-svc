@@ -88,19 +88,12 @@ func (b *Broadcaster) processDeposit(ctx context.Context, deposit db.Deposit) er
 	case core.DefaultNativeTokenAddress:
 		withdrawalTxHash, err = client.WithdrawNative(ctx, deposit)
 		if err != nil {
-			return errors.Wrap(err, "failed to process withdrawal")
+			return errors.Wrap(err, "failed to process native withdrawal")
 		}
 	default:
-		if deposit.IsWrappedToken {
-			withdrawalTxHash, err = client.WithdrawWrapped(ctx, deposit)
-			if err != nil {
-				return errors.Wrap(err, "failed to process withdrawal")
-			}
-		}
-
 		withdrawalTxHash, err = client.WithdrawToken(ctx, deposit)
 		if err != nil {
-			return errors.Wrap(err, "failed to process withdrawal")
+			return errors.Wrap(err, "failed to process token withdrawal")
 		}
 	}
 

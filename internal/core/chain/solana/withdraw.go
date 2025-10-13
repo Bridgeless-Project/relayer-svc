@@ -58,17 +58,7 @@ func (p *Client) GetSignHash(data db.Deposit) ([]byte, error) {
 	return hash[:], nil
 }
 
-func (p *Client) WithdrawNative(ctx context.Context, depositData db.Deposit) (txHash string, err error) {
-	//TODO implement me
-	panic("implement me")
-}
-
 func (p *Client) WithdrawToken(ctx context.Context, depositData db.Deposit) (txHash string, err error) {
-	//TODO implement me
-	panic("implement me")
-}
-
-func (p *Client) WithdrawWrapped(ctx context.Context, depositData db.Deposit) (txHash string, err error) {
 	//TODO implement me
 	panic("implement me")
 }

@@ -58,7 +58,6 @@ type Client interface {
 
 	WithdrawNative(ctx context.Context, depositData db.Deposit) (txHash string, err error)
 	WithdrawToken(ctx context.Context, depositData db.Deposit) (txHash string, err error)
-	WithdrawWrapped(ctx context.Context, depositData db.Deposit) (txHash string, err error)
 }
 
 type Repository interface {
