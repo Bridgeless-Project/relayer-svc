@@ -23,12 +23,11 @@ type Broadcaster struct {
 	cache  sync.Map
 }
 
-func New(coreConnector *connector.Connector, dbConn db.DepositsQ, clientsRepo chain.Repository,
-	depositChan chan db.Deposit, logger *logan.Entry) *Broadcaster {
+func New(coreConnector *connector.Connector, dbConn db.DepositsQ, clientsRepo chain.Repository, logger *logan.Entry) *Broadcaster {
 	return &Broadcaster{
 		coreConnector: coreConnector,
 		clientsRepo:   clientsRepo,
-		depositChan:   depositChan,
+		depositChan:   make(chan db.Deposit, core.BufferChannelSize),
 		dbConn:        dbConn,
 		logger:        logger,
 	}
@@ -53,8 +52,6 @@ func (b *Broadcaster) Run(ctx context.Context) error {
 				if err != nil {
 					b.logger.WithError(err).Error("error updating status")
 				}
-				b.cache.Delete(deposit.DepositIdentifier.String())
-				continue
 			}
 			b.cache.Delete(deposit.DepositIdentifier.String())
 		}

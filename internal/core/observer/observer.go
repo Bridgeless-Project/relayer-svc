@@ -28,7 +28,7 @@ type Observer struct {
 }
 
 func New(client *http.HTTP, retries int64, timeout time.Duration, blocksDb db.BlocksQ,
-	depositsDb db.DepositsQ, logger *logan.Entry, clientsRepo chain.Repository, brcst *broadcaster.Broadcaster) *Observer {
+	depositsDb db.DepositsQ, brcst *broadcaster.Broadcaster, clientsRepo chain.Repository, logger *logan.Entry) *Observer {
 
 	return &Observer{
 		client:      client,

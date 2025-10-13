@@ -20,7 +20,7 @@ type ConnectorConfigurer interface {
 }
 
 type ConnectorConfig struct {
-	wallet     core.Account
+	Account    core.Account
 	Settings   connector.Settings
 	Connection *grpc.ClientConn
 }
@@ -74,6 +74,7 @@ func (c *configurer) CoreConnectorConfig() ConnectorConfig {
 		return ConnectorConfig{
 			Settings:   cfg.Settings,
 			Connection: client,
+			Account:    cfg.wallet,
 		}
 	}).(ConnectorConfig)
 }

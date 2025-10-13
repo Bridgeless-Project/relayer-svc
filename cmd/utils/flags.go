@@ -1,0 +1,55 @@
+package utils
+
+import (
+	"strconv"
+
+	"github.com/Bridgeless-Project/relayer-svc/internal/config"
+	"github.com/pkg/errors"
+	"github.com/spf13/cobra"
+	"gitlab.com/distributed_lab/kit/kv"
+)
+
+const (
+	configFlag      = "config"
+	catchUpFlag     = "catch-up"
+	startHeightFlag = "start-height"
+)
+
+func RegisterConfigFlag(cmd *cobra.Command) {
+	cmd.PersistentFlags().StringP(configFlag, "c", "config.yaml", "Path to the config file")
+}
+
+func RegisterCatchUpFlag(cmd *cobra.Command) {
+	cmd.PersistentFlags().BoolP(catchUpFlag, "cu", false, "Catch up unprocessed deposits from database")
+}
+
+func RegisterStartHeightFlag(cmd *cobra.Command) {
+	cmd.PersistentFlags().Int64P(startHeightFlag, "sh", 0, "Start height to fetch blocks")
+}
+
+func ConfigFromFlags(cmd *cobra.Command) (config.Config, error) {
+	configPath, err := cmd.Flags().GetString(configFlag)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to get config flag")
+	}
+
+	viper := kv.NewViperFile(configPath)
+	if _, err = viper.GetStringMap("ping"); err != nil {
+		return nil, errors.Wrap(err, "failed to ping viper")
+	}
+
+	return config.New(viper), nil
+}
+
+func CatchUpFromFlags(cmd *cobra.Command) (bool, error) {
+	catchUp, err := cmd.Flags().GetBool(catchUpFlag)
+	if err != nil {
+		return false, errors.Wrap(err, "failed to get catch-up flag")
+	}
+
+	return catchUp, nil
+}
+
+func StartHeightFromFlags(cmd *cobra.Command) (int64, error) {
+	return strconv.ParseInt(cmd.Flags().Lookup(startHeightFlag).Value.String(), 10, 64)
+}

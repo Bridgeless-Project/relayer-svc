@@ -8,10 +8,12 @@ import (
 
 	"github.com/Bridgeless-Project/relayer-svc/api"
 	"github.com/Bridgeless-Project/relayer-svc/internal/api/ctx"
-
 	srvgrpc "github.com/Bridgeless-Project/relayer-svc/internal/api/grpc"
 	"github.com/Bridgeless-Project/relayer-svc/internal/api/middlewares"
 	"github.com/Bridgeless-Project/relayer-svc/internal/api/types"
+	"github.com/Bridgeless-Project/relayer-svc/internal/core/broadcaster"
+	"github.com/Bridgeless-Project/relayer-svc/internal/core/chain"
+	"github.com/Bridgeless-Project/relayer-svc/internal/core/connector"
 	"github.com/go-chi/chi/v5"
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"gitlab.com/distributed_lab/logan/v3"
@@ -37,6 +39,9 @@ func NewServer(
 	grpc net.Listener,
 	http net.Listener,
 	db db.DepositsQ,
+	connector *connector.Connector,
+	broadcaster *broadcaster.Broadcaster,
+	clientsRepo chain.Repository,
 	logger *logan.Entry,
 ) *Server {
 	return &Server{
@@ -47,6 +52,9 @@ func NewServer(
 		ctxExtenders: []func(context.Context) context.Context{
 			ctx.LoggerProvider(logger),
 			ctx.DBProvider(db),
+			ctx.ConnectorProvider(connector),
+			ctx.BroadcasterProvider(broadcaster),
+			ctx.ClientsProvider(clientsRepo),
 		},
 	}
 }

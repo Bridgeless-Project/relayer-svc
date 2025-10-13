@@ -1,6 +1,8 @@
 package config
 
 import (
+	chain "github.com/Bridgeless-Project/relayer-svc/internal/core/chain/config"
+	connector "github.com/Bridgeless-Project/relayer-svc/internal/core/connector/config"
 	observer "github.com/Bridgeless-Project/relayer-svc/internal/core/observer/config"
 	"gitlab.com/distributed_lab/kit/comfig"
 	"gitlab.com/distributed_lab/kit/kv"
@@ -12,6 +14,8 @@ type Config interface {
 	pgdb.Databaser
 	Listenerer
 	observer.ObserverConfigurator
+	chain.Chainer
+	connector.ConnectorConfigurer
 }
 
 type config struct {
@@ -21,6 +25,8 @@ type config struct {
 	pgdb.Databaser
 	Listenerer
 	observer.ObserverConfigurator
+	chain.Chainer
+	connector.ConnectorConfigurer
 }
 
 func New(getter kv.Getter) Config {
@@ -30,5 +36,7 @@ func New(getter kv.Getter) Config {
 		Databaser:            pgdb.NewDatabaser(getter),
 		Listenerer:           NewListenerer(getter),
 		ObserverConfigurator: observer.NewConfigurator(getter),
+		Chainer:              chain.NewChainer(getter),
+		ConnectorConfigurer:  connector.NewConnectorConfigurer(getter),
 	}
 }
