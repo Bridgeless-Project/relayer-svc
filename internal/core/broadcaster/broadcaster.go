@@ -63,7 +63,12 @@ func (b *Broadcaster) Run(ctx context.Context) error {
 
 func (b *Broadcaster) Broadcast(deposit db.Deposit) error {
 	if err := b.validateExistence(deposit); err != nil {
-		return err
+		if !errors.Is(err, errWithdraw) {
+			return err
+		}
+
+		b.logger.WithError(err).Error("error broadcasting withdrawal")
+		return types.ErrFailedToBroadcast
 	}
 
 	b.cache.Store(deposit.DepositIdentifier.String(), struct{}{})
