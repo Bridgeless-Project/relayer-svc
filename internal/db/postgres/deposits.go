@@ -43,6 +43,23 @@ type depositsQ struct {
 	selector squirrel.SelectBuilder
 }
 
+func (d *depositsQ) GetWithStatus(status types.WithdrawalStatus) ([]db.Deposit, error) {
+	stmt := d.selector.Where(squirrel.Eq{
+		depositsWithdrawalStatus: status,
+	})
+
+	var deposits []db.Deposit
+	if err := d.db.Select(&deposits, stmt); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, nil
+		}
+
+		return nil, errors.Wrap(err, "failed to get deposits")
+	}
+
+	return deposits, nil
+}
+
 func (d *depositsQ) New() db.DepositsQ {
 	return NewDepositsQ(d.db.Clone())
 }

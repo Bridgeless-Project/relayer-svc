@@ -11,6 +11,7 @@ type DepositsQ interface {
 	New() DepositsQ
 	Insert(Deposit) (id int64, err error)
 	Get(identifier DepositIdentifier) (*Deposit, error)
+	GetWithStatus(status types.WithdrawalStatus) ([]Deposit, error)
 
 	UpdateWithdrawalTx(DepositIdentifier, string) error
 	UpdateSignature(DepositIdentifier, string) error

@@ -42,17 +42,25 @@ func New(client *http.HTTP, retries int64, timeout time.Duration, blocksDb db.Bl
 	}
 }
 
-func (o *Observer) Run(ctx context.Context, startHeight int64) error {
-	select {
-	case <-ctx.Done():
-		o.logger.Debug("context canceled. Stopping observer")
-		return nil
-
-	default:
-		if err := o.fetchDeposits(ctx, startHeight); err != nil {
-			return errors.Wrap(err, "fetch deposits")
+func (o *Observer) Run(ctx context.Context, startHeight int64, catchup bool) error {
+	// Firstly catch up pending deposits from db
+	if catchup {
+		deposits, err := o.depositsDb.GetWithStatus(types.WithdrawalStatus_WITHDRAWAL_STATUS_PROCESSING)
+		if err != nil {
+			return errors.Wrap(err, "failed to get unprocessed deposits")
 		}
 
+		for _, deposit := range deposits {
+			if err := o.broadcaster.Broadcast(deposit); err != nil {
+				o.logger.Errorf("failed to broadcast deposit: %v", err)
+				continue
+			}
+		}
+	}
+
+	// Fetch deposits from Bridgeless core
+	if err := o.fetchDeposits(ctx, startHeight); err != nil {
+		return errors.Wrap(err, "fetch deposits")
 	}
 
 	return nil
@@ -79,28 +87,20 @@ func (o *Observer) fetchDeposits(ctx context.Context, startHeight int64) error {
 				}
 
 				for _, deposit := range deposits {
-					processed, err := o.IsProcessed(ctx, *deposit)
+					err = o.broadcastDeposit(ctx, *deposit)
 					if err != nil {
-						return errors.Wrap(err, "failed to check if deposit is processed")
-					}
-					if processed || !o.clientsRepo.SupportsChain(deposit.WithdrawalChainId) {
+						if errors.Is(err, skippedDeposit) {
+							continue
+						}
+
+						o.logger.Errorf("failed to broadcast deposit: %v", err)
 						continue
-					}
-
-					deposit.WithdrawalStatus = types.WithdrawalStatus_WITHDRAWAL_STATUS_PENDING
-					_, err = o.depositsDb.Insert(*deposit)
-					if err != nil {
-						return errors.Wrap(err, "failed to insert deposit")
-					}
-
-					err = o.broadcaster.Broadcast(*deposit)
-					if err != nil {
-						return errors.Wrap(err, "failed to broadcast deposit")
 					}
 				}
 
 				if err = o.blockDb.UpdateLatestBlockId(db.LatestBlock{BlockId: currentHeight}); err != nil {
-					return errors.Wrap(err, "failed to update latest block")
+					o.logger.Errorf("failed to update latest block id: %v", err)
+					continue
 				}
 
 				continue
@@ -157,8 +157,6 @@ func (o *Observer) fetchSubmitDepositEvents(ctx context.Context, height int64) (
 }
 
 func (o *Observer) IsProcessed(ctx context.Context, deposit db.Deposit) (bool, error) {
-
-	// TODO: Add new field is_processed
 	if deposit.WithdrawalTxHash == nil {
 
 		client, err := o.clientsRepo.Client(deposit.WithdrawalChainId)
@@ -171,4 +169,27 @@ func (o *Observer) IsProcessed(ctx context.Context, deposit db.Deposit) (bool, e
 	}
 
 	return true, nil
+}
+
+func (o *Observer) broadcastDeposit(ctx context.Context, deposit db.Deposit) error {
+	processed, err := o.IsProcessed(ctx, deposit)
+	if err != nil {
+		return errors.Wrap(err, "failed to check if deposit is processed")
+	}
+	if processed || !o.clientsRepo.SupportsChain(deposit.WithdrawalChainId) {
+		return skippedDeposit
+	}
+
+	deposit.WithdrawalStatus = types.WithdrawalStatus_WITHDRAWAL_STATUS_PENDING
+	_, err = o.depositsDb.Insert(deposit)
+	if err != nil {
+		return errors.Wrap(err, "failed to insert deposit")
+	}
+
+	err = o.broadcaster.Broadcast(deposit)
+	if err != nil {
+		return errors.Wrap(err, "failed to broadcast deposit")
+	}
+
+	return nil
 }

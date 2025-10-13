@@ -55,9 +55,9 @@ type Client interface {
 
 	IsProcessed(ctx context.Context, depositData db.Deposit) (bool, error)
 
-	WithdrawNative(ctx context.Context, depositData db.Deposit) (txHash string, err error)
-	WithdrawToken(ctx context.Context, depositData db.Deposit) (txHash string, err error)
-	WithdrawWrapped(ctx context.Context, depositData db.Deposit) (txHash string, err error)
+	WithdrawNative(ctx context.Context, depositData db.Deposit) (string, error)
+	WithdrawToken(ctx context.Context, depositData db.Deposit) (string, error)
+	WithdrawWrapped(ctx context.Context, depositData db.Deposit) (string, error)
 }
 
 type Repository interface {

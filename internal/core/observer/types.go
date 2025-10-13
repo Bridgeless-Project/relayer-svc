@@ -1,8 +1,12 @@
 package observer
 
+import "github.com/pkg/errors"
+
 const (
 	eventDepositSubmitted = "DEPOSIT_SUBMITTED"
 )
+
+var skippedDeposit = errors.New("skipped")
 
 type Attribute struct {
 	Key   string `json:"key"`
