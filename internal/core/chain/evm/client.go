@@ -10,7 +10,9 @@ import (
 	"github.com/Bridgeless-Project/relayer-svc/internal/core/chain/evm/contracts"
 	"github.com/Bridgeless-Project/relayer-svc/internal/db"
 	"github.com/ethereum/go-ethereum/accounts/abi"
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/pkg/errors"
 )
@@ -30,11 +32,6 @@ type Client struct {
 	contractClient *contracts.Bridge
 	walletAddress  common.Address
 	nonce          atomic.Uint64
-}
-
-func (p *Client) IsProcessed(ctx context.Context, depositData db.Deposit) (bool, error) {
-	//TODO implement me
-	panic("implement me")
 }
 
 // NewBridgeClient creates a new bridge Client for the given chain.
@@ -89,4 +86,25 @@ func (p *Client) AddressValid(addr string) bool {
 
 func (p *Client) TransactionHashValid(hash string) bool {
 	return core.DefaultTransactionHashPattern.MatchString(hash)
+}
+
+func (c *Client) IsProcessed(ctx context.Context, depositData db.Deposit) (bool, error) {
+	callOpts := &bind.CallOpts{
+		Pending: false,
+		Context: ctx,
+	}
+
+	hashBytes, err := hexutil.Decode(depositData.TxHash)
+	if err != nil {
+		return false, errors.Wrapf(err, "failed to decode hash %s", depositData.TxHash)
+	}
+
+	hashBytes32 := to32Bytes(hashBytes)
+
+	used, err := c.contractClient.UsedHashes(callOpts, hashBytes32)
+	if err != nil {
+		return false, errors.Wrapf(err, "failed to call contract for used hash")
+	}
+
+	return used, nil
 }
