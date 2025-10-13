@@ -11,10 +11,11 @@ import (
 )
 
 type Chain struct {
-	Id            string
-	Rpc           *rpc.Client
-	BridgeAddress solana.PublicKey
-	Confirmations uint64
+	Id             string
+	Rpc            *rpc.Client
+	BridgeAddress  solana.PublicKey
+	Confirmations  uint64
+	OperatorWallet *solana.Wallet
 
 	Meta Meta
 }
@@ -41,6 +42,19 @@ var SolanaHooks = figure.Hooks{
 				return reflect.Value{}, err
 			}
 			return reflect.ValueOf(pubKey), nil
+		default:
+			return reflect.Value{}, errors.Errorf("unsupported conversion from %T", value)
+		}
+	},
+	"*solana.Wallet": func(value interface{}) (reflect.Value, error) {
+		switch v := value.(type) {
+		case string:
+			wallet, err := solana.WalletFromPrivateKeyBase58(v)
+			if err != nil {
+				return reflect.Value{}, err
+			}
+
+			return reflect.ValueOf(wallet), nil
 		default:
 			return reflect.Value{}, errors.Errorf("unsupported conversion from %T", value)
 		}

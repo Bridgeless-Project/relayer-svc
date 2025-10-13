@@ -34,7 +34,7 @@ func FromChain(c chain.Chain) Chain {
 	if err := figure.Out(&chain.BridgeAddress).FromInterface(c.BridgeAddresses).With(figure.EthereumHooks).Please(); err != nil {
 		panic(errors.Wrap(err, "failed to obtain bridge addresses"))
 	}
-	if err := figure.Out(&chain.OperatorPrivKey).FromInterface(c.PrivateKey).With(figure.EthereumHooks).Please(); err != nil {
+	if err := figure.Out(&chain.OperatorPrivKey).FromInterface(c.OperatorPrivateKey).With(figure.EthereumHooks).Please(); err != nil {
 		panic(errors.Wrap(err, "failed to obtain operator private key"))
 	}
 

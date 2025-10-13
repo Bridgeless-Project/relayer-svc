@@ -7,15 +7,12 @@ import (
 	"github.com/Bridgeless-Project/relayer-svc/internal/core/chain"
 	"github.com/Bridgeless-Project/relayer-svc/internal/db"
 	"github.com/gagliardetto/solana-go"
+	"github.com/gagliardetto/solana-go/rpc"
+	"github.com/pkg/errors"
 )
 
 type Client struct {
 	chain Chain
-}
-
-func (p *Client) IsProcessed(ctx context.Context, depositData db.Deposit) (bool, error) {
-	//TODO implement me
-	panic("implement me")
 }
 
 // NewBridgeClient creates a new bridge Client for the given chain.
@@ -40,4 +37,23 @@ func (p *Client) AddressValid(addr string) bool {
 
 func (p *Client) TransactionHashValid(hash string) bool {
 	return core.SolanaTransactionHashPattern.MatchString(hash)
+}
+
+func (c *Client) IsProcessed(ctx context.Context, depositData db.Deposit) (bool, error) {
+	withdrawalHash, err := c.getWithdrawalHash(depositData)
+	pda, err := c.getWithdrawalPDA(withdrawalHash)
+	if err != nil {
+		return false, err
+	}
+
+	_, err = c.chain.Rpc.GetAccountInfo(ctx, *pda)
+	if err != nil {
+		if errors.Is(err, rpc.ErrNotFound) {
+			return false, nil
+		}
+
+		return false, errors.New("failed to get account info")
+	}
+
+	return true, nil
 }

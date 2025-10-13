@@ -18,6 +18,16 @@ type Client struct {
 	Chain
 }
 
+func (c *Client) WithdrawNative(ctx context.Context, depositData db.Deposit) (txHash string, err error) {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (c *Client) WithdrawWrapped(ctx context.Context, depositData db.Deposit) (txHash string, err error) {
+	//TODO implement me
+	panic("implement me")
+}
+
 func (c *Client) IsProcessed(ctx context.Context, depositData db.Deposit) (bool, error) {
 	//TODO implement me
 	panic("implement me")
