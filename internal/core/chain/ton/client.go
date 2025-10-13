@@ -18,19 +18,17 @@ type Client struct {
 	Chain
 }
 
+// TODO: UNMOCK LATER
 func (c *Client) WithdrawNative(ctx context.Context, depositData db.Deposit) (txHash string, err error) {
-	//TODO implement me
-	panic("implement me")
+	return "", nil
 }
 
 func (c *Client) WithdrawWrapped(ctx context.Context, depositData db.Deposit) (txHash string, err error) {
-	//TODO implement me
-	panic("implement me")
+	return "", nil
 }
 
 func (c *Client) IsProcessed(ctx context.Context, depositData db.Deposit) (bool, error) {
-	//TODO implement me
-	panic("implement me")
+	return true, nil
 }
 
 // NewBridgeClient creates a new bridge Client for the given chain.
