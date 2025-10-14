@@ -1,13 +1,12 @@
 package broadcaster
 
 import (
-	"github.com/Bridgeless-Project/relayer-svc/internal/core/chain"
 	"github.com/Bridgeless-Project/relayer-svc/internal/db"
 	"github.com/pkg/errors"
 )
 
 func (b *Broadcaster) validateExistence(deposit db.Deposit) error {
-	_, exists := b.cache.Load(deposit.DepositIdentifier.String())
+	_, exists := b.cache.Load(deposit.String())
 	if exists {
 		return errWithdrawalInProcess
 	}
@@ -22,8 +21,4 @@ func (b *Broadcaster) validateExistence(deposit db.Deposit) error {
 	}
 
 	return nil
-}
-
-func isInternalError(err error) bool {
-	return errors.Is(err, errWithdraw) || errors.Is(err, chain.ErrChainNotSupported)
 }

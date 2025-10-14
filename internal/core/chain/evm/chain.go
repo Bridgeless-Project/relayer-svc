@@ -15,7 +15,6 @@ type Chain struct {
 	Rpc             *ethclient.Client
 	BridgeAddress   common.Address
 	OperatorPrivKey *ecdsa.PrivateKey
-	Confirmations   uint64
 }
 
 func FromChain(c chain.Chain) Chain {
@@ -24,8 +23,7 @@ func FromChain(c chain.Chain) Chain {
 	}
 
 	chain := Chain{
-		Id:            c.Id,
-		Confirmations: c.Confirmations,
+		Id: c.Id,
 	}
 
 	if err := figure.Out(&chain.Rpc).FromInterface(c.Rpc).With(figure.EthereumHooks).Please(); err != nil {

@@ -1,0 +1,37 @@
+services:
+  db:
+    container_name: db
+    image: postgres:13.3
+    restart: unless-stopped
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_USER=relayer
+      - POSTGRES_PASSWORD=relayer
+      - POSTGRES_DB=db
+      - PGDATA=/pgdata
+    volumes:
+      - pg-data:/pgdata
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U relayer -d db" ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
+
+  relayer-svc:
+    build:
+      context: ../
+      dockerfile: build/Dockerfile
+    ports:
+      - "8080:8080"
+    container_name: relayer-svc
+    entrypoint: sh -c "relayer-svc service migrate up && relayer-svc service run -s 3076769"
+    depends_on:
+      db:
+         condition: service_healthy
+    volumes:
+      - ./configs/config.local.yaml:/config.yaml
+
+volumes:
+  pg-data:

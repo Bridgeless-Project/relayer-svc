@@ -1,12 +1,9 @@
 package grpc
 
 import (
-	"context"
-
 	"github.com/Bridgeless-Project/relayer-svc/internal/api/types"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
-	"google.golang.org/protobuf/types/known/emptypb"
 )
 
 var (

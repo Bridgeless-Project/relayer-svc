@@ -19,8 +19,6 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
-var syncEnabled bool
-
 func init() {
 	utils.RegisterCatchUpFlag(Cmd)
 	utils.RegisterConfigFlag(Cmd)
@@ -36,16 +34,26 @@ var Cmd = &cobra.Command{
 			return errors.Wrap(err, "failed to get config from flags")
 		}
 
+		catchUp, err := utils.CatchUpFromFlags(cmd)
+		if err != nil {
+			return errors.Wrap(err, "failed to catch up from flags")
+		}
+
+		startHeight, err := utils.StartHeightFromFlags(cmd)
+		if err != nil {
+			return errors.Wrap(err, "failed to start height")
+		}
+
 		ctx, cancel := signal.NotifyContext(context.Background(), syscall.SIGTERM, syscall.SIGINT)
 		defer cancel()
 
-		err = runService(ctx, cfg)
+		err = runService(ctx, cfg, catchUp, startHeight)
 
-		return errors.Wrap(err, "failed to run signing service")
+		return errors.Wrap(err, "failed to run relayer service")
 	},
 }
 
-func runService(ctx context.Context, cfg config.Config) error {
+func runService(ctx context.Context, cfg config.Config, catchUp bool, startHeight int64) error {
 	wg := new(sync.WaitGroup)
 	eg, ctx := errgroup.WithContext(ctx)
 	logger := cfg.Log()
@@ -67,16 +75,6 @@ func runService(ctx context.Context, cfg config.Config) error {
 
 	apiServer := api.NewServer(cfg.ApiGrpcListener(), cfg.ApiHttpListener(), dtb, connector, broadcaster, clientsRepo,
 		logger.WithField("component", "api-server"))
-
-	catchUp, err := utils.CatchUpFromFlags(Cmd)
-	if err != nil {
-		return errors.Wrap(err, "failed to catch up from flags")
-	}
-
-	startHeight, err := utils.StartHeightFromFlags(Cmd)
-	if err != nil {
-		return errors.Wrap(err, "failed to start height")
-	}
 
 	wg.Add(2)
 	eg.Go(func() error {

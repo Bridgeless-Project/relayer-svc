@@ -2,6 +2,7 @@ package broadcaster
 
 import (
 	"context"
+	"fmt"
 	"sync"
 
 	"github.com/Bridgeless-Project/relayer-svc/internal/core"
@@ -53,7 +54,7 @@ func (b *Broadcaster) Run(ctx context.Context) error {
 					b.logger.WithError(err).Error("error updating status")
 				}
 			}
-			b.cache.Delete(deposit.DepositIdentifier.String())
+			b.cache.Delete(deposit.String())
 		}
 	}
 }
@@ -68,9 +69,10 @@ func (b *Broadcaster) Broadcast(deposit db.Deposit) error {
 		return types.ErrFailedToBroadcast
 	}
 
-	b.cache.Store(deposit.DepositIdentifier.String(), struct{}{})
+	b.cache.Store(deposit.String(), struct{}{})
 	b.depositChan <- deposit
 
+	fmt.Println("RECEIVED DEPOSIT: ", deposit.String())
 	return nil
 }
 
@@ -110,6 +112,8 @@ func (b *Broadcaster) processDeposit(ctx context.Context, deposit db.Deposit) er
 	if err != nil {
 		return errors.Wrap(err, "failed to update tx info")
 	}
+
+	fmt.Println(fmt.Sprintf("PROCESSED WITHDRAWAL ON CHAIN %s HASH: %s", deposit.WithdrawalChainId, withdrawalTxHash))
 
 	err = b.dbConn.UpdateWithdrawalTx(deposit.DepositIdentifier, withdrawalTxHash)
 	if err != nil {

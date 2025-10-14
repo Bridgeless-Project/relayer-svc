@@ -123,7 +123,7 @@ func processSignature(signature string) ([64]uint8, uint8, error) {
 		recId -= 27
 	}
 
-	if recId < 0 || recId > 3 {
+	if recId > 3 {
 		return [64]uint8{}, 0, errors.New("Invalid recovery ID after normalization")
 	}
 
@@ -176,6 +176,9 @@ func (c *Client) getWithdrawalContext(depositData db.Deposit) (*withdrawalContex
 		[]byte("authority"),
 		[]byte(c.chain.Meta.BridgeId),
 	}, contract.ProgramID)
+	if err != nil {
+		return nil, errors.Wrap(err, "unable to find authority account")
+	}
 
 	return &withdrawalContext{
 		Receiver:         receiver,

@@ -41,9 +41,13 @@ func (p *Client) TransactionHashValid(hash string) bool {
 
 func (c *Client) IsProcessed(ctx context.Context, depositData db.Deposit) (bool, error) {
 	withdrawalHash, err := c.getWithdrawalHash(depositData)
+	if err != nil {
+		return false, errors.Wrap(err, "failed to get withdrawal hash")
+	}
+
 	pda, err := c.getWithdrawalPDA(withdrawalHash)
 	if err != nil {
-		return false, err
+		return false, errors.Wrap(err, "failed to get withdrawal pda")
 	}
 
 	_, err = c.chain.Rpc.GetAccountInfo(ctx, *pda)

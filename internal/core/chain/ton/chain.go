@@ -18,9 +18,7 @@ type RPC struct {
 }
 
 type Chain struct {
-	Id            string `fig:"id,required"`
-	Confirmations uint64 `fig:"confirmations,required"`
-
+	Id                    string `fig:"id,required"`
 	Client                ton.APIClientWrapped
 	BridgeContractAddress *address.Address
 	RPC                   RPC
@@ -32,8 +30,7 @@ func FromChain(c chain.Chain) Chain {
 	}
 
 	tonChain := Chain{
-		Id:            c.Id,
-		Confirmations: c.Confirmations,
+		Id: c.Id,
 	}
 
 	err := figure.Out(&tonChain.BridgeContractAddress).

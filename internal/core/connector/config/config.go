@@ -45,7 +45,7 @@ func (c *configurer) CoreConnectorConfig() ConnectorConfig {
 	return c.once.Do(func() interface{} {
 		const yamlKey = "core_connector"
 		var cfg struct {
-			wallet     core.Account       `fig:"wallet,required"`
+			Account    core.Account       `fig:"wallet,required"`
 			Settings   connector.Settings `fig:"settings,required"`
 			Connection Connection         `fig:"connection,required"`
 		}
@@ -74,7 +74,7 @@ func (c *configurer) CoreConnectorConfig() ConnectorConfig {
 		return ConnectorConfig{
 			Settings:   cfg.Settings,
 			Connection: client,
-			Account:    cfg.wallet,
+			Account:    cfg.Account,
 		}
 	}).(ConnectorConfig)
 }

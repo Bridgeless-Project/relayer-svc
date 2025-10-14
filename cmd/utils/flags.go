@@ -20,11 +20,11 @@ func RegisterConfigFlag(cmd *cobra.Command) {
 }
 
 func RegisterCatchUpFlag(cmd *cobra.Command) {
-	cmd.PersistentFlags().BoolP(catchUpFlag, "cu", false, "Catch up unprocessed deposits from database")
+	cmd.PersistentFlags().BoolP(catchUpFlag, "u", false, "Catch up unprocessed deposits from database")
 }
 
 func RegisterStartHeightFlag(cmd *cobra.Command) {
-	cmd.PersistentFlags().Int64P(startHeightFlag, "sh", 0, "Start height to fetch blocks")
+	cmd.PersistentFlags().Int64P(startHeightFlag, "s", 0, "Start height to fetch blocks")
 }
 
 func ConfigFromFlags(cmd *cobra.Command) (config.Config, error) {

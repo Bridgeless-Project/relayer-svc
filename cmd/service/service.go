@@ -11,6 +11,7 @@ func init() {
 	registerServiceCommands(Cmd)
 	utils.RegisterConfigFlag(Cmd)
 	utils.RegisterCatchUpFlag(Cmd)
+	utils.RegisterStartHeightFlag(Cmd)
 }
 
 func registerServiceCommands(cmd *cobra.Command) {

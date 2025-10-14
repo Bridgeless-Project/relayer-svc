@@ -14,7 +14,6 @@ type Chain struct {
 	Id             string
 	Rpc            *rpc.Client
 	BridgeAddress  solana.PublicKey
-	Confirmations  uint64
 	OperatorWallet *solana.Wallet
 
 	Meta Meta
@@ -66,8 +65,7 @@ func FromChain(c chain.Chain) Chain {
 		panic("chain is not Solana")
 	}
 	chain := Chain{
-		Id:            c.Id,
-		Confirmations: c.Confirmations,
+		Id: c.Id,
 	}
 
 	if err := figure.Out(&chain.Meta).FromInterface(c.Meta).Please(); err != nil {

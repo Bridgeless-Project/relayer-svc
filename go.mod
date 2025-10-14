@@ -154,6 +154,7 @@ require (
 	github.com/tidwall/sjson v1.2.5 // indirect
 	github.com/tklauser/go-sysconf v0.3.11 // indirect
 	github.com/tklauser/numcpus v0.6.0 // indirect
+	github.com/tyler-smith/go-bip39 v1.1.0 // indirect
 	github.com/zondax/hid v0.9.1 // indirect
 	github.com/zondax/ledger-go v0.14.1 // indirect
 	gitlab.com/distributed_lab/figure v2.1.2+incompatible // indirect
@@ -192,4 +193,5 @@ replace (
 	// bridge cosmos sdk comebft change
 	github.com/tendermint/tendermint => github.com/cometbft/cometbft v0.34.29
 	github.com/tidwall/btree => github.com/tidwall/btree v1.5.0
+	github.com/tyler-smith/go-bip39 => github.com/distributed-lab/go-bip39 v1.1.0
 )

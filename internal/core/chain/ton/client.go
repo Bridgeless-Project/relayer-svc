@@ -39,6 +39,9 @@ func NewBridgeClient(chain Chain) *Client {
 		panic(errors.Wrap(err, "failed to connect to global config"))
 	}
 	globalConfig, err := liteclient.GetConfigFromUrl(context.Background(), chain.RPC.GlobalConfigUrl)
+	if err != nil {
+		panic(errors.Wrap(err, "failed to get global config"))
+	}
 
 	api := ton.NewAPIClient(liteClt, ton.ProofCheckPolicyFast).WithRetry()
 	api.SetTrustedBlockFromConfig(globalConfig)

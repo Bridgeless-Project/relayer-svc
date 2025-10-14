@@ -31,7 +31,7 @@ type Client struct {
 	chain          Chain
 	contractClient *contracts.Bridge
 	walletAddress  common.Address
-	nonce          atomic.Uint64
+	nonce          *atomic.Uint64
 }
 
 // NewBridgeClient creates a new bridge Client for the given chain.
@@ -68,7 +68,7 @@ func NewBridgeClient(chain Chain) *Client {
 		chain:          chain,
 		contractClient: contractClient,
 		walletAddress:  walletAddress,
-		nonce:          atomicNonce,
+		nonce:          &atomicNonce,
 	}
 }
 

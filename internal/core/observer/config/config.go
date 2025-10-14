@@ -46,9 +46,9 @@ func (sc *observer) ObserverTimeout() time.Duration {
 }
 
 type config struct {
-	Addr    string `fig:"rpc"`
-	Retries int64  `fig:"retry_attempts"`
-	Timeout int64  `fig:"retry_timeout_sec"`
+	Addr    string `fig:"tendermint_rpc,required"`
+	Retries int64  `fig:"retry_attempts,required"`
+	Timeout int64  `fig:"retry_timeout_sec,required"`
 }
 
 func NewConfigurator(getter kv.Getter) ObserverConfigurator {

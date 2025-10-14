@@ -16,11 +16,7 @@ type Operation interface {
 }
 
 func (p *Client) WithdrawalAmountValid(amount *big.Int) bool {
-	if amount.Cmp(core.ZeroAmount) != 1 {
-		return false
-	}
-
-	return true
+	return amount.Cmp(core.ZeroAmount) == 1
 }
 
 func (c *Client) WithdrawNative(ctx context.Context, depositData db.Deposit) (txHash string, err error) {

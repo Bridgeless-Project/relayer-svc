@@ -68,9 +68,8 @@ type Repository interface {
 type Chain struct {
 	Id                 string `fig:"id,required"`
 	Type               Type   `fig:"type,required"`
-	Confirmations      uint64 `fig:"confirmations,required"`
 	Rpc                any    `fig:"rpc,required"`
-	BridgeAddresses    any    `fig:"bridge_addresses,required"`
+	BridgeAddresses    any    `fig:"bridge_address,required"`
 	OperatorPrivateKey string `fig:"operator_private_key,required"`
 
 	Meta any `fig:"meta"`

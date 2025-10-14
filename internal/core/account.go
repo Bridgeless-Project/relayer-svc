@@ -1,6 +1,8 @@
 package core
 
 import (
+	"fmt"
+
 	secp256k1 "github.com/Bridgeless-Project/bridgeless-core/v12/crypto/ethsecp256k1"
 	"github.com/cosmos/cosmos-sdk/crypto/types"
 	"github.com/cosmos/cosmos-sdk/types/bech32"
@@ -16,6 +18,7 @@ type Account struct {
 }
 
 func NewAccount(prv string, hrp ...string) (*Account, error) {
+	fmt.Println("Prv: " + prv)
 	raw, err := hexutil.Decode(prv)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to decode private key")
