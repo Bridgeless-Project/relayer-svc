@@ -70,8 +70,8 @@ func runService(ctx context.Context, cfg config.Config, catchUp bool, startHeigh
 
 	broadcaster := withdrawalBroadcaster.New(connector, dtb, clientsRepo, logger.WithField("component", "broadcaster"))
 
-	observer := coreObserver.New(cfg.TendermintHttpClient(), cfg.ObserverRetries(), cfg.ObserverTimeout(),
-		blocksQ, dtb, broadcaster, clientsRepo, logger)
+	observer := coreObserver.New(cfg.TendermintHttpClient(), cfg.ObserverRetries(), cfg.ObserverRetryTimeout(),
+		cfg.ObserverPollingInterval(), blocksQ, dtb, broadcaster, clientsRepo, logger)
 
 	apiServer := api.NewServer(cfg.ApiGrpcListener(), cfg.ApiHttpListener(), dtb, connector, broadcaster, clientsRepo,
 		logger.WithField("component", "api-server"))

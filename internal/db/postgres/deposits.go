@@ -82,6 +82,7 @@ func (d *depositsQ) Insert(deposit db.Deposit) (int64, error) {
 			depositsDepositor:    deposit.Depositor,
 			// can be 0x00... in case of native ones
 			depositsWithdrawalToken:   deposit.WithdrawalToken,
+			depositsSignature:         deposit.Signature,
 			depositsWithdrawalChainId: deposit.WithdrawalChainId,
 			depositsCommissionAmount:  deposit.CommissionAmount,
 			depositsReferralId:        deposit.ReferralId,

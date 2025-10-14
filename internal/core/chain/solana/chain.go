@@ -77,6 +77,9 @@ func FromChain(c chain.Chain) Chain {
 	if err := figure.Out(&chain.BridgeAddress).FromInterface(c.BridgeAddresses).With(SolanaHooks).Please(); err != nil {
 		panic(errors.Wrap(err, "failed to obtain bridge addresses"))
 	}
+	if err := figure.Out(&chain.OperatorWallet).FromInterface(c.OperatorPrivateKey).With(SolanaHooks).Please(); err != nil {
+		panic(errors.Wrap(err, "failed to obtain operator wallet"))
+	}
 
 	return chain
 }

@@ -22,6 +22,7 @@ CREATE TABLE IF NOT EXISTS deposits
     withdrawal_status   int          NOT NULL,
 
     withdrawal_tx_hash  VARCHAR(100),
+    referral_id INT     NOT NULL,
     withdrawal_chain_id VARCHAR(50) NOT NULL,
 
     CONSTRAINT unique_deposit UNIQUE (tx_hash, tx_nonce, chain_id)

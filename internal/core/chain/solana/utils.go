@@ -67,7 +67,9 @@ func (c *Client) getWithdrawalHash(depositData db.Deposit) ([]byte, error) {
 }
 
 func getUid(txHash string, nonce *big.Int) [32]byte {
-	return sha256.Sum256(append([]byte(txHash), nonce.Bytes()...))
+	nonceBytes := make([]byte, 8)
+	binary.LittleEndian.PutUint64(nonceBytes, nonce.Uint64())
+	return sha256.Sum256(append([]byte(txHash), nonceBytes...))
 }
 
 func (c *Client) SendTx(ctx context.Context, instruction solana.Instruction) (*solana.Signature, error) {

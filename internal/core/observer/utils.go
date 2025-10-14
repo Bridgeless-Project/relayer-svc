@@ -17,7 +17,7 @@ func (o *Observer) doWithRetry(ctx context.Context, function func() error) error
 	err := retry.Do(
 		function,
 		retry.Attempts(uint(o.retries)),
-		retry.Delay(o.timeout),
+		retry.Delay(o.retryTimeout),
 		retry.DelayType(retry.BackOffDelay),
 		retry.Context(ctx),
 	)

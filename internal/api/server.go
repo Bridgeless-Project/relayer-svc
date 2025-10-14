@@ -104,7 +104,7 @@ func (s *Server) httpRouter(ctxt context.Context) http.Handler {
 	_ = types.RegisterAPIHandlerServer(ctxt, grpcGatewayRouter, srvgrpc.Implementation{})
 
 	router.Mount("/", grpcGatewayRouter)
-	router.Mount("/static/api_server.swagger.json", http.FileServer(http.FS(api.Docs)))
+	router.Mount("/static/api.swagger.json", http.FileServer(http.FS(api.Docs)))
 	router.HandleFunc("/api", openapiconsole.Handler("TSS service API", "/static/api_server.swagger.json"))
 
 	return router

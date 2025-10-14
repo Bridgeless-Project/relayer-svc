@@ -49,7 +49,7 @@ func (i Implementation) SubmitWithdrawal(ctx context.Context, identifier *intern
 		return nil, status.Error(codes.Internal, "unable to process withdrawal")
 	}
 
-	if err := broadcaster.Broadcast(*deposit); err != nil {
+	if err := broadcaster.Broadcast(ctx, *deposit); err != nil {
 		if errors.Is(err, internalTypes.ErrFailedToBroadcast) {
 			return nil, status.Error(codes.Internal, "failed to broadcast withdrawal")
 		}

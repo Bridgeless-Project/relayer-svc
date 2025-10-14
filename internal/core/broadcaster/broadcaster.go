@@ -59,8 +59,8 @@ func (b *Broadcaster) Run(ctx context.Context) error {
 	}
 }
 
-func (b *Broadcaster) Broadcast(deposit db.Deposit) error {
-	if err := b.validateExistence(deposit); err != nil {
+func (b *Broadcaster) Broadcast(ctx context.Context, deposit db.Deposit) error {
+	if err := b.validateExistence(ctx, deposit); err != nil {
 		if !errors.Is(err, errWithdraw) {
 			return err
 		}

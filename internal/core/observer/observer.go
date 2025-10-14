@@ -16,11 +16,12 @@ import (
 )
 
 type Observer struct {
-	client      *http.HTTP
-	retries     int64
-	timeout     time.Duration
-	logger      *logan.Entry
-	clientsRepo chain.Repository
+	client          *http.HTTP
+	retries         int64
+	retryTimeout    time.Duration
+	pollingInterval time.Duration
+	logger          *logan.Entry
+	clientsRepo     chain.Repository
 
 	depositsDb db.DepositsQ
 	blockDb    db.BlocksQ
@@ -28,18 +29,19 @@ type Observer struct {
 	broadcaster *broadcaster.Broadcaster
 }
 
-func New(client *http.HTTP, retries int64, timeout time.Duration, blocksDb db.BlocksQ,
+func New(client *http.HTTP, retries int64, retryTimeout, pollingInterval time.Duration, blocksDb db.BlocksQ,
 	depositsDb db.DepositsQ, brcst *broadcaster.Broadcaster, clientsRepo chain.Repository, logger *logan.Entry) *Observer {
 
 	return &Observer{
-		client:      client,
-		retries:     retries,
-		timeout:     timeout,
-		blockDb:     blocksDb,
-		depositsDb:  depositsDb,
-		broadcaster: brcst,
-		clientsRepo: clientsRepo,
-		logger:      logger,
+		client:          client,
+		retries:         retries,
+		retryTimeout:    retryTimeout,
+		pollingInterval: pollingInterval,
+		blockDb:         blocksDb,
+		depositsDb:      depositsDb,
+		broadcaster:     brcst,
+		clientsRepo:     clientsRepo,
+		logger:          logger,
 	}
 }
 
@@ -52,7 +54,7 @@ func (o *Observer) Run(ctx context.Context, startHeight int64, catchup bool) err
 		}
 
 		for _, deposit := range deposits {
-			if err := o.broadcaster.Broadcast(deposit); err != nil {
+			if err := o.broadcaster.Broadcast(ctx, deposit); err != nil {
 				o.logger.Errorf("failed to broadcast deposit: %v", err)
 				continue
 			}
@@ -68,20 +70,29 @@ func (o *Observer) Run(ctx context.Context, startHeight int64, catchup bool) err
 }
 
 func (o *Observer) fetchDeposits(ctx context.Context, startHeight int64) error {
+	ticker := time.NewTicker(o.pollingInterval)
+	defer ticker.Stop()
+
+	if err := o.blockDb.Insert(db.LatestBlock{BlockId: startHeight}); err != nil {
+		return errors.Wrap(err, "failed to insert latest block")
+	}
 	for {
 		select {
 		case <-ctx.Done():
 			o.logger.Debug("fetching deposits stopped")
 			return nil
 
-		default:
+		case <-ticker.C:
 			currentHeight, err := o.getCurrentHeight(ctx)
 			if err != nil {
 				return errors.Wrap(err, "failed to get current height")
 			}
 
-			if startHeight < currentHeight {
-				startHeight++
+			if startHeight <= currentHeight {
+				if err = o.blockDb.UpdateLatestBlockId(db.LatestBlock{BlockId: startHeight}); err != nil {
+					o.logger.Errorf("failed to update latest block id: %v", err)
+					continue
+				}
 				deposits, err := o.fetchSubmitDepositEvents(ctx, startHeight)
 				if err != nil {
 					return errors.Wrap(err, "failed to fetch deposit events")
@@ -98,17 +109,11 @@ func (o *Observer) fetchDeposits(ctx context.Context, startHeight int64) error {
 						continue
 					}
 				}
-
-				if err = o.blockDb.UpdateLatestBlockId(db.LatestBlock{BlockId: currentHeight}); err != nil {
-					o.logger.Errorf("failed to update latest block id: %v", err)
-					continue
-				}
-
+				startHeight++
 				continue
 			}
 
-			o.logger.Debugf("At tip (height=%d), waiting for next block...", currentHeight)
-			time.Sleep(o.timeout)
+			o.logger.Debug("Waiting for next block...")
 		}
 	}
 }
@@ -159,23 +164,16 @@ func (o *Observer) fetchSubmitDepositEvents(ctx context.Context, height int64) (
 	return deposits, nil
 }
 
-func (o *Observer) IsProcessed(ctx context.Context, deposit db.Deposit) (bool, error) {
+func (o *Observer) IsProcessed(deposit db.Deposit) (bool, error) {
 	if deposit.WithdrawalTxHash == nil {
-
-		client, err := o.clientsRepo.Client(deposit.WithdrawalChainId)
-		if err != nil {
-			return false, errors.Wrap(err, "failed to get withdrawal chain client")
-		}
-		processed, err := client.IsProcessed(ctx, deposit)
-
-		return processed, errors.Wrap(err, "failed to check if deposit is processed")
+		return false, nil
 	}
 
 	return true, nil
 }
 
 func (o *Observer) broadcastDeposit(ctx context.Context, deposit db.Deposit) error {
-	processed, err := o.IsProcessed(ctx, deposit)
+	processed, err := o.IsProcessed(deposit)
 	if err != nil {
 		return errors.Wrap(err, "failed to check if deposit is processed")
 	}
@@ -189,7 +187,7 @@ func (o *Observer) broadcastDeposit(ctx context.Context, deposit db.Deposit) err
 		return errors.Wrap(err, "failed to insert deposit")
 	}
 
-	err = o.broadcaster.Broadcast(deposit)
+	err = o.broadcaster.Broadcast(ctx, deposit)
 	if err != nil {
 		return errors.Wrap(err, "failed to broadcast deposit")
 	}
