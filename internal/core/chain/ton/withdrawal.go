@@ -16,3 +16,7 @@ func (c *Client) WithdrawToken(ctx context.Context, depositData db.Deposit) (txH
 	//TODO implement me
 	panic("implement me")
 }
+
+func (c *Client) WithdrawNative(ctx context.Context, depositData db.Deposit) (txHash string, err error) {
+	return "", nil
+}

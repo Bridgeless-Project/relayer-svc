@@ -144,7 +144,7 @@ func (c *Client) getWithdrawalContext(depositData db.Deposit) (*withdrawalContex
 	uid := [32]uint8{}
 	copy(uid[:], uidBytes[:])
 
-	withdrawalHash, err := c.GetSignHash(depositData)
+	withdrawalHash, err := c.getSignHash(depositData)
 	if err != nil {
 		return nil, errors.Wrap(err, "unable to get withdrawal hash")
 	}
@@ -246,4 +246,40 @@ func parseTokenMetadata(data []byte) (*tokenMetadata, error) {
 	}
 
 	return &tokenMetadata, nil
+}
+
+func (c *Client) getSignHash(data db.Deposit) ([]byte, error) {
+	amount, err := strconv.ParseUint(data.WithdrawalAmount, 10, 64)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to parse withdrawal amount")
+	}
+	amountBytes := make([]byte, 8)
+	binary.LittleEndian.PutUint64(amountBytes, amount)
+
+	nonceBytes := make([]byte, 8)
+	binary.LittleEndian.PutUint64(nonceBytes, uint64(data.TxNonce))
+	// unique id derived from deposit info
+	uid := sha256.Sum256(append([]byte(data.TxHash), nonceBytes...))
+
+	receiver, err := solana.PublicKeyFromBase58(data.Receiver)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to parse receiver address")
+	}
+
+	buffer := []byte("withdraw")
+	buffer = append(buffer, []byte(c.chain.Meta.BridgeId)...)
+	buffer = append(buffer, amountBytes...)
+	buffer = append(buffer, uid[:]...)
+	buffer = append(buffer, receiver.Bytes()...)
+
+	if data.WithdrawalToken != core.DefaultNativeTokenAddress {
+		token, err := solana.PublicKeyFromBase58(data.WithdrawalToken)
+		if err != nil {
+			return nil, err
+		}
+		buffer = append(buffer, token.Bytes()...)
+	}
+
+	hash := sha256.Sum256(buffer)
+	return hash[:], nil
 }

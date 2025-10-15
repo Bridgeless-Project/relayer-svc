@@ -18,15 +18,6 @@ type Client struct {
 	Chain
 }
 
-// TODO: UNMOCK LATER
-func (c *Client) WithdrawNative(ctx context.Context, depositData db.Deposit) (txHash string, err error) {
-	return "", nil
-}
-
-func (c *Client) WithdrawWrapped(ctx context.Context, depositData db.Deposit) (txHash string, err error) {
-	return "", nil
-}
-
 func (c *Client) IsProcessed(ctx context.Context, depositData db.Deposit) (bool, error) {
 	return true, nil
 }

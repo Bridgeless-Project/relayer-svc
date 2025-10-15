@@ -76,6 +76,15 @@ func (o *Observer) fetchDeposits(ctx context.Context, startHeight int64) error {
 	if err := o.blockDb.Insert(db.LatestBlock{BlockId: startHeight}); err != nil {
 		return errors.Wrap(err, "failed to insert latest block")
 	}
+
+	if startHeight == 0 {
+		latestHeight, err := o.getCurrentHeight(ctx)
+		if err != nil {
+			return errors.Wrap(err, "failed to get current height")
+		}
+		startHeight = latestHeight
+	}
+
 	for {
 		select {
 		case <-ctx.Done():
