@@ -95,16 +95,9 @@ func (b *Broadcaster) processDeposit(ctx context.Context, deposit db.Deposit) er
 			return errors.Wrap(err, "failed to process native withdrawal")
 		}
 	default:
-		if deposit.IsWrappedToken {
-			withdrawalTxHash, err = client.WithdrawWrapped(ctx, deposit)
-			if err != nil {
-				return errors.Wrap(err, "failed to process wrapped withdrawal")
-			}
-		} else {
-			withdrawalTxHash, err = client.WithdrawToken(ctx, deposit)
-			if err != nil {
-				return errors.Wrap(err, "failed to process token withdrawal")
-			}
+		withdrawalTxHash, err = client.WithdrawToken(ctx, deposit)
+		if err != nil {
+			return errors.Wrap(err, "failed to process token withdrawal")
 		}
 	}
 
