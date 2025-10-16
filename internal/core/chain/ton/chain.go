@@ -1,10 +1,12 @@
 package ton
 
 import (
+	"crypto/ed25519"
 	"reflect"
 	"time"
 
 	"github.com/Bridgeless-Project/relayer-svc/internal/core/chain"
+	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/pkg/errors"
 	"github.com/xssnick/tonutils-go/address"
 	"github.com/xssnick/tonutils-go/ton"
@@ -22,6 +24,7 @@ type Chain struct {
 	Client                ton.APIClientWrapped
 	BridgeContractAddress *address.Address
 	RPC                   RPC
+	OperatorPrivateKey    ed25519.PrivateKey `fig:"operator_private_key,required"`
 }
 
 func FromChain(c chain.Chain) Chain {
@@ -45,6 +48,11 @@ func FromChain(c chain.Chain) Chain {
 	err = figure.Out(&tonChain.RPC).FromInterface(c.Rpc).With(rpcHook).Please()
 	if err != nil {
 		panic(errors.Wrap(err, "failed to obtain TON rpc"))
+	}
+
+	if err = figure.Out(&tonChain.OperatorPrivateKey).FromInterface(c.OperatorPrivateKey).
+		With(privateKeyHook).Please(); err != nil {
+		panic(errors.Wrap(err, "failed to obtain operator private key"))
 	}
 
 	return tonChain
@@ -83,5 +91,20 @@ var rpcHook = figure.Hooks{
 		default:
 			return reflect.Value{}, errors.Errorf("unsupported conversion from %T", value)
 		}
+	},
+}
+
+var privateKeyHook = figure.Hooks{
+	"ed25519.PrivateKey": func(value interface{}) (reflect.Value, error) {
+		switch v := value.(type) {
+		case string:
+			bytes, err := hexutil.Decode(v)
+			if err != nil {
+				return reflect.Value{}, errors.Wrap(err, "failed to decode private key")
+			}
+
+			return reflect.ValueOf(ed25519.PrivateKey(bytes)), nil
+		}
+		return reflect.Value{}, errors.Errorf("unsupported conversion from %T", value)
 	},
 }

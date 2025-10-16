@@ -2,56 +2,14 @@ package ton
 
 import (
 	"bytes"
+	"context"
 	"fmt"
-	"strings"
-	"unicode"
 
-	"github.com/bnb-chain/tss-lib/v2/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
-	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/pkg/errors"
-	tonAddress "github.com/xssnick/tonutils-go/address"
+	"github.com/xssnick/tonutils-go/address"
 	"github.com/xssnick/tonutils-go/tvm/cell"
 )
-
-func СonvertToTonSignature(sig *common.SignatureData) string {
-	rawSig := append(sig.Signature, sig.SignatureRecovery...)
-
-	return hexutil.Encode(rawSig)
-}
-
-func parseMsgOpCode(msg *cell.Slice) (string, error) {
-	op, err := msg.LoadBigUInt(opCodeBitSize)
-	if err != nil {
-		return "", errors.Wrap(err, "failed to load message opcode")
-	}
-
-	return hexutil.Encode(op.Bytes()), nil
-}
-
-func cleanPrintable(s string) string {
-	var sb strings.Builder
-	for _, r := range s {
-		if unicode.IsPrint(r) {
-			sb.WriteRune(r)
-		}
-	}
-	return sb.String()
-}
-
-func getAddressCell(addr string) (*cell.Cell, error) {
-	address, err := tonAddress.ParseAddr(addr)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to parse address")
-	}
-
-	addressCell := cell.BeginCell()
-	if err = addressCell.StoreAddr(address); err != nil {
-		return nil, errors.Wrap(err, "failed to store address")
-	}
-
-	return addressCell.EndCell(), nil
-}
 
 func getNetworkCell(network string) (*cell.Cell, error) {
 	networkCell := cell.BeginCell()
@@ -65,6 +23,51 @@ func getNetworkCell(network string) (*cell.Cell, error) {
 	}
 
 	return networkCell.EndCell(), nil
+}
+
+func getSignatureCell(signature string) (*cell.Cell, error) {
+	signatureCell := cell.BeginCell()
+
+	signatureBytes, err := hexutil.Decode(signature)
+	if err != nil {
+		return nil, errors.Wrap(err, "error decoding signature")
+	}
+
+	err = signatureCell.StoreSlice(signatureBytes, signatureBitSize)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to store signature bytes to cell")
+	}
+
+	return signatureCell.EndCell(), nil
+}
+
+func (c *Client) deriveJettonAddress(ctx context.Context, ownerAddress, jettonAddress *address.Address) (*address.Address, error) {
+	block, err := c.Chain.Client.CurrentMasterchainInfo(ctx)
+	if err != nil {
+		return nil, errors.Wrap(err, "error getting current masterchain info")
+	}
+
+	queryCell := cell.BeginCell()
+	err = queryCell.StoreAddr(ownerAddress)
+	if err != nil {
+		return nil, errors.Wrap(err, "error storing owner address")
+	}
+
+	res, err := c.Chain.Client.RunGetMethod(ctx, block, jettonAddress, getJettonWalletMethod, queryCell.EndCell().BeginParse())
+	if err != nil {
+		return nil, errors.Wrap(err, "error getting jetton address")
+	}
+
+	resSlice, err := res.Slice(0)
+	if err != nil {
+		return nil, errors.Wrap(err, "error getting result slice")
+	}
+	val, err := resSlice.LoadAddr()
+	if err != nil {
+		return nil, errors.Wrap(err, "error loading jetton address")
+	}
+
+	return val, nil
 }
 
 func fillBytesToSize(str string, size int, fill byte) ([]byte, error) {
@@ -83,12 +86,4 @@ func fillBytesToSize(str string, size int, fill byte) ([]byte, error) {
 	copy(buf, raw)
 
 	return buf, nil
-}
-
-func TxHashToBytes32(txHash string) []byte {
-	hashBytes, err := hexutil.Decode(txHash)
-	if err != nil || len(hashBytes) != 32 {
-		return crypto.Keccak256(([]byte)(txHash))
-	}
-	return hashBytes
 }

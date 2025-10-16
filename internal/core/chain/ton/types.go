@@ -1,40 +1,16 @@
 package ton
 
-import (
-	"math/big"
-
-	"github.com/xssnick/tonutils-go/address"
-)
-
 const (
-	opCodeBitSize              = 32
-	networkCellSizeBytes       = 32
-	networkCellSizeBit         = 256
-	amountBitSize              = 257
-	receiverBitSize            = 1016
-	referralBitSize            = 16
-	withdrawalNativeHashMethod = "nativeHash"
-	withdrawalJettonHashMethod = "jettonHash"
-	trueBit                    = -1
-
-	receiverCellId = 0
-	networkCellId  = 1
+	opCodeBitSize         = 32
+	networkCellSizeBytes  = 32
+	networkCellSizeBit    = 256
+	signatureBitSize      = 520
+	amountBitSize         = 257
+	hashBitSize           = 257
+	nonceBitSize          = 257
+	withdrawNativeCode    = 1289667639
+	withdrawJettonCode    = 39151229
+	getJettonWalletMethod = "get_wallet_address"
+	forwardTonAmount      = 500000000
+	totalTonAmount        = 1000000000
 )
-
-type depositJettonContent struct {
-	Sender       *address.Address
-	Amount       *big.Int
-	Receiver     string
-	ChainId      string
-	IsWrapped    bool
-	TokenAddress *address.Address
-	ReferralId   uint16
-}
-
-type depositNativeContent struct {
-	Sender     *address.Address
-	Amount     *big.Int
-	Receiver   string
-	ChainId    string
-	ReferralId uint16
-}
