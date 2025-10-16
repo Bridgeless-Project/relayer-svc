@@ -19,6 +19,7 @@ func (i Implementation) SubmitWithdrawal(ctx context.Context, identifier *intern
 		logger      = apiCtx.Logger(ctx)
 		connector   = apiCtx.Connector(ctx)
 		broadcaster = apiCtx.Broadcaster(ctx)
+		db          = apiCtx.DB(ctx)
 	)
 
 	err := common.ValidateIdentifier(identifier)
@@ -40,7 +41,17 @@ func (i Implementation) SubmitWithdrawal(ctx context.Context, identifier *intern
 		return nil, status.Error(codes.InvalidArgument, "invalid transaction hash")
 	}
 
-	deposit, err := connector.GetDeposit(ctx, common.ToDbIdentifier(identifier))
+	deposit, err := db.Get(common.ToDbIdentifier(identifier))
+	if err != nil {
+		logger.Errorf("failed to get deposit from database: %v", err)
+		return nil, status.Error(codes.Internal, "unable to process withdrawal")
+	}
+
+	if deposit != nil {
+		return nil, status.Error(codes.AlreadyExists, "deposit already exists")
+	}
+
+	deposit, err = connector.GetDeposit(ctx, common.ToDbIdentifier(identifier))
 	if err != nil {
 		if strings.Contains(err.Error(), "not found") {
 			return nil, status.Error(codes.NotFound, "deposit not found")
