@@ -11,25 +11,33 @@ listeners:
 
 
 observer:
-  rpc: ""
+  tendermint_rpc: ""
   retry_attempts: 0
   retry_timeout_sec: 0
+  polling_interval_sec: 0
 
-broadcaster:
-  rpc: ""
+core_connector:
+  wallet: ""
+  connection:
+    addr: ""
+    enable_tls: false
+  settings:
+    chain_id: ""
+    denom: ""
+    min_gas_price: 0
 
 chains:
   list:
     - id: "evm1"
       type: "EVM"
       rpc: "rpc"
-      wallet: "priv_key"
+      operator_private_key: "priv_key"
       bridge_address: "0x00000000000000000000000"
 
     - id: "evm2"
       type: "EVM"
       rpc: "rpc"
-      wallet: "priv_key"
+      operator_private_key : "priv_key"
       bridge_address: "0x00000000000000000000000"
 
 
