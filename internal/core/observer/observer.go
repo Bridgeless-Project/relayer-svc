@@ -2,7 +2,6 @@ package observer
 
 import (
 	"context"
-	"fmt"
 	"time"
 
 	"github.com/Bridgeless-Project/relayer-svc/internal/core/broadcaster"
@@ -122,7 +121,7 @@ func (o *Observer) fetchDeposits(ctx context.Context, startHeight int64) error {
 				continue
 			}
 
-			o.logger.Debug("Waiting for next block...")
+			o.logger.Debug("Waiting for next block, currentHeight:", currentHeight)
 		}
 	}
 }
@@ -162,8 +161,6 @@ func (o *Observer) fetchSubmitDepositEvents(ctx context.Context, height int64) (
 	if err := o.doWithRetry(ctx, getBlockResult); err != nil {
 		return nil, errors.Wrap(err, "failed to get block results")
 	}
-
-	fmt.Println("fetched block results at height: ", blockResult.Height)
 
 	deposits, err := parseDepositsFromTxResults(blockResult.TxsResults)
 	if err != nil {

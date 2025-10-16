@@ -2,7 +2,6 @@ package evm
 
 import (
 	"context"
-	"fmt"
 	"math/big"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
@@ -26,7 +25,6 @@ func (c *Client) prepareTxOpts(ctx context.Context) (*bind.TransactOpts, error) 
 	}
 	tx.Nonce = new(big.Int).SetUint64(c.nonce.Load())
 
-	fmt.Println("Gas limit:", tx.GasLimit)
 	tx.GasPrice = gasPrice
 
 	return tx, nil
