@@ -4,20 +4,11 @@ import (
 	"context"
 	"math/big"
 
-	"github.com/Bridgeless-Project/relayer-svc/internal/core"
 	"github.com/Bridgeless-Project/relayer-svc/internal/db"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/pkg/errors"
 )
-
-type Operation interface {
-	CalculateHash() []byte
-}
-
-func (p *Client) WithdrawalAmountValid(amount *big.Int) bool {
-	return amount.Cmp(core.ZeroAmount) == 1
-}
 
 func (c *Client) WithdrawNative(ctx context.Context, depositData db.Deposit) (txHash string, err error) {
 	transactOpts, err := c.prepareTxOpts(ctx)

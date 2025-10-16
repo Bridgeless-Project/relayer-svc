@@ -27,7 +27,7 @@ func New(coreConnector *connector.Connector, dbConn db.DepositsQ, clientsRepo ch
 	return &Broadcaster{
 		coreConnector: coreConnector,
 		clientsRepo:   clientsRepo,
-		depositChan:   make(chan db.Deposit, core.BufferChannelSize),
+		depositChan:   make(chan db.Deposit, bufferChannelSize),
 		dbConn:        dbConn,
 		logger:        logger,
 	}

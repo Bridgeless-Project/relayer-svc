@@ -7,7 +7,6 @@ import (
 	"github.com/Bridgeless-Project/relayer-svc/internal/core"
 	"github.com/Bridgeless-Project/relayer-svc/internal/core/chain"
 	"github.com/Bridgeless-Project/relayer-svc/internal/db"
-	"github.com/xssnick/tonutils-go/address"
 	"github.com/xssnick/tonutils-go/liteclient"
 	"github.com/xssnick/tonutils-go/ton"
 	"github.com/xssnick/tonutils-go/ton/wallet"
@@ -59,11 +58,6 @@ func (c *Client) ChainId() string {
 
 func (c *Client) Type() chain.Type {
 	return chain.TypeTON
-}
-
-func (c *Client) AddressValid(addr string) bool {
-	_, err := address.ParseAddr(addr)
-	return err == nil
 }
 
 func (c *Client) TransactionHashValid(hash string) bool {

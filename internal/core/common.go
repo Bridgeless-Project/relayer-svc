@@ -6,7 +6,6 @@ import (
 )
 
 const (
-	HexPrefix                 = "0x"
 	DefaultNativeTokenAddress = "0x0000000000000000000000000000000000000000"
 )
 

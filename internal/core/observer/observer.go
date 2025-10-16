@@ -93,17 +93,20 @@ func (o *Observer) fetchDeposits(ctx context.Context, startHeight int64) error {
 		case <-ticker.C:
 			currentHeight, err := o.getCurrentHeight(ctx)
 			if err != nil {
-				return errors.Wrap(err, "failed to get current height")
+				o.logger.WithError(err).Error("failed to get current height")
+				continue
 			}
 
 			if startHeight <= currentHeight {
 				if err = o.blockDb.UpdateLatestBlockId(db.LatestBlock{BlockId: startHeight}); err != nil {
-					o.logger.Errorf("failed to update latest block id: %v", err)
+					o.logger.WithError(err).Error("failed to update latest block height")
 					continue
 				}
 				deposits, err := o.fetchSubmitDepositEvents(ctx, startHeight)
 				if err != nil {
-					return errors.Wrap(err, "failed to fetch deposit events")
+
+					o.logger.WithError(err).Error("failed to fetch submit deposit events")
+					continue
 				}
 
 				for _, deposit := range deposits {
@@ -113,7 +116,7 @@ func (o *Observer) fetchDeposits(ctx context.Context, startHeight int64) error {
 							continue
 						}
 
-						o.logger.Errorf("failed to broadcast deposit: %v", err)
+						o.logger.WithError(err).Error("failed to broadcast deposit")
 						continue
 					}
 				}

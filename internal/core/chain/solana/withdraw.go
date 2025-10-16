@@ -2,22 +2,12 @@ package solana
 
 import (
 	"context"
-	"math/big"
 
-	"github.com/Bridgeless-Project/relayer-svc/internal/core"
 	"github.com/Bridgeless-Project/relayer-svc/internal/core/chain/solana/contract"
 	"github.com/Bridgeless-Project/relayer-svc/internal/db"
 	"github.com/gagliardetto/solana-go"
 	"github.com/pkg/errors"
 )
-
-func (c *Client) WithdrawalAmountValid(amount *big.Int) bool {
-	// Solana token amounts are uint64, bigger (or negative) numbers are invalid
-	if !amount.IsUint64() {
-		return false
-	}
-	return amount.Cmp(core.ZeroAmount) == 1
-}
 
 func (c *Client) WithdrawNative(ctx context.Context, depositData db.Deposit) (string, error) {
 	withdrawalCtx, err := c.getWithdrawalContext(depositData)

@@ -6,7 +6,6 @@ import (
 	"github.com/Bridgeless-Project/relayer-svc/internal/core"
 	"github.com/Bridgeless-Project/relayer-svc/internal/core/chain"
 	"github.com/Bridgeless-Project/relayer-svc/internal/db"
-	"github.com/gagliardetto/solana-go"
 	"github.com/gagliardetto/solana-go/rpc"
 	"github.com/pkg/errors"
 )
@@ -28,11 +27,6 @@ func (p *Client) ChainId() string {
 
 func (p *Client) Type() chain.Type {
 	return chain.TypeSolana
-}
-
-func (p *Client) AddressValid(addr string) bool {
-	_, err := solana.PublicKeyFromBase58(addr)
-	return err == nil
 }
 
 func (p *Client) TransactionHashValid(hash string) bool {

@@ -16,7 +16,6 @@ const (
 	depositsTxHash  = "tx_hash"
 	depositsTxNonce = "tx_nonce"
 	depositsChainId = "chain_id"
-	depositsId      = "id"
 
 	depositsDepositor        = "depositor"
 	depositsDepositAmount    = "deposit_amount"

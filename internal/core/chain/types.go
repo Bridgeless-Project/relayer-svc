@@ -2,7 +2,6 @@ package chain
 
 import (
 	"context"
-	"math/big"
 
 	"github.com/Bridgeless-Project/relayer-svc/internal/db"
 	"github.com/pkg/errors"
@@ -16,43 +15,19 @@ var (
 	ErrDepositNotFound        = errors.New("deposit not found")
 	ErrTxNotConfirmed         = errors.New("transaction not confirmed")
 	ErrInvalidReceiverAddress = errors.New("invalid receiver address")
-	ErrInvalidBridgeId        = errors.New("invalid bridge id")
 	ErrInvalidDepositedAmount = errors.New("invalid deposited amount")
 	ErrInvalidScriptPubKey    = errors.New("invalid script pub key")
 	ErrInvalidTxNonce         = errors.New("invalid tx nonce")
 	ErrFailedUnpackLogs       = errors.New("failed to unpack logs")
 	ErrUnsupportedEvent       = errors.New("unsupported event")
 	ErrUnsupportedContract    = errors.New("unsupported contract")
-	ErrInvalidTransactionData = errors.New("invalid transaction data")
 )
-
-func IsPendingDepositError(err error) bool {
-	return errors.Is(err, ErrTxPending) ||
-		errors.Is(err, ErrTxNotConfirmed)
-}
-
-func IsInvalidDepositError(err error) bool {
-	return errors.Is(err, ErrChainNotSupported) ||
-		errors.Is(err, ErrTxFailed) ||
-		errors.Is(err, ErrTxNotFound) ||
-		errors.Is(err, ErrDepositNotFound) ||
-		errors.Is(err, ErrInvalidReceiverAddress) ||
-		errors.Is(err, ErrInvalidDepositedAmount) ||
-		errors.Is(err, ErrInvalidScriptPubKey) ||
-		errors.Is(err, ErrInvalidTxNonce) ||
-		errors.Is(err, ErrFailedUnpackLogs) ||
-		errors.Is(err, ErrUnsupportedEvent) ||
-		errors.Is(err, ErrUnsupportedContract)
-}
 
 type Client interface {
 	Type() Type
 	ChainId() string
 
-	AddressValid(addr string) bool
 	TransactionHashValid(hash string) bool
-	WithdrawalAmountValid(amount *big.Int) bool
-
 	IsProcessed(ctx context.Context, depositData db.Deposit) (bool, error)
 
 	WithdrawNative(ctx context.Context, depositData db.Deposit) (string, error)
