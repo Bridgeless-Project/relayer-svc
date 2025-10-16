@@ -51,7 +51,8 @@ type Deposit struct {
 	WithdrawalChainId string  `structs:"withdrawal_chain_id" db:"withdrawal_chain_id"`
 	WithdrawalAmount  string  `structs:"withdrawal_amount" db:"withdrawal_amount"`
 
-	IsWrappedToken bool `structs:"is_wrapped_token" db:"is_wrapped_token"`
+	IsWrappedToken bool   `structs:"is_wrapped_token" db:"is_wrapped_token"`
+	TxData         string `structs:"tx_data" db:"tx_data"`
 
 	Signature string `structs:"signature" db:"signature"`
 }

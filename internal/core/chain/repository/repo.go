@@ -12,10 +12,6 @@ func NewClientsRepository(clients []chain.Client) chain.Repository {
 	clientsMap := make(map[string]chain.Client, len(clients))
 
 	for _, cl := range clients {
-		// TODO: REMOVE
-		if cl.Type() == chain.TypeTON {
-			continue
-		}
 		clientsMap[cl.ChainId()] = cl
 	}
 

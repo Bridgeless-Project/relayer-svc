@@ -46,6 +46,7 @@ func txToDeposit(tx bridgetypes.Transaction) *db.Deposit {
 		WithdrawalChainId: tx.WithdrawalChainId,
 		WithdrawalAmount:  tx.WithdrawalAmount,
 		IsWrappedToken:    tx.IsWrapped,
+		TxData:            tx.TxData,
 		Signature:         tx.Signature,
 	}
 }

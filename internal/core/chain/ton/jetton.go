@@ -31,12 +31,10 @@ func (c *Client) buildWithdrawJettonCell(ctx context.Context, depositData db.Dep
 		return nil, errors.Wrap(err, "error decoding txHash")
 	}
 	hashInt := big.NewInt(0).SetBytes(hashBytes)
-	signatureBytes, err := hexutil.Decode(depositData.Signature)
+	signCell, err := getSignatureCell(depositData.Signature)
 	if err != nil {
-		return nil, errors.Wrap(err, "error decoding signature")
+		return nil, errors.Wrap(err, "error getting signature")
 	}
-
-	signCell := cell.BeginCell().MustStoreSlice(signatureBytes, 520).EndCell()
 
 	networkCell, err := getNetworkCell(depositData.WithdrawalChainId)
 	if err != nil {

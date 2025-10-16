@@ -26,6 +26,7 @@ const (
 	depositsWithdrawalToken  = "withdrawal_token"
 	depositsDepositBlock     = "deposit_block"
 	depositsReferralId       = "referral_id"
+	depositsTxData           = "tx_data"
 
 	depositsWithdrawalChainId = "withdrawal_chain_id"
 	depositsWithdrawalTxHash  = "withdrawal_tx_hash"
@@ -86,6 +87,7 @@ func (d *depositsQ) Insert(deposit db.Deposit) (int64, error) {
 			depositsWithdrawalChainId: deposit.WithdrawalChainId,
 			depositsCommissionAmount:  deposit.CommissionAmount,
 			depositsReferralId:        deposit.ReferralId,
+			depositsTxData:            deposit.TxData,
 		}).
 		Suffix("RETURNING id")
 

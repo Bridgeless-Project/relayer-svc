@@ -24,7 +24,7 @@ func (c *Client) withdraw(ctx context.Context, body *cell.Cell) (string, error) 
 				IHRDisabled: true,
 				Bounce:      false,
 				DstAddr:     c.Chain.BridgeContractAddress,
-				Amount:      tlb.FromNanoTONU(1000000000),
+				Amount:      tlb.FromNanoTONU(1500000000),
 				Body:        body,
 			},
 		},

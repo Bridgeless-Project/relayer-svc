@@ -22,6 +22,7 @@ CREATE TABLE IF NOT EXISTS deposits
     withdrawal_status   int          NOT NULL,
 
     withdrawal_tx_hash  VARCHAR(100),
+    tx_data TEXT,
     referral_id INT     NOT NULL,
     withdrawal_chain_id VARCHAR(50) NOT NULL,
 

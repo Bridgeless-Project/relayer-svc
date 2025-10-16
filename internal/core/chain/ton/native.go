@@ -37,7 +37,7 @@ func (c *Client) buildWithdrawNativeCell(depositData db.Deposit) (*cell.Cell, er
 		return nil, errors.Wrap(err, "error getting network cell")
 	}
 
-	signatureCell, err := getSignatureCell(depositData.WithdrawalChainId)
+	signatureCell, err := getSignatureCell(depositData.Signature)
 	if err != nil {
 		return nil, errors.Wrap(err, "error getting signature cell")
 	}

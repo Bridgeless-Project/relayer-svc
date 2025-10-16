@@ -3,7 +3,7 @@ module github.com/Bridgeless-Project/relayer-svc
 go 1.25.1
 
 require (
-	github.com/Bridgeless-Project/bridgeless-core/v12 v12.1.25-rc1
+	github.com/Bridgeless-Project/bridgeless-core/v12 v12.1.8-0.20251014090218-8fbe5c6d4de8
 	github.com/Masterminds/squirrel v1.5.4
 	github.com/avast/retry-go v3.0.0+incompatible
 	github.com/bnb-chain/tss-lib/v2 v2.0.2

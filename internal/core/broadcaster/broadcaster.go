@@ -101,7 +101,7 @@ func (b *Broadcaster) processDeposit(ctx context.Context, deposit db.Deposit) er
 		}
 	}
 
-	err = b.coreConnector.UpdateTxInfo(deposit)
+	err = b.coreConnector.UpdateTxInfo(ctx, deposit)
 	if err != nil {
 		return errors.Wrap(err, "failed to update tx info")
 	}
