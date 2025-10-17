@@ -2,6 +2,7 @@ package evm
 
 import (
 	"context"
+	"math/big"
 	"strings"
 	"sync/atomic"
 
@@ -101,7 +102,7 @@ func (c *Client) IsProcessed(ctx context.Context, depositData db.Deposit) (bool,
 
 	hashBytes32 := to32Bytes(hashBytes)
 
-	used, err := c.contractClient.UsedHashes(callOpts, hashBytes32)
+	used, err := c.contractClient.ContainsHash(callOpts, hashBytes32, big.NewInt(depositData.TxNonce))
 	if err != nil {
 		return false, errors.Wrapf(err, "failed to call contract for used hash")
 	}
