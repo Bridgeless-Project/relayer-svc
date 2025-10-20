@@ -27,7 +27,7 @@ func (i Implementation) SubmitWithdrawal(ctx context.Context, identifier *intern
 		return nil, status.Errorf(codes.InvalidArgument, "invalid identifier %s: %v", identifier, err)
 	}
 
-	if clients.SupportsChain(identifier.ChainId) {
+	if !clients.SupportsChain(identifier.ChainId) {
 		return nil, status.Error(codes.InvalidArgument, "chain is not supported")
 	}
 
@@ -37,7 +37,7 @@ func (i Implementation) SubmitWithdrawal(ctx context.Context, identifier *intern
 		return nil, status.Errorf(codes.Internal, "unable to process withdrawal")
 	}
 
-	if client.TransactionHashValid(identifier.TxHash) {
+	if !client.TransactionHashValid(identifier.TxHash) {
 		return nil, status.Error(codes.InvalidArgument, "invalid transaction hash")
 	}
 

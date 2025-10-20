@@ -20,8 +20,22 @@ type Client struct {
 }
 
 func (c *Client) IsProcessed(ctx context.Context, depositData db.Deposit) (bool, error) {
-	// TODO: Add a contract call when it will be available
-	return false, nil
+	address, err := c.getStoreAddress(ctx, depositData)
+	if err != nil {
+		return false, errors.Wrap(err, "error getting store address")
+	}
+
+	block, err := c.Chain.Client.CurrentMasterchainInfo(ctx)
+	if err != nil {
+		return false, errors.Wrap(err, "error getting current master chain info")
+	}
+
+	accountInfo, err := c.Chain.Client.WaitForBlock(block.SeqNo).GetAccount(ctx, block, address)
+	if err != nil {
+		return false, errors.Wrap(err, "error getting account info")
+	}
+
+	return accountInfo.IsActive, nil
 }
 
 // NewBridgeClient creates a new bridge Client for the given chain.

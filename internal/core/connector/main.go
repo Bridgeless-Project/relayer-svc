@@ -2,6 +2,7 @@ package connector
 
 import (
 	"context"
+	"fmt"
 	"sync"
 
 	coretypes "github.com/Bridgeless-Project/bridgeless-core/v12/types"
@@ -21,7 +22,7 @@ import (
 	"google.golang.org/grpc"
 )
 
-const gasLimit = 3_000_000
+const gasLimit = 4_000_000
 
 type Settings struct {
 	ChainId     string `fig:"chain_id,required"`
@@ -49,6 +50,7 @@ func NewConnector(account core.Account, conn *grpc.ClientConn, settings Settings
 		return nil, errors.Wrap(err, "failed to get account data")
 	}
 
+	fmt.Println("account seq: ", accountData.Sequence)
 	return &Connector{
 		transactor: txclient.NewServiceClient(conn),
 		txConfiger: authtx.NewTxConfig(codec.NewProtoCodec(codectypes.NewInterfaceRegistry()), []signing.SignMode{signing.SignMode_SIGN_MODE_DIRECT}),
@@ -96,6 +98,8 @@ func (c *Connector) submitMsgs(ctx context.Context, msgs ...sdk.Msg) error {
 		return errors.Wrap(err, "failed to broadcast transaction")
 	}
 	if res.TxResponse.Code != txCodeSuccess {
+		fmt.Println("Response: ", res.TxResponse.String())
+		fmt.Println("tx response log: ", res.TxResponse.Logs.String())
 		return errors.Errorf("transaction failed with code %d", res.TxResponse.Code)
 	}
 

@@ -116,7 +116,7 @@ func (o *Observer) fetchDeposits(ctx context.Context, startHeight int64) error {
 							continue
 						}
 
-						o.logger.WithError(err).Error("failed to broadcast deposit")
+						o.logger.Warnf("failed to broadcast deposit: %v", err)
 						continue
 					}
 				}

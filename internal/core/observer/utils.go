@@ -20,6 +20,9 @@ func (o *Observer) doWithRetry(ctx context.Context, function func() error) error
 		retry.Delay(o.retryTimeout),
 		retry.DelayType(retry.BackOffDelay),
 		retry.Context(ctx),
+		retry.OnRetry(func(n uint, err error) {
+			o.logger.WithError(err).WithField("attempt", n).Info("retrying step")
+		}),
 	)
 
 	if err != nil {

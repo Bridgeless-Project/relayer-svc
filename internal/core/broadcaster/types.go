@@ -5,6 +5,6 @@ import "github.com/pkg/errors"
 const bufferChannelSize = 1000
 
 var (
-	errWithdrawalInProcess = errors.New("withdrawal in process")
+	errWithdrawalInProcess = errors.New("withdrawal already exists")
 	errWithdraw            = errors.New("failed to process withdrawal")
 )
