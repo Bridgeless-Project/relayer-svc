@@ -15,6 +15,7 @@ import (
 	_ "google.golang.org/protobuf/types/known/anypb"
 	emptypb "google.golang.org/protobuf/types/known/emptypb"
 	reflect "reflect"
+	sync "sync"
 	unsafe "unsafe"
 )
 
@@ -25,24 +26,84 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
+type SubmitResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	WithdrawalId  string                 `protobuf:"bytes,1,opt,name=withdrawal_id,json=withdrawalId,proto3" json:"withdrawal_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *SubmitResponse) Reset() {
+	*x = SubmitResponse{}
+	mi := &file_api_proto_msgTypes[0]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SubmitResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SubmitResponse) ProtoMessage() {}
+
+func (x *SubmitResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_api_proto_msgTypes[0]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SubmitResponse.ProtoReflect.Descriptor instead.
+func (*SubmitResponse) Descriptor() ([]byte, []int) {
+	return file_api_proto_rawDescGZIP(), []int{0}
+}
+
+func (x *SubmitResponse) GetWithdrawalId() string {
+	if x != nil {
+		return x.WithdrawalId
+	}
+	return ""
+}
+
 var File_api_proto protoreflect.FileDescriptor
 
 const file_api_proto_rawDesc = "" +
 	"\n" +
-	"\tapi.proto\x12\x03api\x1a\x1cgoogle/api/annotations.proto\x1a\x1bgoogle/protobuf/empty.proto\x1a\x19google/protobuf/any.proto\x1a\rdeposit.proto\x1a.protoc-gen-openapiv2/options/annotations.proto2\xb1\x01\n" +
-	"\x03API\x12Z\n" +
-	"\x10SubmitWithdrawal\x12\x1a.deposit.DepositIdentifier\x1a\x16.google.protobuf.Empty\"\x12\x82\xd3\xe4\x93\x02\f:\x01*\"\a/submit\x12N\n" +
+	"\tapi.proto\x12\x03api\x1a\x1cgoogle/api/annotations.proto\x1a\x1bgoogle/protobuf/empty.proto\x1a\x19google/protobuf/any.proto\x1a\rdeposit.proto\x1a.protoc-gen-openapiv2/options/annotations.proto\"5\n" +
+	"\x0eSubmitResponse\x12#\n" +
+	"\rwithdrawal_id\x18\x01 \x01(\tR\fwithdrawalId2\xae\x01\n" +
+	"\x03API\x12W\n" +
+	"\x10SubmitWithdrawal\x12\x1a.deposit.DepositIdentifier\x1a\x13.api.SubmitResponse\"\x12\x82\xd3\xe4\x93\x02\f:\x01*\"\a/submit\x12N\n" +
 	"\vCheckHealth\x12\x16.google.protobuf.Empty\x1a\x16.google.protobuf.Empty\"\x0f\x82\xd3\xe4\x93\x02\t\x12\a/healthB>Z<github.com/Bridgeless-Project/relayer-svc/internal/api/typesb\x06proto3"
 
+var (
+	file_api_proto_rawDescOnce sync.Once
+	file_api_proto_rawDescData []byte
+)
+
+func file_api_proto_rawDescGZIP() []byte {
+	file_api_proto_rawDescOnce.Do(func() {
+		file_api_proto_rawDescData = protoimpl.X.CompressGZIP(unsafe.Slice(unsafe.StringData(file_api_proto_rawDesc), len(file_api_proto_rawDesc)))
+	})
+	return file_api_proto_rawDescData
+}
+
+var file_api_proto_msgTypes = make([]protoimpl.MessageInfo, 1)
 var file_api_proto_goTypes = []any{
-	(*types.DepositIdentifier)(nil), // 0: deposit.DepositIdentifier
-	(*emptypb.Empty)(nil),           // 1: google.protobuf.Empty
+	(*SubmitResponse)(nil),          // 0: api.SubmitResponse
+	(*types.DepositIdentifier)(nil), // 1: deposit.DepositIdentifier
+	(*emptypb.Empty)(nil),           // 2: google.protobuf.Empty
 }
 var file_api_proto_depIdxs = []int32{
-	0, // 0: api.API.SubmitWithdrawal:input_type -> deposit.DepositIdentifier
-	1, // 1: api.API.CheckHealth:input_type -> google.protobuf.Empty
-	1, // 2: api.API.SubmitWithdrawal:output_type -> google.protobuf.Empty
-	1, // 3: api.API.CheckHealth:output_type -> google.protobuf.Empty
+	1, // 0: api.API.SubmitWithdrawal:input_type -> deposit.DepositIdentifier
+	2, // 1: api.API.CheckHealth:input_type -> google.protobuf.Empty
+	0, // 2: api.API.SubmitWithdrawal:output_type -> api.SubmitResponse
+	2, // 3: api.API.CheckHealth:output_type -> google.protobuf.Empty
 	2, // [2:4] is the sub-list for method output_type
 	0, // [0:2] is the sub-list for method input_type
 	0, // [0:0] is the sub-list for extension type_name
@@ -61,12 +122,13 @@ func file_api_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_api_proto_rawDesc), len(file_api_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   0,
+			NumMessages:   1,
 			NumExtensions: 0,
 			NumServices:   1,
 		},
 		GoTypes:           file_api_proto_goTypes,
 		DependencyIndexes: file_api_proto_depIdxs,
+		MessageInfos:      file_api_proto_msgTypes,
 	}.Build()
 	File_api_proto = out.File
 	file_api_proto_goTypes = nil

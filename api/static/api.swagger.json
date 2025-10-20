@@ -46,8 +46,7 @@
           "200": {
             "description": "A successful response.",
             "schema": {
-              "type": "object",
-              "properties": {}
+              "$ref": "#/definitions/apiSubmitResponse"
             }
           },
           "default": {
@@ -74,6 +73,14 @@
     }
   },
   "definitions": {
+    "apiSubmitResponse": {
+      "type": "object",
+      "properties": {
+        "withdrawalId": {
+          "type": "string"
+        }
+      }
+    },
     "depositDepositIdentifier": {
       "type": "object",
       "properties": {

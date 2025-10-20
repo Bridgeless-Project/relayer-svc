@@ -58,18 +58,17 @@ func (b *Broadcaster) Run(ctx context.Context) error {
 	}
 }
 
-func (b *Broadcaster) Broadcast(ctx context.Context, deposit db.Deposit) error {
-	if err := b.validateExistence(ctx, deposit); err != nil {
+func (b *Broadcaster) Broadcast(ctx context.Context, deposit db.Deposit) (*string, error) {
+	if err := b.checkExistence(deposit); err != nil {
 		if errors.Is(err, errAlreadyExists) {
-			return errAlreadyExists
+			return nil, errAlreadyExists
 		}
 
-		b.logger.WithError(err).Error("error broadcasting withdrawal")
-		return types.ErrFailedToBroadcast
+		b.logger.WithError(err).Error("failed to check deposit existence")
+		return nil, types.ErrFailedToBroadcast
 	}
 
 	b.cache.Store(deposit.String(), struct{}{})
-	b.depositChan <- deposit
 
 	return nil
 }

@@ -47,7 +47,7 @@ func New(client *http.HTTP, retries int64, retryTimeout, pollingInterval time.Du
 func (o *Observer) Run(ctx context.Context, startHeight int64, catchup bool) error {
 	// Firstly catch up pending deposits from db
 	if catchup {
-		deposits, err := o.depositsDb.GetWithStatus(types.WithdrawalStatus_WITHDRAWAL_STATUS_PROCESSING)
+		deposits, err := o.depositsDb.GetWithStatus(types.WithdrawalStatus_WITHDRAWAL_STATUS_PENDING)
 		if err != nil {
 			return errors.Wrap(err, "failed to get unprocessed deposits")
 		}
@@ -178,15 +178,6 @@ func (o *Observer) isProcessed(deposit db.Deposit) (bool, error) {
 		return true, nil
 	}
 
-	depositData, err := o.depositsDb.Get(deposit.DepositIdentifier)
-	if err != nil {
-		return false, errors.Wrap(err, "failed to get deposit from database")
-	}
-
-	if depositData != nil {
-		return true, nil
-	}
-
 	return false, nil
 }
 
@@ -197,12 +188,6 @@ func (o *Observer) broadcastDeposit(ctx context.Context, deposit db.Deposit) err
 	}
 	if processed || !o.clientsRepo.SupportsChain(deposit.WithdrawalChainId) {
 		return skippedDeposit
-	}
-
-	deposit.WithdrawalStatus = types.WithdrawalStatus_WITHDRAWAL_STATUS_PENDING
-	_, err = o.depositsDb.Insert(deposit)
-	if err != nil {
-		return errors.Wrap(err, "failed to insert deposit")
 	}
 
 	err = o.broadcaster.Broadcast(ctx, deposit)

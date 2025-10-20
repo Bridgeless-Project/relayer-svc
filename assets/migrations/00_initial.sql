@@ -2,7 +2,7 @@
 
 CREATE TABLE IF NOT EXISTS deposits
 (
-    id                  BIGSERIAL PRIMARY KEY,
+    id                  TEXT PRIMARY KEY,
 
     tx_hash             VARCHAR(100) NOT NULL,
     tx_nonce            INT          NOT NULL,
