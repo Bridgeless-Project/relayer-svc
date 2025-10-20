@@ -173,16 +173,25 @@ func (o *Observer) fetchSubmitDepositEvents(ctx context.Context, height int64) (
 	return deposits, nil
 }
 
-func (o *Observer) IsProcessed(deposit db.Deposit) (bool, error) {
-	if deposit.WithdrawalTxHash == nil {
-		return false, nil
+func (o *Observer) isProcessed(deposit db.Deposit) (bool, error) {
+	if deposit.WithdrawalTxHash != nil {
+		return true, nil
 	}
 
-	return true, nil
+	depositData, err := o.depositsDb.Get(deposit.DepositIdentifier)
+	if err != nil {
+		return false, errors.Wrap(err, "failed to get deposit from database")
+	}
+
+	if depositData != nil {
+		return true, nil
+	}
+
+	return false, nil
 }
 
 func (o *Observer) broadcastDeposit(ctx context.Context, deposit db.Deposit) error {
-	processed, err := o.IsProcessed(deposit)
+	processed, err := o.isProcessed(deposit)
 	if err != nil {
 		return errors.Wrap(err, "failed to check if deposit is processed")
 	}
