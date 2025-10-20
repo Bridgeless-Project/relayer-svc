@@ -9,7 +9,7 @@ import (
 
 type DepositsQ interface {
 	New() DepositsQ
-	Insert(Deposit) (id int64, err error)
+	Insert(Deposit) (err error)
 	Get(identifier DepositIdentifier) (*Deposit, error)
 	FilterById(id string) DepositsQ
 	GetDefault() (*Deposit, error)

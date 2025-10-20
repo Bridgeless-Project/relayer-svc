@@ -53,7 +53,8 @@ func (o *Observer) Run(ctx context.Context, startHeight int64, catchup bool) err
 		}
 
 		for _, deposit := range deposits {
-			if err := o.broadcaster.Broadcast(ctx, deposit); err != nil {
+			_, err = o.broadcaster.Broadcast(deposit)
+			if err != nil {
 				o.logger.Errorf("failed to broadcast deposit: %v", err)
 				continue
 			}
@@ -186,11 +187,12 @@ func (o *Observer) broadcastDeposit(ctx context.Context, deposit db.Deposit) err
 	if err != nil {
 		return errors.Wrap(err, "failed to check if deposit is processed")
 	}
+
 	if processed || !o.clientsRepo.SupportsChain(deposit.WithdrawalChainId) {
 		return skippedDeposit
 	}
 
-	err = o.broadcaster.Broadcast(ctx, deposit)
+	_, err = o.broadcaster.Broadcast(deposit)
 	if err != nil {
 		return errors.Wrap(err, "failed to broadcast deposit")
 	}

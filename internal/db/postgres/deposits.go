@@ -80,7 +80,7 @@ func (d *depositsQ) New() db.DepositsQ {
 	return NewDepositsQ(d.db.Clone())
 }
 
-func (d *depositsQ) Insert(deposit db.Deposit) (int64, error) {
+func (d *depositsQ) Insert(deposit db.Deposit) error {
 	stmt := squirrel.
 		Insert(depositsTable).
 		SetMap(map[string]interface{}{
@@ -103,19 +103,17 @@ func (d *depositsQ) Insert(deposit db.Deposit) (int64, error) {
 			depositsCommissionAmount:  deposit.CommissionAmount,
 			depositsReferralId:        deposit.ReferralId,
 			depositsTxData:            deposit.TxData,
-		}).
-		Suffix("RETURNING id")
+		})
 
-	var id int64
-	if err := d.db.Get(&id, stmt); err != nil {
+	if err := d.db.Exec(stmt); err != nil {
 		if strings.Contains(err.Error(), "duplicate key value violates unique constraint") {
 			err = db.ErrAlreadySubmitted
 		}
 
-		return id, err
+		return err
 	}
 
-	return id, nil
+	return nil
 }
 
 func (d *depositsQ) Get(identifier db.DepositIdentifier) (*db.Deposit, error) {
@@ -183,7 +181,7 @@ func (d *depositsQ) Transaction(f func() error) error {
 	return d.db.Transaction(f)
 }
 
-func (d *depositsQ) InsertProcessedDeposit(deposit db.Deposit) (int64, error) {
+func (d *depositsQ) InsertProcessedDeposit(deposit db.Deposit) error {
 	stmt := squirrel.
 		Insert(depositsTable).
 		SetMap(map[string]interface{}{
@@ -206,17 +204,15 @@ func (d *depositsQ) InsertProcessedDeposit(deposit db.Deposit) (int64, error) {
 			depositsSignature:         deposit.Signature,
 			depositsWithdrawalStatus:  types.WithdrawalStatus_WITHDRAWAL_STATUS_PROCESSED,
 			depositsReferralId:        deposit.ReferralId,
-		}).
-		Suffix("RETURNING id")
+		})
 
-	var id int64
-	if err := d.db.Get(&id, stmt); err != nil {
+	if err := d.db.Exec(stmt); err != nil {
 		if strings.Contains(err.Error(), "duplicate key value violates unique constraint") {
 			err = db.ErrAlreadySubmitted
 		}
 
-		return id, err
+		return err
 	}
 
-	return id, nil
+	return nil
 }

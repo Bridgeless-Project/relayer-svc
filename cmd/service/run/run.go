@@ -89,7 +89,8 @@ func runService(ctx context.Context, cfg config.Config, catchUp bool, startHeigh
 	wg.Add(2)
 	eg.Go(func() error {
 		defer wg.Done()
-		return errors.Wrap(broadcaster.Run(ctx), "error while broadcasting withdrawals")
+		broadcaster.Run(ctx)
+		return nil
 	})
 	eg.Go(func() error {
 		defer wg.Done()
