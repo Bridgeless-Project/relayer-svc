@@ -51,19 +51,13 @@ func (c *Client) getStoreAddress(ctx context.Context, depositData db.Deposit) (*
 		}
 	}
 
-	queryCell := cell.BeginCell()
-	err = queryCell.StoreBigInt(big.NewInt(0).SetBytes(withdrawalHash), hashBitSize)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to store hash")
-	}
-
 	b, err := c.Chain.Client.CurrentMasterchainInfo(ctx)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get current master chain info")
 	}
 
-	res, err := c.Chain.Client.WaitForBlock(b.SeqNo).RunGetMethod(ctx, b, c.Chain.BridgeContractAddress,
-		storeAddressMethod, queryCell.EndCell().BeginParse())
+	res, err := c.Chain.Client.RunGetMethod(ctx, b, c.Chain.BridgeContractAddress,
+		storeAddressMethod, big.NewInt(0).SetBytes(withdrawalHash))
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to call contract to get store address")
 	}

@@ -12,12 +12,13 @@ import (
 )
 
 func (c *Client) WithdrawNative(ctx context.Context, depositData db.Deposit) (txHash string, err error) {
+	ctxt := c.Chain.Client.Client().StickyContext(ctx)
 	withdrawNativeCell, err := c.buildWithdrawNativeCell(depositData)
 	if err != nil {
 		return "", errors.Wrap(err, "failed to build withdraw native cell")
 	}
 
-	hash, err := c.withdraw(ctx, withdrawNativeCell)
+	hash, err := c.withdraw(ctxt, withdrawNativeCell)
 	if err != nil {
 		return "", errors.Wrap(err, "failed to process withdrawal")
 	}
@@ -69,7 +70,7 @@ func (c *Client) buildWithdrawNativeCell(depositData db.Deposit) (*cell.Cell, er
 }
 
 func (c *Client) getWithdrawalNativeHash(ctx context.Context, deposit db.Deposit) ([]byte, error) {
-	master, err := c.Chain.Client.GetMasterchainInfo(context.Background())
+	master, err := c.Chain.Client.GetMasterchainInfo(ctx)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get the master chain info")
 	}
@@ -92,12 +93,8 @@ func (c *Client) getWithdrawalNativeHash(ctx context.Context, deposit db.Deposit
 	txHash := big.NewInt(0).SetBytes(txHashToBytes32(deposit.TxHash))
 	txNonce := big.NewInt(0).SetUint64(uint64(deposit.TxNonce))
 
-	block, err := c.Chain.Client.CurrentMasterchainInfo(ctx)
-	if err != nil {
-		return nil, errors.Wrap(err, "error getting jetton address")
-	}
-	res, err := c.Chain.Client.WaitForBlock(block.SeqNo).RunGetMethod(
-		context.Background(),
+	res, err := c.Chain.Client.WaitForBlock(master.SeqNo).RunGetMethod(
+		ctx,
 		master,
 		c.Chain.BridgeContractAddress,
 		withdrawalNativeHashMethod,

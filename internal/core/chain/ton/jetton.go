@@ -12,12 +12,14 @@ import (
 )
 
 func (c *Client) WithdrawToken(ctx context.Context, depositData db.Deposit) (string, error) {
-	body, err := c.buildWithdrawJettonCell(ctx, depositData)
+	ctxt := c.Chain.Client.Client().StickyContext(ctx)
+
+	body, err := c.buildWithdrawJettonCell(ctxt, depositData)
 	if err != nil {
 		return "", errors.Wrap(err, "error building withdraw jetton cell")
 	}
 
-	txHash, err := c.withdraw(ctx, body)
+	txHash, err := c.withdraw(ctxt, body)
 	if err != nil {
 		return "", errors.Wrap(err, "error withdrawing jetton cell")
 	}
@@ -84,7 +86,7 @@ func (c *Client) buildWithdrawJettonCell(ctx context.Context, depositData db.Dep
 }
 
 func (c *Client) getWithdrawalJettonHash(ctx context.Context, deposit db.Deposit) ([]byte, error) {
-	master, err := c.Chain.Client.GetMasterchainInfo(context.Background())
+	master, err := c.Chain.Client.GetMasterchainInfo(ctx)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get the master chain info")
 	}
@@ -118,11 +120,8 @@ func (c *Client) getWithdrawalJettonHash(ctx context.Context, deposit db.Deposit
 
 	txHash := big.NewInt(0).SetBytes(txHashToBytes32(deposit.TxHash))
 
-	block, err := c.Chain.Client.CurrentMasterchainInfo(ctx)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to get current master chain info")
-	}
-	res, err := c.Chain.Client.WaitForBlock(block.SeqNo).RunGetMethod(context.Background(),
+	res, err := c.Chain.Client.WaitForBlock(master.SeqNo).RunGetMethod(
+		ctx,
 		master,
 		c.Chain.BridgeContractAddress,
 		withdrawalJettonHashMethod,

@@ -20,17 +20,19 @@ type Client struct {
 }
 
 func (c *Client) IsProcessed(ctx context.Context, depositData db.Deposit) (bool, error) {
-	address, err := c.getStoreAddress(ctx, depositData)
+	ctxt := c.Chain.Client.Client().StickyContext(ctx)
+
+	address, err := c.getStoreAddress(ctxt, depositData)
 	if err != nil {
 		return false, errors.Wrap(err, "error getting store address")
 	}
 
-	block, err := c.Chain.Client.CurrentMasterchainInfo(ctx)
+	block, err := c.Chain.Client.CurrentMasterchainInfo(ctxt)
 	if err != nil {
 		return false, errors.Wrap(err, "error getting current master chain info")
 	}
 
-	accountInfo, err := c.Chain.Client.WaitForBlock(block.SeqNo).GetAccount(ctx, block, address)
+	accountInfo, err := c.Chain.Client.GetAccount(ctxt, block, address)
 	if err != nil {
 		return false, errors.Wrap(err, "error getting account info")
 	}

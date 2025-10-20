@@ -60,8 +60,8 @@ func (b *Broadcaster) Run(ctx context.Context) error {
 
 func (b *Broadcaster) Broadcast(ctx context.Context, deposit db.Deposit) error {
 	if err := b.validateExistence(ctx, deposit); err != nil {
-		if !errors.Is(err, errWithdraw) {
-			return err
+		if errors.Is(err, errAlreadyExists) {
+			return errAlreadyExists
 		}
 
 		b.logger.WithError(err).Error("error broadcasting withdrawal")
