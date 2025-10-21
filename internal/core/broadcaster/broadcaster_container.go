@@ -92,6 +92,7 @@ func (b *broadcastContainer) process(ctx context.Context) error {
 		return errors.Wrap(err, "error processing withdrawal")
 	}
 
+	b.logger.Infof("Processed deposit %s withdrawal hash %s", b.deposit.String(), txHash)
 	b.deposit.WithdrawalTxHash = &txHash
 
 	return nil

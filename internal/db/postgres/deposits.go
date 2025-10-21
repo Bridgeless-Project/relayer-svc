@@ -84,6 +84,7 @@ func (d *depositsQ) Insert(deposit db.Deposit) error {
 	stmt := squirrel.
 		Insert(depositsTable).
 		SetMap(map[string]interface{}{
+			idField:                  deposit.Id,
 			depositsTxHash:           deposit.TxHash,
 			depositsTxNonce:          deposit.TxNonce,
 			depositsChainId:          deposit.ChainId,
@@ -185,6 +186,7 @@ func (d *depositsQ) InsertProcessedDeposit(deposit db.Deposit) error {
 	stmt := squirrel.
 		Insert(depositsTable).
 		SetMap(map[string]interface{}{
+			idField:                  deposit.Id,
 			depositsTxHash:           deposit.TxHash,
 			depositsTxNonce:          deposit.TxNonce,
 			depositsChainId:          deposit.ChainId,
