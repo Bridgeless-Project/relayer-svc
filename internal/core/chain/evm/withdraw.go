@@ -28,15 +28,18 @@ func (c *Client) WithdrawNative(ctx context.Context, depositData db.Deposit) (tx
 		return "", errors.Wrap(err, "failed to decode hash")
 	}
 
-	hashBytes32 := to32Bytes(hashBytes)
-
 	signatureBytes, err := hexutil.Decode(depositData.Signature)
 	if err != nil {
 		return "", errors.Wrap(err, "failed to decode signature")
 	}
 
-	tx, err := c.contractClient.WithdrawNative(transactOpts, amount, receiverAdress, hashBytes32,
-		big.NewInt(depositData.TxNonce), [][]byte{signatureBytes})
+	tx, err := c.contractClient.WithdrawNative(
+		transactOpts,
+		amount,
+		receiverAdress,
+		to32Bytes(hashBytes),
+		big.NewInt(depositData.TxNonce),
+		[][]byte{signatureBytes})
 	if err != nil {
 		return "", errors.Wrap(err, "failed to withdraw native")
 	}
@@ -61,7 +64,6 @@ func (c *Client) WithdrawToken(ctx context.Context, depositData db.Deposit) (txH
 		return "", errors.Wrap(err, "failed to decode hash")
 	}
 
-	hashBytes32 := to32Bytes(hashBytes)
 	signatureBytes, err := hexutil.Decode(depositData.Signature)
 	if err != nil {
 		return "", errors.Wrap(err, "failed to decode signature")
@@ -69,8 +71,15 @@ func (c *Client) WithdrawToken(ctx context.Context, depositData db.Deposit) (txH
 
 	tokenAddr := common.HexToAddress(depositData.WithdrawalToken)
 
-	tx, err := c.contractClient.WithdrawERC20(transactOpts, tokenAddr, amount, receiverAdress, hashBytes32,
-		big.NewInt(depositData.TxNonce), depositData.IsWrappedToken, [][]byte{signatureBytes})
+	tx, err := c.contractClient.WithdrawERC20(
+		transactOpts,
+		tokenAddr,
+		amount,
+		receiverAdress,
+		to32Bytes(hashBytes),
+		big.NewInt(depositData.TxNonce),
+		depositData.IsWrappedToken,
+		[][]byte{signatureBytes})
 	if err != nil {
 		return "", errors.Wrap(err, "failed to withdraw token")
 	}

@@ -55,40 +55,36 @@ func (b *Broadcaster) Run(ctx context.Context) {
 	}
 }
 
-func (b *Broadcaster) Broadcast(deposit db.Deposit) (*string, error) {
+func (b *Broadcaster) Broadcast(deposit db.Deposit) error {
 	_, ok := b.cache.Load(deposit.String())
 	if ok {
-		return nil, errAlreadyExists
+		return errAlreadyExists
 	}
 
-	id := uuid.New().String()
-	deposit.Id = id
 	deposit.WithdrawalStatus = types.WithdrawalStatus_WITHDRAWAL_STATUS_PENDING
 	err := b.dbConn.Insert(deposit)
 	if err != nil {
 		if errors.Is(err, db.ErrAlreadySubmitted) {
 			// Store duplicate deposit identifier to cache to avoid spamming db with get queries
-			b.cache.Store(deposit.String(), struct{}{})
-			return nil, errAlreadyExists
+			b.cache.Store(deposit.String(), nil)
+			return errAlreadyExists
 		}
 
 		b.logger.WithError(err).Error("error inserting deposit")
-		return nil, types.ErrFailedToBroadcast
+		return types.ErrFailedToBroadcast
 	}
 
-	b.cache.Store(deposit.String(), struct{}{})
+	b.cache.Store(deposit.String(), nil)
 
 	chainClient, err := b.clientsRepo.Client(deposit.WithdrawalChainId)
 	if err != nil {
 		b.logger.WithError(err).Error("failed to get the withdrawal chain client")
-		return nil, types.ErrFailedToBroadcast
+		return types.ErrFailedToBroadcast
 	}
 
 	go func() {
-		b.handlerChan <- NewContainer(id, chainClient, deposit, b.dbConn, b.logger)
+		b.handlerChan <- NewContainer(uuid.New().String(), chainClient, deposit, b.dbConn, b.logger)
 	}()
-	b.cache.Store(deposit.String(), struct{}{})
-	deposit.Id = id
 
-	return &id, nil
+	return nil
 }

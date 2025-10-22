@@ -22,12 +22,11 @@ type broadcastContainer struct {
 }
 
 func NewContainer(id string, chainClient chain.Client, deposit db.Deposit, dbQ db.DepositsQ, logger *logan.Entry) *broadcastContainer {
-	deposit.Id = id
 	return &broadcastContainer{
 		id:          uuid.New(),
 		chainClient: chainClient,
 		deposit:     deposit,
-		dbQ:         dbQ.New(),
+		dbQ:         dbQ,
 		logger:      logger.WithField("container", id),
 	}
 }

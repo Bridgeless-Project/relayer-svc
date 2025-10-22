@@ -2,8 +2,6 @@
 
 CREATE TABLE IF NOT EXISTS deposits
 (
-    id                  TEXT PRIMARY KEY,
-
     tx_hash             VARCHAR(100) NOT NULL,
     tx_nonce            INT          NOT NULL,
     chain_id            VARCHAR(50)  NOT NULL,
@@ -26,8 +24,7 @@ CREATE TABLE IF NOT EXISTS deposits
     referral_id INT     NOT NULL,
     withdrawal_chain_id VARCHAR(50) NOT NULL,
 
-    CONSTRAINT unique_deposit UNIQUE (tx_hash, tx_nonce, chain_id)
-);
+    PRIMARY KEY (tx_hash,tx_nonce,chain_id));
 
 CREATE TABLE IF NOT EXISTS latest_block
 (

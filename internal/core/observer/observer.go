@@ -44,7 +44,7 @@ func New(client *http.HTTP, retries int64, retryTimeout, pollingInterval time.Du
 	}
 }
 
-func (o *Observer) Run(ctx context.Context, startHeight int64, catchup bool) error {
+func (o *Observer) Run(ctx context.Context, startHeight uint64, catchup bool) error {
 	// Firstly catch up pending deposits from db
 	if catchup {
 		deposits, err := o.depositsDb.GetWithStatus(types.WithdrawalStatus_WITHDRAWAL_STATUS_PENDING)
@@ -53,7 +53,7 @@ func (o *Observer) Run(ctx context.Context, startHeight int64, catchup bool) err
 		}
 
 		for _, deposit := range deposits {
-			_, err = o.broadcaster.Broadcast(deposit)
+			err = o.broadcaster.Broadcast(deposit)
 			if err != nil {
 				o.logger.Errorf("failed to broadcast deposit: %v", err)
 				continue
@@ -63,17 +63,17 @@ func (o *Observer) Run(ctx context.Context, startHeight int64, catchup bool) err
 
 	// Fetch deposits from Bridgeless core
 	if err := o.fetchDeposits(ctx, startHeight); err != nil {
-		return errors.Wrap(err, "fetch deposits")
+		return errors.Wrap(err, "failed to fetch deposits from the core")
 	}
 
 	return nil
 }
 
-func (o *Observer) fetchDeposits(ctx context.Context, startHeight int64) error {
+func (o *Observer) fetchDeposits(ctx context.Context, startHeight uint64) error {
 	ticker := time.NewTicker(o.pollingInterval)
 	defer ticker.Stop()
 
-	if err := o.blockDb.Insert(db.LatestBlock{BlockId: startHeight}); err != nil {
+	if err := o.blockDb.Insert(db.LatestBlock{BlockId: int64(startHeight)}); err != nil {
 		return errors.Wrap(err, "failed to insert latest block")
 	}
 
@@ -98,39 +98,38 @@ func (o *Observer) fetchDeposits(ctx context.Context, startHeight int64) error {
 				continue
 			}
 
-			if startHeight <= currentHeight {
-				if err = o.blockDb.UpdateLatestBlockId(db.LatestBlock{BlockId: startHeight}); err != nil {
-					o.logger.WithError(err).Error("failed to update latest block height")
-					continue
-				}
-				deposits, err := o.fetchSubmitDepositEvents(ctx, startHeight)
-				if err != nil {
-
-					o.logger.WithError(err).Error("failed to fetch submit deposit events")
-					continue
-				}
-
-				for _, deposit := range deposits {
-					err = o.broadcastDeposit(ctx, *deposit)
-					if err != nil {
-						if errors.Is(err, skippedDeposit) {
-							continue
-						}
-
-						o.logger.Warnf("failed to broadcast deposit: %v", err)
-						continue
-					}
-				}
-				startHeight++
+			if startHeight > currentHeight {
+				o.logger.Debug("Waiting for next block, currentHeight:", currentHeight)
 				continue
 			}
 
-			o.logger.Debug("Waiting for next block, currentHeight:", currentHeight)
+			if err = o.blockDb.UpdateLatestBlockId(db.LatestBlock{BlockId: int64(startHeight)}); err != nil {
+				o.logger.WithError(err).Error("failed to update latest block height")
+				continue
+			}
+
+			deposits, err := o.fetchSubmitDepositEvents(ctx, int64(startHeight))
+			if err != nil {
+				o.logger.WithError(err).Error("failed to fetch submit deposit events")
+				continue
+			}
+
+			for _, deposit := range deposits {
+				if err = o.broadcastDeposit(ctx, *deposit); err != nil {
+					if errors.Is(err, skippedDeposit) {
+						continue
+					}
+					o.logger.Warnf("failed to broadcast deposit: %v", err)
+					continue
+				}
+			}
+
+			startHeight++
 		}
 	}
 }
 
-func (o *Observer) getCurrentHeight(ctx context.Context) (int64, error) {
+func (o *Observer) getCurrentHeight(ctx context.Context) (uint64, error) {
 	var info *coretypes.ResultABCIInfo
 
 	getCurrentHeight := func() error {
@@ -146,7 +145,7 @@ func (o *Observer) getCurrentHeight(ctx context.Context) (int64, error) {
 		return 0, errors.Wrap(err, "failed to get current height")
 	}
 
-	return info.Response.LastBlockHeight, nil
+	return uint64(info.Response.LastBlockHeight), nil
 }
 
 func (o *Observer) fetchSubmitDepositEvents(ctx context.Context, height int64) ([]*db.Deposit, error) {
@@ -192,7 +191,7 @@ func (o *Observer) broadcastDeposit(ctx context.Context, deposit db.Deposit) err
 		return skippedDeposit
 	}
 
-	_, err = o.broadcaster.Broadcast(deposit)
+	err = o.broadcaster.Broadcast(deposit)
 	if err != nil {
 		return errors.Wrap(err, "failed to broadcast deposit")
 	}

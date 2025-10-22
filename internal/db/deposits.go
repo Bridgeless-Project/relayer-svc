@@ -11,8 +11,6 @@ type DepositsQ interface {
 	New() DepositsQ
 	Insert(Deposit) (err error)
 	Get(identifier DepositIdentifier) (*Deposit, error)
-	FilterById(id string) DepositsQ
-	GetDefault() (*Deposit, error)
 	GetWithStatus(status types.WithdrawalStatus) ([]Deposit, error)
 
 	UpdateWithdrawalTx(DepositIdentifier, string) error
@@ -35,7 +33,6 @@ func (di *DepositIdentifier) String() string {
 }
 
 type Deposit struct {
-	Id string `structs:"id" db:"id"`
 	DepositIdentifier
 
 	Depositor        string `structs:"depositor" db:"depositor"`

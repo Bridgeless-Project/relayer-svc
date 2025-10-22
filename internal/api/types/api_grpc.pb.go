@@ -29,7 +29,7 @@ const (
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type APIClient interface {
-	SubmitWithdrawal(ctx context.Context, in *types.DepositIdentifier, opts ...grpc.CallOption) (*SubmitResponse, error)
+	SubmitWithdrawal(ctx context.Context, in *types.DepositIdentifier, opts ...grpc.CallOption) (*emptypb.Empty, error)
 	CheckHealth(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*emptypb.Empty, error)
 }
 
@@ -41,9 +41,9 @@ func NewAPIClient(cc grpc.ClientConnInterface) APIClient {
 	return &aPIClient{cc}
 }
 
-func (c *aPIClient) SubmitWithdrawal(ctx context.Context, in *types.DepositIdentifier, opts ...grpc.CallOption) (*SubmitResponse, error) {
+func (c *aPIClient) SubmitWithdrawal(ctx context.Context, in *types.DepositIdentifier, opts ...grpc.CallOption) (*emptypb.Empty, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(SubmitResponse)
+	out := new(emptypb.Empty)
 	err := c.cc.Invoke(ctx, API_SubmitWithdrawal_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
@@ -65,7 +65,7 @@ func (c *aPIClient) CheckHealth(ctx context.Context, in *emptypb.Empty, opts ...
 // All implementations should embed UnimplementedAPIServer
 // for forward compatibility.
 type APIServer interface {
-	SubmitWithdrawal(context.Context, *types.DepositIdentifier) (*SubmitResponse, error)
+	SubmitWithdrawal(context.Context, *types.DepositIdentifier) (*emptypb.Empty, error)
 	CheckHealth(context.Context, *emptypb.Empty) (*emptypb.Empty, error)
 }
 
@@ -76,7 +76,7 @@ type APIServer interface {
 // pointer dereference when methods are called.
 type UnimplementedAPIServer struct{}
 
-func (UnimplementedAPIServer) SubmitWithdrawal(context.Context, *types.DepositIdentifier) (*SubmitResponse, error) {
+func (UnimplementedAPIServer) SubmitWithdrawal(context.Context, *types.DepositIdentifier) (*emptypb.Empty, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method SubmitWithdrawal not implemented")
 }
 func (UnimplementedAPIServer) CheckHealth(context.Context, *emptypb.Empty) (*emptypb.Empty, error) {

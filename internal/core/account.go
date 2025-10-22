@@ -8,11 +8,12 @@ import (
 	"github.com/pkg/errors"
 )
 
+// TODO: Move to cfg
 const defaultHrp = "bridge"
 
 type Account struct {
 	prv  *secp256k1.PrivKey
-	addr Address
+	addr string
 }
 
 func NewAccount(prv string, hrp ...string) (*Account, error) {
@@ -35,7 +36,7 @@ func NewAccount(prv string, hrp ...string) (*Account, error) {
 
 	return &Account{
 		prv:  key,
-		addr: Address(address),
+		addr: address,
 	}, nil
 }
 
@@ -47,6 +48,6 @@ func (a *Account) PublicKey() types.PubKey {
 	return a.prv.PubKey()
 }
 
-func (a *Account) CosmosAddress() Address {
+func (a *Account) CosmosAddress() string {
 	return a.addr
 }

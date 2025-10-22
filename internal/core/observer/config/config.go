@@ -26,7 +26,7 @@ type observer struct {
 
 func (sc *observer) TendermintHttpClient() *http.HTTP {
 	cfg := sc.Config()
-	client, err := http.New(cfg.Addr, "/websocket")
+	client, err := http.New(cfg.RPC, "/websocket")
 	if err != nil {
 		panic(errors.Wrap(err, "failed to create tendermint http client"))
 	}
@@ -51,7 +51,7 @@ func (sc *observer) ObserverPollingInterval() time.Duration {
 }
 
 type config struct {
-	Addr            string `fig:"tendermint_rpc,required"`
+	RPC             string `fig:"tendermint_rpc,required"`
 	Retries         int64  `fig:"retry_attempts,required"`
 	RetryTimeout    int64  `fig:"retry_timeout_sec,required"`
 	PollingInterval int64  `fig:"polling_interval_sec,required"`

@@ -53,11 +53,14 @@ func NewConnector(account core.Account, conn *grpc.ClientConn, settings Settings
 	fmt.Println("account seq: ", accountData.Sequence)
 	return &Connector{
 		transactor: txclient.NewServiceClient(conn),
-		txConfiger: authtx.NewTxConfig(codec.NewProtoCodec(codectypes.NewInterfaceRegistry()), []signing.SignMode{signing.SignMode_SIGN_MODE_DIRECT}),
-		auther:     authtypes.NewQueryClient(conn),
-		querier:    bridgetypes.NewQueryClient(conn),
-		settings:   settings,
-		account:    account,
+		txConfiger: authtx.NewTxConfig(
+			codec.NewProtoCodec(codectypes.NewInterfaceRegistry()),
+			[]signing.SignMode{signing.SignMode_SIGN_MODE_DIRECT},
+		),
+		auther:   authtypes.NewQueryClient(conn),
+		querier:  bridgetypes.NewQueryClient(conn),
+		settings: settings,
+		account:  account,
 
 		accountNumber:   accountData.AccountNumber,
 		accountSequence: accountData.Sequence,
@@ -93,11 +96,12 @@ func (c *Connector) submitMsgs(ctx context.Context, msgs ...sdk.Msg) error {
 		Mode:    txclient.BroadcastMode_BROADCAST_MODE_BLOCK,
 		TxBytes: tx,
 	})
-
 	if err != nil {
 		return errors.Wrap(err, "failed to broadcast transaction")
 	}
+
 	if res.TxResponse.Code != txCodeSuccess {
+		// TODO: Remove debug log
 		fmt.Println("Response: ", res.TxResponse.String())
 		fmt.Println("tx response log: ", res.TxResponse.Logs.String())
 		return errors.Errorf("transaction failed with code %d", res.TxResponse.Code)
@@ -138,7 +142,13 @@ func (c *Connector) buildTx(gasLimit, feeAmount uint64, msgs ...sdk.Msg) ([]byte
 		Sequence:      sequence,
 	}
 
-	sig, err := clienttx.SignWithPrivKey(signMode, signerData, txBuilder, c.account.PrivateKey(), c.txConfiger, sequence)
+	sig, err := clienttx.SignWithPrivKey(
+		signMode,
+		signerData,
+		txBuilder,
+		c.account.PrivateKey(),
+		c.txConfiger,
+		sequence)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to sign with private key")
 	}
@@ -150,8 +160,8 @@ func (c *Connector) buildTx(gasLimit, feeAmount uint64, msgs ...sdk.Msg) ([]byte
 	return c.txConfiger.TxEncoder()(txBuilder.GetTx())
 }
 
-func getAccountData(ctx context.Context, auther authtypes.QueryClient, address core.Address) (*coretypes.EthAccount, error) {
-	resp, err := auther.Account(ctx, &authtypes.QueryAccountRequest{Address: address.String()})
+func getAccountData(ctx context.Context, auther authtypes.QueryClient, address string) (*coretypes.EthAccount, error) {
+	resp, err := auther.Account(ctx, &authtypes.QueryAccountRequest{Address: address})
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get account")
 	}

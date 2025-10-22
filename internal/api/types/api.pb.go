@@ -76,9 +76,9 @@ const file_api_proto_rawDesc = "" +
 	"\n" +
 	"\tapi.proto\x12\x03api\x1a\x1cgoogle/api/annotations.proto\x1a\x1bgoogle/protobuf/empty.proto\x1a\x19google/protobuf/any.proto\x1a\rdeposit.proto\x1a.protoc-gen-openapiv2/options/annotations.proto\"5\n" +
 	"\x0eSubmitResponse\x12#\n" +
-	"\rwithdrawal_id\x18\x01 \x01(\tR\fwithdrawalId2\xae\x01\n" +
-	"\x03API\x12W\n" +
-	"\x10SubmitWithdrawal\x12\x1a.deposit.DepositIdentifier\x1a\x13.api.SubmitResponse\"\x12\x82\xd3\xe4\x93\x02\f:\x01*\"\a/submit\x12N\n" +
+	"\rwithdrawal_id\x18\x01 \x01(\tR\fwithdrawalId2\xb1\x01\n" +
+	"\x03API\x12Z\n" +
+	"\x10SubmitWithdrawal\x12\x1a.deposit.DepositIdentifier\x1a\x16.google.protobuf.Empty\"\x12\x82\xd3\xe4\x93\x02\f:\x01*\"\a/submit\x12N\n" +
 	"\vCheckHealth\x12\x16.google.protobuf.Empty\x1a\x16.google.protobuf.Empty\"\x0f\x82\xd3\xe4\x93\x02\t\x12\a/healthB>Z<github.com/Bridgeless-Project/relayer-svc/internal/api/typesb\x06proto3"
 
 var (
@@ -102,7 +102,7 @@ var file_api_proto_goTypes = []any{
 var file_api_proto_depIdxs = []int32{
 	1, // 0: api.API.SubmitWithdrawal:input_type -> deposit.DepositIdentifier
 	2, // 1: api.API.CheckHealth:input_type -> google.protobuf.Empty
-	0, // 2: api.API.SubmitWithdrawal:output_type -> api.SubmitResponse
+	2, // 2: api.API.SubmitWithdrawal:output_type -> google.protobuf.Empty
 	2, // 3: api.API.CheckHealth:output_type -> google.protobuf.Empty
 	2, // [2:4] is the sub-list for method output_type
 	0, // [0:2] is the sub-list for method input_type

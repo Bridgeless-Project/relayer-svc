@@ -15,9 +15,18 @@ func (c *Client) WithdrawNative(ctx context.Context, depositData db.Deposit) (st
 		return "", errors.Wrap(err, "failed to get withdrawal context")
 	}
 
-	withdrawInstruction := contract.NewWithdrawNativeInstruction(c.chain.Meta.BridgeId, withdrawalCtx.WithdrawalTxHash,
-		withdrawalCtx.Amount, withdrawalCtx.UID, withdrawalCtx.Sig, withdrawalCtx.RecID, withdrawalCtx.Receiver,
-		withdrawalCtx.Authority, withdrawalCtx.WithdrawalPDA, c.chain.OperatorWallet.PublicKey(), solana.SystemProgramID)
+	withdrawInstruction := contract.NewWithdrawNativeInstruction(
+		c.chain.Meta.BridgeId,
+		withdrawalCtx.WithdrawalTxHash,
+		withdrawalCtx.Amount,
+		withdrawalCtx.UID,
+		withdrawalCtx.Sig,
+		withdrawalCtx.RecID,
+		withdrawalCtx.Receiver,
+		withdrawalCtx.Authority,
+		withdrawalCtx.WithdrawalPDA,
+		c.chain.OperatorWallet.PublicKey(),
+		solana.SystemProgramID)
 
 	hash, err := c.SendTx(ctx, withdrawInstruction.Build())
 	if err != nil {

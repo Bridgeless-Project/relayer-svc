@@ -6,14 +6,14 @@ import (
 
 	"github.com/Bridgeless-Project/relayer-svc/internal/api/common"
 	apiCtx "github.com/Bridgeless-Project/relayer-svc/internal/api/ctx"
-	"github.com/Bridgeless-Project/relayer-svc/internal/api/types"
 	internalTypes "github.com/Bridgeless-Project/relayer-svc/internal/types"
 	"github.com/pkg/errors"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/types/known/emptypb"
 )
 
-func (i Implementation) SubmitWithdrawal(ctx context.Context, identifier *internalTypes.DepositIdentifier) (*types.SubmitResponse, error) {
+func (i Implementation) SubmitWithdrawal(ctx context.Context, identifier *internalTypes.DepositIdentifier) (*emptypb.Empty, error) {
 	var (
 		clients     = apiCtx.Clients(ctx)
 		logger      = apiCtx.Logger(ctx)
@@ -49,7 +49,7 @@ func (i Implementation) SubmitWithdrawal(ctx context.Context, identifier *intern
 		return nil, status.Error(codes.Internal, "unable to process withdrawal")
 	}
 
-	id, err := broadcaster.Broadcast(*deposit)
+	err = broadcaster.Broadcast(*deposit)
 	if err != nil {
 		if errors.Is(err, internalTypes.ErrFailedToBroadcast) {
 			return nil, status.Error(codes.Internal, "failed to broadcast withdrawal")
@@ -58,5 +58,5 @@ func (i Implementation) SubmitWithdrawal(ctx context.Context, identifier *intern
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	return &types.SubmitResponse{WithdrawalId: *id}, nil
+	return nil, nil
 }

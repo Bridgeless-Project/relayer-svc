@@ -50,7 +50,8 @@ func FromChain(c chain.Chain) Chain {
 		panic(errors.Wrap(err, "failed to obtain TON rpc"))
 	}
 
-	if err = figure.Out(&tonChain.OperatorPrivateKey).FromInterface(c.OperatorPrivateKey).
+	if err = figure.Out(&tonChain.OperatorPrivateKey).
+		FromInterface(c.OperatorPrivateKey).
 		With(privateKeyHook).Please(); err != nil {
 		panic(errors.Wrap(err, "failed to obtain operator private key"))
 	}

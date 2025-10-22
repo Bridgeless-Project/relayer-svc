@@ -68,16 +68,23 @@ func FromChain(c chain.Chain) Chain {
 		Id: c.Id,
 	}
 
-	if err := figure.Out(&chain.Meta).FromInterface(c.Meta).Please(); err != nil {
+	if err := figure.Out(&chain.Meta).
+		FromInterface(c.Meta).Please(); err != nil {
 		panic(errors.Wrap(err, "failed to decode chain meta"))
 	}
-	if err := figure.Out(&chain.Rpc).FromInterface(c.Rpc).With(SolanaHooks).Please(); err != nil {
+	if err := figure.Out(&chain.Rpc).
+		FromInterface(c.Rpc).
+		With(SolanaHooks).Please(); err != nil {
 		panic(errors.Wrap(err, "failed to obtain Solana clients"))
 	}
-	if err := figure.Out(&chain.BridgeAddress).FromInterface(c.BridgeAddresses).With(SolanaHooks).Please(); err != nil {
+	if err := figure.Out(&chain.BridgeAddress).
+		FromInterface(c.BridgeAddresses).
+		With(SolanaHooks).Please(); err != nil {
 		panic(errors.Wrap(err, "failed to obtain bridge addresses"))
 	}
-	if err := figure.Out(&chain.OperatorWallet).FromInterface(c.OperatorPrivateKey).With(SolanaHooks).Please(); err != nil {
+	if err := figure.Out(&chain.OperatorWallet).
+		FromInterface(c.OperatorPrivateKey).
+		With(SolanaHooks).Please(); err != nil {
 		panic(errors.Wrap(err, "failed to obtain operator wallet"))
 	}
 

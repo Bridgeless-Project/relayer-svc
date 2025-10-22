@@ -10,9 +10,9 @@ import (
 )
 
 func (c *Connector) UpdateTxInfo(ctx context.Context, deposit db.Deposit) error {
-	msg := bridgeTypes.NewMsgUpdateTransaction(c.account.CosmosAddress().String(), toTransaction(deposit))
+	msg := bridgeTypes.NewMsgUpdateTransaction(c.account.CosmosAddress(), toTransaction(deposit))
 
-	fmt.Println("Address: ", c.account.CosmosAddress().String())
+	fmt.Println("Address: ", c.account.CosmosAddress())
 
 	err := c.submitMsgs(ctx, msg)
 	if err != nil {

@@ -25,11 +25,7 @@ func (o *Observer) doWithRetry(ctx context.Context, function func() error) error
 		}),
 	)
 
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return errors.Wrap(err, "failed to execute function")
 }
 
 func parseDepositsFromTxResults(txs []*abciTypes.ResponseDeliverTx) ([]*db.Deposit, error) {
