@@ -2,6 +2,7 @@ package grpc
 
 import (
 	"context"
+	"fmt"
 	"strings"
 
 	"github.com/Bridgeless-Project/relayer-svc/internal/api/common"
@@ -16,7 +17,6 @@ import (
 func (i Implementation) SubmitWithdrawal(ctx context.Context, identifier *internalTypes.DepositIdentifier) (*emptypb.Empty, error) {
 	var (
 		clients     = apiCtx.Clients(ctx)
-		logger      = apiCtx.Logger(ctx)
 		connector   = apiCtx.Connector(ctx)
 		broadcaster = apiCtx.Broadcaster(ctx)
 	)
@@ -26,14 +26,14 @@ func (i Implementation) SubmitWithdrawal(ctx context.Context, identifier *intern
 		return nil, status.Errorf(codes.InvalidArgument, "invalid identifier %s: %v", identifier, err)
 	}
 
-	if !clients.SupportsChain(identifier.ChainId) {
-		return nil, status.Error(codes.InvalidArgument, "chain is not supported")
-	}
-
 	client, err := clients.Client(identifier.ChainId)
 	if err != nil {
-		logger.Errorf("failed to get chain client %s: %v", identifier.ChainId, err)
-		return nil, status.Errorf(codes.Internal, "unable to process withdrawal")
+		return nil, status.Errorf(codes.InvalidArgument, fmt.Sprintf("chain %s is not supported", identifier.ChainId))
+	}
+
+	err = common.ValidateChainIdentifier(identifier, client)
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, "invalid chain identifier %s: %v", identifier, err)
 	}
 
 	if !client.TransactionHashValid(identifier.TxHash) {
