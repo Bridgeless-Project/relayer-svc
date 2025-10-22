@@ -47,10 +47,24 @@ func (b *Broadcaster) Run(ctx context.Context) {
 				return
 			}
 
-			_, err := container.Run(ctx)
+			deposit, err := container.Run(ctx)
 			if err != nil {
 				b.logger.WithError(err).Error(fmt.Sprintf("error processing withdrawal %s", container.id))
+				continue
 			}
+
+			if deposit == nil {
+				continue
+			}
+
+			fmt.Println("deposit processed successfully")
+
+			err = b.coreConnector.UpdateTxInfo(ctx, *deposit)
+			if err != nil {
+				fmt.Println("error updating tx info:, ", err)
+				b.logger.WithError(err).Error(fmt.Sprintf("error updating withdrawal info %s", container.id))
+			}
+
 		}
 	}
 }

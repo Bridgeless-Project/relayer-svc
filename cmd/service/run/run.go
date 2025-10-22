@@ -53,7 +53,7 @@ var Cmd = &cobra.Command{
 	},
 }
 
-func runService(ctx context.Context, cfg config.Config, catchUp bool, startHeight int64) error {
+func runService(ctx context.Context, cfg config.Config, catchUp bool, startHeight uint64) error {
 	wg := new(sync.WaitGroup)
 	eg, ctx := errgroup.WithContext(ctx)
 	logger := cfg.Log()

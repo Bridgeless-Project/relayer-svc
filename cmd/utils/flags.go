@@ -50,6 +50,6 @@ func CatchUpFromFlags(cmd *cobra.Command) (bool, error) {
 	return catchUp, nil
 }
 
-func StartHeightFromFlags(cmd *cobra.Command) (int64, error) {
-	return strconv.ParseInt(cmd.Flags().Lookup(startHeightFlag).Value.String(), 10, 64)
+func StartHeightFromFlags(cmd *cobra.Command) (uint64, error) {
+	return strconv.ParseUint(cmd.Flags().Lookup(startHeightFlag).Value.String(), 10, 64)
 }
