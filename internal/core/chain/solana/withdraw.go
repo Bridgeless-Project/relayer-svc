@@ -36,6 +36,15 @@ func (c *Client) WithdrawNative(ctx context.Context, depositData db.Deposit) (st
 }
 
 func (c *Client) WithdrawToken(ctx context.Context, depositData db.Deposit) (string, error) {
+	receiverPub, err := solana.PublicKeyFromBase58(depositData.Receiver)
+	if err != nil {
+		return "", errors.Wrap(err, "failed to decode receiver public key")
+	}
+	_, err = c.chain.Rpc.GetAccountInfo(ctx, receiverPub)
+	if err != nil {
+		return "", errors.Wrap(err, "failed to get receiver account info")
+	}
+
 	if !depositData.IsWrappedToken {
 		txHash, err := c.withdrawSPL(ctx, depositData)
 		if err != nil {

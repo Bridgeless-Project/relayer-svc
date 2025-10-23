@@ -15,6 +15,13 @@ message SubmitResponse {
   string withdrawal_id = 1;
 }
 
+message CheckWithdrawalResponse {
+  deposit.DepositIdentifier deposit_identifier = 1;
+  deposit.TransferData transfer_data = 2;
+  deposit.WithdrawalStatus withdrawal_status = 3;
+  deposit.WithdrawalIdentifier withdrawal_identifier = 4;
+}
+
 service API {
   rpc SubmitWithdrawal(deposit.DepositIdentifier) returns (google.protobuf.Empty) {
     option (google.api.http) = {
@@ -22,6 +29,13 @@ service API {
       body: "*"
     };
   }
+
+  rpc CheckWithdrawal(deposit.DepositIdentifier) returns (CheckWithdrawalResponse) {
+    option (google.api.http) = {
+      get: "/check/{chain_id}/{tx_hash}/{tx_nonce}"
+    };
+  }
+
   rpc CheckHealth(google.protobuf.Empty) returns (google.protobuf.Empty) {
     option (google.api.http) = {
       get: "/health"

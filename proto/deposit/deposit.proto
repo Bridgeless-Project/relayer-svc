@@ -19,3 +19,26 @@ message DepositIdentifier {
   string chain_id = 3;
 }
 
+message WithdrawalIdentifier {
+  optional string tx_hash = 1;
+  string chain_id = 2;
+}
+
+message TransferData {
+  optional string sender = 1;
+  string receiver = 2;
+
+  string deposit_amount = 3;
+  string withdrawal_amount = 4;
+  string commission_amount = 5;
+
+  string deposit_asset = 6;
+  string withdrawal_asset = 7;
+  bool is_wrapped_asset = 8;
+
+  int64 deposit_block = 9;
+
+  // used for EVM transfers
+  optional string signature = 10;
+}
+

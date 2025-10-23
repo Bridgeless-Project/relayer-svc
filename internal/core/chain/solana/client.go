@@ -50,7 +50,7 @@ func (c *Client) IsProcessed(ctx context.Context, depositData db.Deposit) (bool,
 			return false, nil
 		}
 
-		return false, errors.New("failed to get account info")
+		return false, errors.Wrap(err, "failed to get account info")
 	}
 
 	return true, nil

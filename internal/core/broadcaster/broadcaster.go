@@ -9,7 +9,6 @@ import (
 	"github.com/Bridgeless-Project/relayer-svc/internal/core/connector"
 	"github.com/Bridgeless-Project/relayer-svc/internal/db"
 	"github.com/Bridgeless-Project/relayer-svc/internal/types"
-	"github.com/google/uuid"
 	"github.com/pkg/errors"
 	"gitlab.com/distributed_lab/logan/v3"
 )
@@ -47,10 +46,17 @@ func (b *Broadcaster) Run(ctx context.Context) {
 				return
 			}
 
-			_, err := container.Run(ctx)
+			deposit, err := container.Run(ctx)
 			if err != nil {
-				b.logger.WithError(err).Error(fmt.Sprintf("error processing withdrawal %s", container.id))
+				b.logger.WithError(err).Error(fmt.Sprintf("error processing withdrawal for deposit"))
+				continue
 			}
+
+			err = b.coreConnector.UpdateTxInfo(ctx, *deposit)
+			if err != nil {
+				b.logger.WithError(err).Error(fmt.Sprintf("error updating withdrawal info for deposit: %s", deposit.String()))
+			}
+
 		}
 	}
 }
@@ -83,7 +89,7 @@ func (b *Broadcaster) Broadcast(deposit db.Deposit) error {
 	}
 
 	go func() {
-		b.handlerChan <- NewContainer(uuid.New().String(), chainClient, deposit, b.dbConn, b.logger)
+		b.handlerChan <- NewContainer(chainClient, deposit, b.dbConn, b.logger)
 	}()
 
 	return nil

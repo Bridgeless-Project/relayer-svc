@@ -16,6 +16,49 @@
     "application/json"
   ],
   "paths": {
+    "/check/{chainId}/{txHash}/{txNonce}": {
+      "get": {
+        "operationId": "API_CheckWithdrawal",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/apiCheckWithdrawalResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "chainId",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "txHash",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "txNonce",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "format": "int64"
+          }
+        ],
+        "tags": [
+          "API"
+        ]
+      }
+    },
     "/health": {
       "get": {
         "operationId": "API_CheckHealth",
@@ -74,6 +117,23 @@
     }
   },
   "definitions": {
+    "apiCheckWithdrawalResponse": {
+      "type": "object",
+      "properties": {
+        "depositIdentifier": {
+          "$ref": "#/definitions/depositDepositIdentifier"
+        },
+        "transferData": {
+          "$ref": "#/definitions/depositTransferData"
+        },
+        "withdrawalStatus": {
+          "$ref": "#/definitions/depositWithdrawalStatus"
+        },
+        "withdrawalIdentifier": {
+          "$ref": "#/definitions/depositWithdrawalIdentifier"
+        }
+      }
+    },
     "depositDepositIdentifier": {
       "type": "object",
       "properties": {
@@ -88,6 +148,66 @@
           "type": "string"
         }
       }
+    },
+    "depositTransferData": {
+      "type": "object",
+      "properties": {
+        "sender": {
+          "type": "string"
+        },
+        "receiver": {
+          "type": "string"
+        },
+        "depositAmount": {
+          "type": "string"
+        },
+        "withdrawalAmount": {
+          "type": "string"
+        },
+        "commissionAmount": {
+          "type": "string"
+        },
+        "depositAsset": {
+          "type": "string"
+        },
+        "withdrawalAsset": {
+          "type": "string"
+        },
+        "isWrappedAsset": {
+          "type": "boolean"
+        },
+        "depositBlock": {
+          "type": "string",
+          "format": "int64"
+        },
+        "signature": {
+          "type": "string",
+          "title": "used for EVM transfers"
+        }
+      }
+    },
+    "depositWithdrawalIdentifier": {
+      "type": "object",
+      "properties": {
+        "txHash": {
+          "type": "string"
+        },
+        "chainId": {
+          "type": "string"
+        }
+      }
+    },
+    "depositWithdrawalStatus": {
+      "type": "string",
+      "enum": [
+        "WITHDRAWAL_STATUS_UNSPECIFIED",
+        "WITHDRAWAL_STATUS_PENDING",
+        "WITHDRAWAL_STATUS_PROCESSING",
+        "WITHDRAWAL_STATUS_PROCESSED",
+        "WITHDRAWAL_STATUS_FAILED",
+        "WITHDRAWAL_STATUS_ALREADY_EXISTS"
+      ],
+      "default": "WITHDRAWAL_STATUS_UNSPECIFIED"
     },
     "protobufAny": {
       "type": "object",
