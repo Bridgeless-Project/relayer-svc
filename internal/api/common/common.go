@@ -21,7 +21,7 @@ func ValidateIdentifier(identifier *types.DepositIdentifier) error {
 	}.Filter()
 }
 
-func ValidateChainIdentifier(identifier *types.DepositIdentifier, client chain.Client) error {
+func ValidateTxHash(identifier *types.DepositIdentifier, client chain.Client) error {
 	if !client.TransactionHashValid(identifier.TxHash) {
 		return errors.New("invalid transaction hash")
 	}

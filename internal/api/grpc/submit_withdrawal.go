@@ -31,7 +31,7 @@ func (i Implementation) SubmitWithdrawal(ctx context.Context, identifier *intern
 		return nil, status.Errorf(codes.InvalidArgument, fmt.Sprintf("chain %s is not supported", identifier.ChainId))
 	}
 
-	err = common.ValidateChainIdentifier(identifier, client)
+	err = common.ValidateTxHash(identifier, client)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, "invalid chain identifier %s: %v", identifier, err)
 	}

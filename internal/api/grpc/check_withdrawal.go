@@ -29,14 +29,14 @@ func (i Implementation) CheckWithdrawal(ctx context.Context, identifier *interna
 		return nil, status.Errorf(codes.InvalidArgument, fmt.Sprintf("chain %s is not supported", identifier.ChainId))
 	}
 
-	err = common.ValidateChainIdentifier(identifier, client)
+	err = common.ValidateTxHash(identifier, client)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, "invalid chain identifier %s: %v", identifier, err)
 	}
 
 	withdrawalData, err := db.Get(common.ToDbIdentifier(identifier))
 	if err != nil {
-		logger.WithError(err).Error("failed to fetch withdrawal data")
+		logger.WithError(err).Error("failed to fetch withdrawal data from db")
 		return nil, status.Error(codes.Internal, "failed to get withdrawal details")
 	}
 

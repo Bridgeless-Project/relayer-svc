@@ -2,7 +2,6 @@ package connector
 
 import (
 	"context"
-	"fmt"
 
 	bridgeTypes "github.com/Bridgeless-Project/bridgeless-core/v12/x/bridge/types"
 	"github.com/Bridgeless-Project/relayer-svc/internal/db"
@@ -12,11 +11,8 @@ import (
 func (c *Connector) UpdateTxInfo(ctx context.Context, deposit db.Deposit) error {
 	msg := bridgeTypes.NewMsgUpdateTransaction(c.account.CosmosAddress(), toTransaction(deposit))
 
-	fmt.Println("Address: ", c.account.CosmosAddress())
-
 	err := c.submitMsgs(ctx, msg)
 	if err != nil {
-		fmt.Println(err)
 		return errors.Wrap(err, "failed to update tx info")
 	}
 

@@ -22,7 +22,7 @@ import (
 	"google.golang.org/grpc"
 )
 
-const gasLimit = 4_000_000
+const gasLimit = 3_000_000
 
 type Settings struct {
 	ChainId     string `fig:"chain_id,required"`
@@ -101,10 +101,10 @@ func (c *Connector) submitMsgs(ctx context.Context, msgs ...sdk.Msg) error {
 	}
 
 	if res.TxResponse.Code != txCodeSuccess {
-		// TODO: Remove debug log
-		fmt.Println("Response: ", res.TxResponse.String())
-		fmt.Println("tx response log: ", res.TxResponse.Logs.String())
-		return errors.Errorf("transaction failed with code %d", res.TxResponse.Code)
+
+		return errors.Errorf("transaction failed with code %d, full log: %s",
+			res.TxResponse.Code,
+			res.TxResponse.String())
 	}
 
 	return nil
