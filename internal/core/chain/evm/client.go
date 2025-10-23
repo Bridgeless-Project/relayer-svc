@@ -13,7 +13,6 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/pkg/errors"
 )
@@ -95,14 +94,7 @@ func (c *Client) IsProcessed(ctx context.Context, depositData db.Deposit) (bool,
 		Context: ctx,
 	}
 
-	hashBytes, err := hexutil.Decode(depositData.TxHash)
-	if err != nil {
-		return false, errors.Wrapf(err, "failed to decode hash %s", depositData.TxHash)
-	}
-
-	hashBytes32 := to32Bytes(hashBytes)
-
-	used, err := c.contractClient.ContainsHash(callOpts, hashBytes32, big.NewInt(depositData.TxNonce))
+	used, err := c.contractClient.ContainsHash(callOpts, txHashToBytes32(depositData.TxHash), big.NewInt(depositData.TxNonce))
 	if err != nil {
 		return false, errors.Wrapf(err, "failed to call contract for used hash")
 	}

@@ -23,11 +23,6 @@ func (c *Client) WithdrawNative(ctx context.Context, depositData db.Deposit) (tx
 
 	receiverAdress := common.HexToAddress(depositData.Receiver)
 
-	hashBytes, err := hexutil.Decode(depositData.TxHash)
-	if err != nil {
-		return "", errors.Wrap(err, "failed to decode hash")
-	}
-
 	signatureBytes, err := hexutil.Decode(depositData.Signature)
 	if err != nil {
 		return "", errors.Wrap(err, "failed to decode signature")
@@ -37,7 +32,7 @@ func (c *Client) WithdrawNative(ctx context.Context, depositData db.Deposit) (tx
 		transactOpts,
 		amount,
 		receiverAdress,
-		to32Bytes(hashBytes),
+		txHashToBytes32(depositData.TxHash),
 		big.NewInt(depositData.TxNonce),
 		[][]byte{signatureBytes})
 	if err != nil {
@@ -59,11 +54,6 @@ func (c *Client) WithdrawToken(ctx context.Context, depositData db.Deposit) (txH
 	}
 
 	receiverAdress := common.HexToAddress(depositData.Receiver)
-	hashBytes, err := hexutil.Decode(depositData.TxHash)
-	if err != nil {
-		return "", errors.Wrap(err, "failed to decode hash")
-	}
-
 	signatureBytes, err := hexutil.Decode(depositData.Signature)
 	if err != nil {
 		return "", errors.Wrap(err, "failed to decode signature")
@@ -76,7 +66,7 @@ func (c *Client) WithdrawToken(ctx context.Context, depositData db.Deposit) (txH
 		tokenAddr,
 		amount,
 		receiverAdress,
-		to32Bytes(hashBytes),
+		txHashToBytes32(depositData.TxHash),
 		big.NewInt(depositData.TxNonce),
 		depositData.IsWrappedToken,
 		[][]byte{signatureBytes})

@@ -1,12 +1,19 @@
 package evm
 
-func to32Bytes(data []byte) [32]byte {
-	var arr [32]byte
-	if len(data) > 32 {
-		copy(arr[:], data[:32])
-		return arr
-	}
-	copy(arr[:], data)
+import (
+	"github.com/ethereum/go-ethereum/common/hexutil"
+	"github.com/ethereum/go-ethereum/crypto"
+)
 
-	return arr
+func txHashToBytes32(txHash string) [32]byte {
+	var res [32]byte
+	hashBytes, err := hexutil.Decode(txHash)
+	if err != nil || len(hashBytes) != 32 {
+		bytes := crypto.Keccak256(([]byte)(txHash))
+		copy(res[:], bytes)
+		return res
+	}
+
+	copy(res[:], hashBytes)
+	return res
 }
