@@ -48,7 +48,7 @@ func (b *Broadcaster) Run(ctx context.Context) {
 
 			deposit, err := container.Run(ctx)
 			if err != nil {
-				b.logger.WithError(err).Error(fmt.Sprintf("error processing withdrawal for deposit"))
+				b.logger.WithError(err).Error(fmt.Sprintf("error processing withdrawal for deposit: %s", deposit.String()))
 				continue
 			}
 
