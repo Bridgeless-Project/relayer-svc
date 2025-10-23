@@ -34,7 +34,7 @@ func (b *broadcastContainer) Run(ctx context.Context) (*db.Deposit, error) {
 		return &b.deposit, errors.Wrap(err, "failed to validate deposit")
 	}
 
-	if !processed {
+	if processed {
 		err = b.dbQ.UpdateStatus(b.deposit.DepositIdentifier, internalTypes.WithdrawalStatus_WITHDRAWAL_STATUS_ALREADY_EXISTS)
 		if err != nil {
 			return &b.deposit, errors.Wrap(err, "failed to update deposit status")

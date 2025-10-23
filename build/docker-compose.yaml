@@ -26,7 +26,7 @@ services:
     ports:
       - "8080:8080"
     container_name: relayer-svc
-    entrypoint: sh -c "relayer-svc service migrate up && relayer-svc service run"
+    entrypoint: sh -c "relayer-svc service migrate up && relayer-svc service run -s 3221536"
     depends_on:
       db:
          condition: service_healthy

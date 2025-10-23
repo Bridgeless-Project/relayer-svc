@@ -63,9 +63,13 @@ func (c *Client) prepareTxOpts(ctx context.Context) (*bind.TransactOpts, error) 
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to generate transactor")
 	}
-	tx.Nonce = new(big.Int).SetUint64(c.nonce.Load())
+	nonce, err := c.chain.Rpc.NonceAt(ctx, c.walletAddress, nil)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to fetch operator account nonce")
+	}
+
+	tx.Nonce = big.NewInt(0).SetUint64(nonce)
 
 	tx.GasPrice = gasPrice
-
 	return tx, nil
 }

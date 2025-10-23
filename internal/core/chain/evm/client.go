@@ -4,7 +4,6 @@ import (
 	"context"
 	"math/big"
 	"strings"
-	"sync/atomic"
 
 	"github.com/Bridgeless-Project/relayer-svc/internal/core"
 	"github.com/Bridgeless-Project/relayer-svc/internal/core/chain"
@@ -31,7 +30,6 @@ type Client struct {
 	chain          Chain
 	contractClient *contracts.Bridge
 	walletAddress  common.Address
-	nonce          *atomic.Uint64
 }
 
 // NewBridgeClient creates a new bridge Client for the given chain.
@@ -56,19 +54,11 @@ func NewBridgeClient(chain Chain) *Client {
 	}
 
 	walletAddress := crypto.PubkeyToAddress(chain.OperatorPrivKey.PublicKey)
-	nonce, err := chain.Rpc.NonceAt(context.Background(), walletAddress, nil)
-	if err != nil {
-		panic(errors.Wrapf(err, "failed to get nonce for chain %s", chain.Id))
-	}
-
-	atomicNonce := atomic.Uint64{}
-	atomicNonce.Store(nonce)
 
 	return &Client{
 		chain:          chain,
 		contractClient: contractClient,
 		walletAddress:  walletAddress,
-		nonce:          &atomicNonce,
 	}
 }
 

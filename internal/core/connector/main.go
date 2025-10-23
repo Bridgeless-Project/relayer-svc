@@ -2,7 +2,6 @@ package connector
 
 import (
 	"context"
-	"fmt"
 	"sync"
 
 	coretypes "github.com/Bridgeless-Project/bridgeless-core/v12/types"
@@ -50,7 +49,6 @@ func NewConnector(account core.Account, conn *grpc.ClientConn, settings Settings
 		return nil, errors.Wrap(err, "failed to get account data")
 	}
 
-	fmt.Println("account seq: ", accountData.Sequence)
 	return &Connector{
 		transactor: txclient.NewServiceClient(conn),
 		txConfiger: authtx.NewTxConfig(
