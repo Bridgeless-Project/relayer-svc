@@ -16,6 +16,7 @@ type Config interface {
 	observer.ObserverConfigurator
 	chain.Chainer
 	connector.ConnectorConfigurer
+	Retrier
 }
 
 type config struct {
@@ -27,6 +28,7 @@ type config struct {
 	observer.ObserverConfigurator
 	chain.Chainer
 	connector.ConnectorConfigurer
+	Retrier
 }
 
 func New(getter kv.Getter) Config {
@@ -38,5 +40,6 @@ func New(getter kv.Getter) Config {
 		ObserverConfigurator: observer.NewConfigurator(getter),
 		Chainer:              chain.NewChainer(getter),
 		ConnectorConfigurer:  connector.NewConnectorConfigurer(getter),
+		Retrier:              NewRetrier(getter),
 	}
 }

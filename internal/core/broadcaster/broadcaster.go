@@ -4,7 +4,9 @@ import (
 	"context"
 	"fmt"
 	"sync"
+	"time"
 
+	"github.com/Bridgeless-Project/relayer-svc/internal/core"
 	"github.com/Bridgeless-Project/relayer-svc/internal/core/chain"
 	"github.com/Bridgeless-Project/relayer-svc/internal/core/connector"
 	"github.com/Bridgeless-Project/relayer-svc/internal/db"
@@ -21,15 +23,22 @@ type Broadcaster struct {
 	dbConn db.DepositsQ
 	logger *logan.Entry
 	cache  sync.Map
+
+	retries      uint
+	retryTimeout time.Duration
 }
 
-func New(coreConnector *connector.Connector, dbConn db.DepositsQ, clientsRepo chain.Repository, logger *logan.Entry) *Broadcaster {
+func New(coreConnector *connector.Connector, dbConn db.DepositsQ, clientsRepo chain.Repository,
+	retries uint, retryTimeout time.Duration, logger *logan.Entry) *Broadcaster {
 	return &Broadcaster{
 		coreConnector: coreConnector,
 		clientsRepo:   clientsRepo,
 		handlerChan:   make(chan *broadcastContainer),
 		dbConn:        dbConn,
 		logger:        logger,
+		cache:         sync.Map{},
+		retries:       retries,
+		retryTimeout:  retryTimeout,
 	}
 }
 
@@ -52,7 +61,11 @@ func (b *Broadcaster) Run(ctx context.Context) {
 				continue
 			}
 
-			err = b.coreConnector.UpdateTxInfo(ctx, *deposit)
+			updateTx := func() error {
+				return b.coreConnector.UpdateTxInfo(ctx, *deposit)
+			}
+
+			err = core.DoWithRetry(ctx, updateTx, b.retries, b.retryTimeout, b.logger)
 			if err != nil {
 				b.logger.WithError(err).Error(fmt.Sprintf("error updating withdrawal info for deposit: %s", deposit.String()))
 			}

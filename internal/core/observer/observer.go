@@ -4,6 +4,7 @@ import (
 	"context"
 	"time"
 
+	"github.com/Bridgeless-Project/relayer-svc/internal/core"
 	"github.com/Bridgeless-Project/relayer-svc/internal/core/broadcaster"
 	"github.com/Bridgeless-Project/relayer-svc/internal/core/chain"
 	"github.com/Bridgeless-Project/relayer-svc/internal/db"
@@ -16,7 +17,7 @@ import (
 
 type Observer struct {
 	client          *http.HTTP
-	retries         int64
+	retries         uint
 	retryTimeout    time.Duration
 	pollingInterval time.Duration
 	logger          *logan.Entry
@@ -28,7 +29,7 @@ type Observer struct {
 	broadcaster *broadcaster.Broadcaster
 }
 
-func New(client *http.HTTP, retries int64, retryTimeout, pollingInterval time.Duration, blocksDb db.BlocksQ,
+func New(client *http.HTTP, retries uint, retryTimeout, pollingInterval time.Duration, blocksDb db.BlocksQ,
 	depositsDb db.DepositsQ, brcst *broadcaster.Broadcaster, clientsRepo chain.Repository, logger *logan.Entry) *Observer {
 
 	return &Observer{
@@ -115,7 +116,7 @@ func (o *Observer) fetchDeposits(ctx context.Context, startHeight uint64) error 
 			}
 
 			for _, deposit := range deposits {
-				if err = o.broadcastDeposit(ctx, *deposit); err != nil {
+				if err = o.broadcastDeposit(*deposit); err != nil {
 					if errors.Is(err, skippedDeposit) {
 						continue
 					}
@@ -141,7 +142,7 @@ func (o *Observer) getCurrentHeight(ctx context.Context) (uint64, error) {
 		return nil
 	}
 
-	if err := o.doWithRetry(ctx, getCurrentHeight); err != nil {
+	if err := core.DoWithRetry(ctx, getCurrentHeight, o.retries, o.retryTimeout, o.logger); err != nil {
 		return 0, errors.Wrap(err, "failed to get current height")
 	}
 
@@ -161,7 +162,7 @@ func (o *Observer) fetchSubmitDepositEvents(ctx context.Context, height int64) (
 		return nil
 	}
 
-	if err := o.doWithRetry(ctx, getBlockResult); err != nil {
+	if err := core.DoWithRetry(ctx, getBlockResult, o.retries, o.retryTimeout, o.logger); err != nil {
 		return nil, errors.Wrap(err, "failed to get block results")
 	}
 
@@ -181,7 +182,7 @@ func (o *Observer) isProcessed(deposit db.Deposit) (bool, error) {
 	return false, nil
 }
 
-func (o *Observer) broadcastDeposit(ctx context.Context, deposit db.Deposit) error {
+func (o *Observer) broadcastDeposit(deposit db.Deposit) error {
 	processed, err := o.isProcessed(deposit)
 	if err != nil {
 		return errors.Wrap(err, "failed to check if deposit is processed")

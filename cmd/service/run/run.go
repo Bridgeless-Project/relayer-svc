@@ -68,10 +68,12 @@ func runService(ctx context.Context, cfg config.Config, catchUp bool, startHeigh
 		return errors.Wrap(err, "failed to create connector")
 	}
 
-	broadcaster := withdrawalBroadcaster.New(connector, dtb, clientsRepo, logger.WithField("component", "broadcaster"))
+	broadcaster := withdrawalBroadcaster.New(connector, dtb, clientsRepo, cfg.RetryAttempts(), cfg.RetryTimeout(),
+		logger.WithField("component", "broadcaster"))
 
-	observer := coreObserver.New(cfg.TendermintHttpClient(), cfg.ObserverRetries(), cfg.ObserverRetryTimeout(),
-		cfg.ObserverPollingInterval(), blocksQ, dtb, broadcaster, clientsRepo, logger)
+	observer := coreObserver.New(cfg.TendermintHttpClient(), cfg.RetryAttempts(), cfg.RetryTimeout(),
+		cfg.ObserverPollingInterval(), blocksQ, dtb, broadcaster, clientsRepo,
+		logger.WithField("component", "observer"))
 
 	apiServer := api.NewServer(cfg.ApiGrpcListener(), cfg.ApiHttpListener(), dtb, connector, broadcaster, clientsRepo,
 		logger.WithField("component", "api-server"))

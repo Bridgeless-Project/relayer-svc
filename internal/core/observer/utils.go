@@ -1,32 +1,15 @@
 package observer
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
 	"strconv"
 
 	bridgeTypes "github.com/Bridgeless-Project/bridgeless-core/v12/x/bridge/types"
 	"github.com/Bridgeless-Project/relayer-svc/internal/db"
-	"github.com/avast/retry-go"
 	"github.com/pkg/errors"
 	abciTypes "github.com/tendermint/tendermint/abci/types"
 )
-
-func (o *Observer) doWithRetry(ctx context.Context, function func() error) error {
-	err := retry.Do(
-		function,
-		retry.Attempts(uint(o.retries)),
-		retry.Delay(o.retryTimeout),
-		retry.DelayType(retry.BackOffDelay),
-		retry.Context(ctx),
-		retry.OnRetry(func(n uint, err error) {
-			o.logger.WithError(err).WithField("attempt", n).Info("retrying step")
-		}),
-	)
-
-	return errors.Wrap(err, "failed to execute function")
-}
 
 func parseDepositsFromTxResults(txs []*abciTypes.ResponseDeliverTx) ([]*db.Deposit, error) {
 	var deposits []*db.Deposit
