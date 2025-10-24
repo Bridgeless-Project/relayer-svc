@@ -47,7 +47,7 @@ func (b *broadcastContainer) Run(ctx context.Context) (*db.Deposit, error) {
 		b.logger.WithError(err).Error("failed to process deposit")
 
 		updateErr := b.dbQ.UpdateStatus(b.deposit.DepositIdentifier, internalTypes.WithdrawalStatus_WITHDRAWAL_STATUS_FAILED)
-		if err != nil {
+		if updateErr != nil {
 			b.logger.WithError(updateErr).Error("failed to update deposit status to FAILED")
 		}
 
