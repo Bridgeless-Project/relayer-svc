@@ -1,9 +1,8 @@
-package broadcaster
+package containers
 
 import (
 	"context"
 
-	"github.com/Bridgeless-Project/relayer-svc/internal/core"
 	"github.com/Bridgeless-Project/relayer-svc/internal/core/chain"
 	"github.com/Bridgeless-Project/relayer-svc/internal/db"
 	internalTypes "github.com/Bridgeless-Project/relayer-svc/internal/types"
@@ -19,13 +18,17 @@ type broadcastContainer struct {
 	logger *logan.Entry
 }
 
-func NewContainer(chainClient chain.Client, deposit db.Deposit, dbQ db.DepositsQ, logger *logan.Entry) *broadcastContainer {
+func NewBroadcastContainer(chainClient chain.Client, deposit db.Deposit, dbQ db.DepositsQ, logger *logan.Entry) WithdrawalContainer {
 	return &broadcastContainer{
 		chainClient: chainClient,
 		deposit:     deposit,
 		dbQ:         dbQ,
-		logger:      logger.WithField("container", deposit.String()),
+		logger:      logger.WithField("broadcast_container", deposit.String()),
 	}
+}
+
+func (b *broadcastContainer) ID() string {
+	return b.ID()
 }
 
 func (b *broadcastContainer) Run(ctx context.Context) (*db.Deposit, error) {
@@ -37,13 +40,18 @@ func (b *broadcastContainer) Run(ctx context.Context) (*db.Deposit, error) {
 	if processed {
 		err = b.dbQ.UpdateStatus(b.deposit.DepositIdentifier, internalTypes.WithdrawalStatus_WITHDRAWAL_STATUS_ALREADY_EXISTS)
 		if err != nil {
-			return &b.deposit, errors.Wrap(err, "failed to update deposit status")
+			return &b.deposit, errors.Wrap(err, "failed to update deposit status to already exists")
 		}
 
-		return &b.deposit, errAlreadyExists
+		return &b.deposit, internalTypes.ErrAlreadyExists
 	}
 
-	if err = b.process(ctx); err != nil {
+	if err = b.dbQ.UpdateStatus(b.deposit.DepositIdentifier,
+		internalTypes.WithdrawalStatus_WITHDRAWAL_STATUS_PROCESSING); err != nil {
+		return &b.deposit, errors.Wrap(err, "failed to update deposit status processing")
+	}
+
+	if err = executeWithdrawal(ctx, b.chainClient, b.deposit, b.logger); err != nil {
 		b.logger.WithError(err).Error("failed to process deposit")
 
 		updateErr := b.dbQ.UpdateStatus(b.deposit.DepositIdentifier, internalTypes.WithdrawalStatus_WITHDRAWAL_STATUS_FAILED)
@@ -55,11 +63,19 @@ func (b *broadcastContainer) Run(ctx context.Context) (*db.Deposit, error) {
 	}
 
 	if err = b.dbQ.UpdateWithdrawalTx(b.deposit.DepositIdentifier, *b.deposit.WithdrawalTxHash); err != nil {
+
+		updateErr := b.dbQ.UpdateStatus(b.deposit.DepositIdentifier, internalTypes.WithdrawalStatus_WITHDRAWAL_STATUS_FAILED)
+		if updateErr != nil {
+			b.logger.WithError(updateErr).Error("failed to update deposit status to FAILED")
+		}
+
 		return &b.deposit, errors.Wrap(err, "failed to update deposit withdrawal tx")
 	}
 
-	if err = b.dbQ.UpdateStatus(b.deposit.DepositIdentifier, internalTypes.WithdrawalStatus_WITHDRAWAL_STATUS_PROCESSED); err != nil {
-		return &b.deposit, errors.Wrap(err, "failed to update deposit withdrawal status")
+	b.deposit.WithdrawalStatus = internalTypes.WithdrawalStatus_WITHDRAWAL_STATUS_SUBMITTING_TO_CORE
+	err = b.dbQ.UpdateStatus(b.deposit.DepositIdentifier, internalTypes.WithdrawalStatus_WITHDRAWAL_STATUS_SUBMITTING_TO_CORE)
+	if err != nil {
+		return &b.deposit, errors.Wrap(err, "failed to update deposit withdrawal status to submit")
 	}
 
 	return &b.deposit, nil
@@ -72,26 +88,4 @@ func (b *broadcastContainer) isAlreadyProcessed(ctx context.Context) (bool, erro
 	}
 
 	return processed, nil
-}
-
-func (b *broadcastContainer) process(ctx context.Context) error {
-	var (
-		txHash string
-		err    error
-	)
-
-	switch b.deposit.WithdrawalToken {
-	case core.DefaultNativeTokenAddress:
-		txHash, err = b.chainClient.WithdrawNative(ctx, b.deposit)
-	default:
-		txHash, err = b.chainClient.WithdrawToken(ctx, b.deposit)
-	}
-	if err != nil {
-		return errors.Wrap(err, "error processing withdrawal")
-	}
-
-	b.logger.Infof("Processed deposit %s withdrawal hash %s", b.deposit.String(), txHash)
-	b.deposit.WithdrawalTxHash = &txHash
-
-	return nil
 }

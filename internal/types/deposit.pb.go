@@ -24,12 +24,13 @@ const (
 type WithdrawalStatus int32
 
 const (
-	WithdrawalStatus_WITHDRAWAL_STATUS_UNSPECIFIED    WithdrawalStatus = 0
-	WithdrawalStatus_WITHDRAWAL_STATUS_PENDING        WithdrawalStatus = 1
-	WithdrawalStatus_WITHDRAWAL_STATUS_PROCESSING     WithdrawalStatus = 2
-	WithdrawalStatus_WITHDRAWAL_STATUS_PROCESSED      WithdrawalStatus = 3
-	WithdrawalStatus_WITHDRAWAL_STATUS_FAILED         WithdrawalStatus = 4
-	WithdrawalStatus_WITHDRAWAL_STATUS_ALREADY_EXISTS WithdrawalStatus = 5
+	WithdrawalStatus_WITHDRAWAL_STATUS_UNSPECIFIED        WithdrawalStatus = 0
+	WithdrawalStatus_WITHDRAWAL_STATUS_PENDING            WithdrawalStatus = 1
+	WithdrawalStatus_WITHDRAWAL_STATUS_PROCESSING         WithdrawalStatus = 2
+	WithdrawalStatus_WITHDRAWAL_STATUS_SUBMITTING_TO_CORE WithdrawalStatus = 3
+	WithdrawalStatus_WITHDRAWAL_STATUS_PROCESSED          WithdrawalStatus = 4
+	WithdrawalStatus_WITHDRAWAL_STATUS_FAILED             WithdrawalStatus = 5
+	WithdrawalStatus_WITHDRAWAL_STATUS_ALREADY_EXISTS     WithdrawalStatus = 6
 )
 
 // Enum value maps for WithdrawalStatus.
@@ -38,17 +39,19 @@ var (
 		0: "WITHDRAWAL_STATUS_UNSPECIFIED",
 		1: "WITHDRAWAL_STATUS_PENDING",
 		2: "WITHDRAWAL_STATUS_PROCESSING",
-		3: "WITHDRAWAL_STATUS_PROCESSED",
-		4: "WITHDRAWAL_STATUS_FAILED",
-		5: "WITHDRAWAL_STATUS_ALREADY_EXISTS",
+		3: "WITHDRAWAL_STATUS_SUBMITTING_TO_CORE",
+		4: "WITHDRAWAL_STATUS_PROCESSED",
+		5: "WITHDRAWAL_STATUS_FAILED",
+		6: "WITHDRAWAL_STATUS_ALREADY_EXISTS",
 	}
 	WithdrawalStatus_value = map[string]int32{
-		"WITHDRAWAL_STATUS_UNSPECIFIED":    0,
-		"WITHDRAWAL_STATUS_PENDING":        1,
-		"WITHDRAWAL_STATUS_PROCESSING":     2,
-		"WITHDRAWAL_STATUS_PROCESSED":      3,
-		"WITHDRAWAL_STATUS_FAILED":         4,
-		"WITHDRAWAL_STATUS_ALREADY_EXISTS": 5,
+		"WITHDRAWAL_STATUS_UNSPECIFIED":        0,
+		"WITHDRAWAL_STATUS_PENDING":            1,
+		"WITHDRAWAL_STATUS_PROCESSING":         2,
+		"WITHDRAWAL_STATUS_SUBMITTING_TO_CORE": 3,
+		"WITHDRAWAL_STATUS_PROCESSED":          4,
+		"WITHDRAWAL_STATUS_FAILED":             5,
+		"WITHDRAWAL_STATUS_ALREADY_EXISTS":     6,
 	}
 )
 
@@ -336,14 +339,15 @@ const file_deposit_proto_rawDesc = "" +
 	" \x01(\tH\x01R\tsignature\x88\x01\x01B\t\n" +
 	"\a_senderB\f\n" +
 	"\n" +
-	"_signature*\xdb\x01\n" +
+	"_signature*\x85\x02\n" +
 	"\x10WithdrawalStatus\x12!\n" +
 	"\x1dWITHDRAWAL_STATUS_UNSPECIFIED\x10\x00\x12\x1d\n" +
 	"\x19WITHDRAWAL_STATUS_PENDING\x10\x01\x12 \n" +
-	"\x1cWITHDRAWAL_STATUS_PROCESSING\x10\x02\x12\x1f\n" +
-	"\x1bWITHDRAWAL_STATUS_PROCESSED\x10\x03\x12\x1c\n" +
-	"\x18WITHDRAWAL_STATUS_FAILED\x10\x04\x12$\n" +
-	" WITHDRAWAL_STATUS_ALREADY_EXISTS\x10\x05B:Z8github.com/Bridgeless-Project/relayer-svc/internal/typesb\x06proto3"
+	"\x1cWITHDRAWAL_STATUS_PROCESSING\x10\x02\x12(\n" +
+	"$WITHDRAWAL_STATUS_SUBMITTING_TO_CORE\x10\x03\x12\x1f\n" +
+	"\x1bWITHDRAWAL_STATUS_PROCESSED\x10\x04\x12\x1c\n" +
+	"\x18WITHDRAWAL_STATUS_FAILED\x10\x05\x12$\n" +
+	" WITHDRAWAL_STATUS_ALREADY_EXISTS\x10\x06B:Z8github.com/Bridgeless-Project/relayer-svc/internal/typesb\x06proto3"
 
 var (
 	file_deposit_proto_rawDescOnce sync.Once

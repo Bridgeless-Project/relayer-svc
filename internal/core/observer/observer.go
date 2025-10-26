@@ -54,9 +54,9 @@ func (o *Observer) Run(ctx context.Context, startHeight uint64, catchup bool) er
 		}
 
 		for _, deposit := range deposits {
-			err = o.broadcaster.Broadcast(deposit)
+			err = o.broadcaster.CatchUp(deposit)
 			if err != nil {
-				o.logger.Errorf("failed to broadcast deposit: %v", err)
+				o.logger.Errorf("failed to broadcast deposit to catchup deposit: %v", err)
 				continue
 			}
 		}

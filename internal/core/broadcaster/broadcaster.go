@@ -7,10 +7,12 @@ import (
 	"time"
 
 	"github.com/Bridgeless-Project/relayer-svc/internal/core"
+	"github.com/Bridgeless-Project/relayer-svc/internal/core/broadcaster/containers"
 	"github.com/Bridgeless-Project/relayer-svc/internal/core/chain"
 	"github.com/Bridgeless-Project/relayer-svc/internal/core/connector"
 	"github.com/Bridgeless-Project/relayer-svc/internal/db"
 	"github.com/Bridgeless-Project/relayer-svc/internal/types"
+	internalTypes "github.com/Bridgeless-Project/relayer-svc/internal/types"
 	"github.com/pkg/errors"
 	"gitlab.com/distributed_lab/logan/v3"
 )
@@ -18,7 +20,7 @@ import (
 type Broadcaster struct {
 	coreConnector *connector.Connector
 	clientsRepo   chain.Repository
-	handlerChan   chan *broadcastContainer
+	handlerChan   chan containers.WithdrawalContainer
 
 	dbConn db.DepositsQ
 	logger *logan.Entry
@@ -33,7 +35,7 @@ func New(coreConnector *connector.Connector, dbConn db.DepositsQ, clientsRepo ch
 	return &Broadcaster{
 		coreConnector: coreConnector,
 		clientsRepo:   clientsRepo,
-		handlerChan:   make(chan *broadcastContainer),
+		handlerChan:   make(chan containers.WithdrawalContainer),
 		dbConn:        dbConn,
 		logger:        logger,
 		cache:         sync.Map{},
@@ -57,7 +59,12 @@ func (b *Broadcaster) Run(ctx context.Context) {
 
 			deposit, err := container.Run(ctx)
 			if err != nil {
-				b.logger.WithError(err).Error(fmt.Sprintf("error processing withdrawal for deposit: %s", deposit.String()))
+				b.logger.WithError(err).Error(fmt.Sprintf("error processing withdrawal, container ID: %s",
+					container.ID()))
+				continue
+			}
+
+			if deposit == nil {
 				continue
 			}
 
@@ -67,9 +74,17 @@ func (b *Broadcaster) Run(ctx context.Context) {
 
 			err = core.DoWithRetry(ctx, updateTx, b.retries, b.retryTimeout, b.logger)
 			if err != nil {
-				b.logger.WithError(err).Error(fmt.Sprintf("error updating withdrawal info for deposit: %s", deposit.String()))
+				b.logger.WithError(err).Error(fmt.Sprintf("error updating withdrawal info for deposit: %s",
+					deposit.String()))
+				continue
 			}
 
+			err = b.dbConn.UpdateStatus(deposit.DepositIdentifier,
+				internalTypes.WithdrawalStatus_WITHDRAWAL_STATUS_PROCESSED)
+			if err != nil {
+				b.logger.WithError(err).Error(fmt.Sprintf("error updating withdrawal status to processed for deposit: %s",
+					deposit.String()))
+			}
 		}
 	}
 }
@@ -77,7 +92,7 @@ func (b *Broadcaster) Run(ctx context.Context) {
 func (b *Broadcaster) Broadcast(deposit db.Deposit) error {
 	_, ok := b.cache.Load(deposit.String())
 	if ok {
-		return errAlreadyExists
+		return internalTypes.ErrAlreadyExists
 	}
 
 	deposit.WithdrawalStatus = types.WithdrawalStatus_WITHDRAWAL_STATUS_PENDING
@@ -86,7 +101,7 @@ func (b *Broadcaster) Broadcast(deposit db.Deposit) error {
 		if errors.Is(err, db.ErrAlreadySubmitted) {
 			// Store duplicate deposit identifier to cache to avoid spamming db with get queries
 			b.cache.Store(deposit.String(), nil)
-			return errAlreadyExists
+			return internalTypes.ErrAlreadyExists
 		}
 
 		b.logger.WithError(err).Error("error inserting deposit")
@@ -102,7 +117,32 @@ func (b *Broadcaster) Broadcast(deposit db.Deposit) error {
 	}
 
 	go func() {
-		b.handlerChan <- NewContainer(chainClient, deposit, b.dbConn, b.logger)
+		b.handlerChan <- containers.NewBroadcastContainer(chainClient, deposit, b.dbConn, b.logger)
+	}()
+
+	return nil
+}
+
+func (b *Broadcaster) CatchUp(deposit db.Deposit) error {
+	_, ok := b.cache.Load(deposit.String())
+	if ok {
+		return internalTypes.ErrAlreadyExists
+	}
+
+	err := b.dbConn.UpdateStatus(deposit.DepositIdentifier, types.WithdrawalStatus_WITHDRAWAL_STATUS_PENDING)
+	if err != nil {
+		return errors.Wrap(err, fmt.Sprintf("failed to update statu to pending: %s", deposit.String()))
+	}
+	b.cache.Store(deposit.String(), nil)
+
+	chainClient, err := b.clientsRepo.Client(deposit.WithdrawalChainId)
+	if err != nil {
+		return errors.Wrap(err, fmt.Sprintf("failed to get the withdrawal chain client: %s", deposit.String()))
+	}
+
+	go func() {
+		b.handlerChan <- containers.NewCatchUpContainer(chainClient, deposit, b.dbConn,
+			b.coreConnector, b.logger)
 	}()
 
 	return nil
