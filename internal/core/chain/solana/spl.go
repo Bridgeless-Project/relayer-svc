@@ -44,7 +44,13 @@ func (c *Client) withdrawSPL(ctx context.Context, depositData db.Deposit) (strin
 
 	txHash, err := c.SendTx(ctx, withdrawInstruction.Build())
 	if err != nil {
+
+		if txHash != nil {
+			return txHash.String(), errors.Wrap(err, "failed to send withdrawal tx")
+		}
+
 		return "", errors.Wrap(err, "unable to send withdrawal token instruction")
 	}
+
 	return txHash.String(), nil
 }

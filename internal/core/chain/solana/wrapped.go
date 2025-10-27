@@ -39,6 +39,10 @@ func (c *Client) withdrawWrapped(ctx context.Context, depositData db.Deposit) (s
 	)
 	txHash, err := c.SendTx(ctx, withdrawInstruction.Build())
 	if err != nil {
+		if txHash != nil {
+			return txHash.String(), errors.Wrapf(err, "unable to send withdrawal wrapped instruction")
+		}
+
 		return "", errors.Wrap(err, "unable to send withdrawal wrapped instruction")
 	}
 

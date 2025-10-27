@@ -89,7 +89,7 @@ func (c *Client) SendTx(ctx context.Context, instruction solana.Instruction) (*s
 		return nil, errors.Wrap(err, "unable to create transaction")
 	}
 
-	_, err = tx.Sign(
+	sign, err := tx.Sign(
 		func(key solana.PublicKey) *solana.PrivateKey {
 			if c.chain.OperatorWallet.PublicKey().Equals(key) {
 				return &c.chain.OperatorWallet.PrivateKey
@@ -102,12 +102,12 @@ func (c *Client) SendTx(ctx context.Context, instruction solana.Instruction) (*s
 	}
 
 	// Send transaction, and wait for confirmation:
-	sig, err := c.chain.Rpc.SendTransaction(ctx, tx)
+	_, err = c.chain.Rpc.SendTransaction(ctx, tx)
 	if err != nil {
-		return nil, errors.Wrap(err, "unable to send transaction")
+		return &sign[0], errors.Wrap(err, "unable to send transaction")
 	}
 
-	return &sig, nil
+	return &sign[0], nil
 }
 
 func processSignature(signature string) ([64]uint8, uint8, error) {

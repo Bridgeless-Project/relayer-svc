@@ -30,7 +30,11 @@ func (c *Client) WithdrawNative(ctx context.Context, depositData db.Deposit) (st
 
 	hash, err := c.SendTx(ctx, withdrawInstruction.Build())
 	if err != nil {
-		return "", errors.Wrap(err, "unable to send withdrawal")
+		if hash != nil {
+			return hash.String(), errors.Wrapf(err, "unable to send native withdrawal tx")
+		}
+
+		return "", errors.Wrap(err, "unable to send native withdrawal tx")
 	}
 	return hash.String(), nil
 }
