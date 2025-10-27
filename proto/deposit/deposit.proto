@@ -23,6 +23,8 @@ message DepositIdentifier {
 message WithdrawalIdentifier {
   optional string tx_hash = 1;
   string chain_id = 2;
+  optional int64 withdrawal_core_block = 3;
+  optional int64 withdrawal_chain_block = 4;
 }
 
 message TransferData {

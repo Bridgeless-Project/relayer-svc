@@ -11,19 +11,21 @@ import (
 	"github.com/xssnick/tonutils-go/tvm/cell"
 )
 
-func (c *Client) WithdrawNative(ctx context.Context, depositData db.Deposit) (txHash string, err error) {
+func (c *Client) WithdrawNative(ctx context.Context, depositData db.Deposit) (string, int64, error) {
 	ctxt := c.Chain.Client.Client().StickyContext(ctx)
 	withdrawNativeCell, err := c.buildWithdrawNativeCell(depositData)
 	if err != nil {
-		return "", errors.Wrap(err, "failed to build withdraw native cell")
+		return "", 0, errors.Wrap(err, "failed to build withdraw native cell")
+	}
+
+	b, err := c.Chain.Client.GetMasterchainInfo(ctxt)
+	if err != nil {
+		return "", 0, errors.Wrap(err, "failed to get master chain info")
 	}
 
 	hash, err := c.withdraw(ctxt, withdrawNativeCell)
-	if err != nil {
-		return "", errors.Wrap(err, "failed to process withdrawal")
-	}
 
-	return hash, nil
+	return hash, int64(b.SeqNo), errors.Wrapf(err, "failed to withdraw native")
 }
 
 func (c *Client) buildWithdrawNativeCell(depositData db.Deposit) (*cell.Cell, error) {

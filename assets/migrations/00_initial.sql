@@ -15,6 +15,8 @@ CREATE TABLE IF NOT EXISTS deposits
     withdrawal_token    VARCHAR(100) NOT NULL,
     is_wrapped_token    BOOLEAN DEFAULT false,
     deposit_block       BIGINT      NOT NULL,
+    withdrawal_core_block       BIGINT,
+    withdrawal_chain_block BIGINT,
     signature           TEXT,
 
     withdrawal_status   int          NOT NULL,

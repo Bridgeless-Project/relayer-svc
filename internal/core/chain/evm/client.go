@@ -16,19 +16,10 @@ import (
 	"github.com/pkg/errors"
 )
 
-const (
-	EventDepositedNative = "DepositedNative"
-	EventDepositedERC20  = "DepositedERC20"
-)
-
-var events = []string{
-	EventDepositedNative,
-	EventDepositedERC20,
-}
-
 type Client struct {
 	chain          Chain
 	contractClient *contracts.Bridge
+	abi            *abi.ABI
 	walletAddress  common.Address
 }
 
@@ -37,15 +28,6 @@ func NewBridgeClient(chain Chain) *Client {
 	bridgeAbi, err := abi.JSON(strings.NewReader(contracts.BridgeMetaData.ABI))
 	if err != nil {
 		panic(errors.Wrap(err, "failed to parse bridge ABI"))
-	}
-
-	depositEvents := make([]abi.Event, len(events))
-	for i, event := range events {
-		depositEvent, ok := bridgeAbi.Events[event]
-		if !ok {
-			panic("wrong bridge ABI events")
-		}
-		depositEvents[i] = depositEvent
 	}
 
 	contractClient, err := contracts.NewBridge(chain.BridgeAddress, chain.Rpc)
@@ -57,6 +39,7 @@ func NewBridgeClient(chain Chain) *Client {
 
 	return &Client{
 		chain:          chain,
+		abi:            &bridgeAbi,
 		contractClient: contractClient,
 		walletAddress:  walletAddress,
 	}

@@ -22,8 +22,12 @@ func executeWithdrawal(ctx context.Context, chainClient chain.Client, deposit db
 	default:
 		txHash, err = chainClient.WithdrawToken(ctx, deposit)
 	}
-	if err != nil {
+	if err != nil && txHash == "" {
 		return errors.Wrap(err, "error processing withdrawal")
+	}
+
+	if err != nil {
+		logger.WithError(err).Error("error processing withdrawal")
 	}
 
 	logger.Infof("Processed deposit %s withdrawal hash %s", deposit.String(), txHash)

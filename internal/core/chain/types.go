@@ -8,19 +8,7 @@ import (
 )
 
 var (
-	ErrChainNotSupported      = errors.New("chain not supported")
-	ErrTxPending              = errors.New("transaction is pending")
-	ErrTxFailed               = errors.New("transaction failed")
-	ErrTxNotFound             = errors.New("transaction not found")
-	ErrDepositNotFound        = errors.New("deposit not found")
-	ErrTxNotConfirmed         = errors.New("transaction not confirmed")
-	ErrInvalidReceiverAddress = errors.New("invalid receiver address")
-	ErrInvalidDepositedAmount = errors.New("invalid deposited amount")
-	ErrInvalidScriptPubKey    = errors.New("invalid script pub key")
-	ErrInvalidTxNonce         = errors.New("invalid tx nonce")
-	ErrFailedUnpackLogs       = errors.New("failed to unpack logs")
-	ErrUnsupportedEvent       = errors.New("unsupported event")
-	ErrUnsupportedContract    = errors.New("unsupported contract")
+	ErrChainNotSupported = errors.New("chain not supported")
 )
 
 type Client interface {
@@ -30,8 +18,8 @@ type Client interface {
 	TransactionHashValid(hash string) bool
 	IsProcessed(ctx context.Context, depositData db.Deposit) (bool, error)
 
-	WithdrawNative(ctx context.Context, depositData db.Deposit) (string, error)
-	WithdrawToken(ctx context.Context, depositData db.Deposit) (string, error)
+	WithdrawNative(ctx context.Context, depositData db.Deposit) (string, int64, error)
+	WithdrawToken(ctx context.Context, depositData db.Deposit) (string, int64, error)
 }
 
 type Repository interface {

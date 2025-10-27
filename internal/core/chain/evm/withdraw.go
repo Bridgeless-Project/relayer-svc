@@ -2,6 +2,7 @@ package evm
 
 import (
 	"context"
+	"fmt"
 	"math/big"
 
 	"github.com/Bridgeless-Project/relayer-svc/internal/db"
@@ -10,22 +11,33 @@ import (
 	"github.com/pkg/errors"
 )
 
-func (c *Client) WithdrawNative(ctx context.Context, depositData db.Deposit) (txHash string, err error) {
+func (c *Client) WithdrawNative(ctx context.Context, depositData db.Deposit) (string, int64, error) {
 	transactOpts, err := c.prepareTxOpts(ctx)
 	if err != nil {
-		return "", errors.Wrap(err, "failed to prepare transact opts")
+		return "", 0, errors.Wrap(err, "failed to prepare transact opts")
 	}
 
 	amount, ok := new(big.Int).SetString(depositData.WithdrawalAmount, 10)
 	if !ok {
-		return "", errors.New("failed to parse withdrawal amount")
+		return "", 0, errors.New("failed to parse withdrawal amount")
 	}
 
 	receiverAdress := common.HexToAddress(depositData.Receiver)
 
 	signatureBytes, err := hexutil.Decode(depositData.Signature)
 	if err != nil {
-		return "", errors.Wrap(err, "failed to decode signature")
+		return "", 0, errors.Wrap(err, "failed to decode signature")
+	}
+
+	hash, err := c.getWithdrawalTxHash(withdrawNative, transactOpts, depositData)
+	if err != nil {
+		return "", 0, errors.Wrap(err, "failed to get withdrawal tx hash")
+	}
+
+	fmt.Println("PREDICTED HASH: ", hash)
+	block, err := c.chain.Rpc.BlockByNumber(ctx, nil)
+	if err != nil {
+		return "", 0, errors.Wrap(err, "failed to get block by number")
 	}
 
 	tx, err := c.contractClient.WithdrawNative(
@@ -36,30 +48,40 @@ func (c *Client) WithdrawNative(ctx context.Context, depositData db.Deposit) (tx
 		big.NewInt(depositData.TxNonce),
 		[][]byte{signatureBytes})
 	if err != nil {
-		return "", errors.Wrap(err, "failed to withdraw native")
+		return "", block.Number().Int64(), errors.Wrap(err, "failed to withdraw native")
 	}
 
-	return tx.Hash().Hex(), nil
+	return tx.Hash().Hex(), block.Number().Int64(), nil
 }
 
-func (c *Client) WithdrawToken(ctx context.Context, depositData db.Deposit) (txHash string, err error) {
+func (c *Client) WithdrawToken(ctx context.Context, depositData db.Deposit) (string, int64, error) {
 	transactOpts, err := c.prepareTxOpts(ctx)
 	if err != nil {
-		return "", errors.Wrap(err, "failed to prepare transact opts")
+		return "", 0, errors.Wrap(err, "failed to prepare transact opts")
 	}
 
 	amount, ok := new(big.Int).SetString(depositData.WithdrawalAmount, 10)
 	if !ok {
-		return "", errors.New("failed to parse withdrawal amount")
+		return "", 0, errors.New("failed to parse withdrawal amount")
 	}
 
 	receiverAdress := common.HexToAddress(depositData.Receiver)
 	signatureBytes, err := hexutil.Decode(depositData.Signature)
 	if err != nil {
-		return "", errors.Wrap(err, "failed to decode signature")
+		return "", 0, errors.Wrap(err, "failed to decode signature")
 	}
 
 	tokenAddr := common.HexToAddress(depositData.WithdrawalToken)
+
+	hash, err := c.getWithdrawalTxHash(withdrawERC20, transactOpts, depositData)
+	if err != nil {
+		return "", 0, errors.Wrap(err, "failed to get withdrawal tx hash")
+	}
+
+	block, err := c.chain.Rpc.BlockByNumber(ctx, nil)
+	if err != nil {
+		return "", 0, errors.Wrap(err, "failed to get block by number")
+	}
 
 	tx, err := c.contractClient.WithdrawERC20(
 		transactOpts,
@@ -71,8 +93,11 @@ func (c *Client) WithdrawToken(ctx context.Context, depositData db.Deposit) (txH
 		depositData.IsWrappedToken,
 		[][]byte{signatureBytes})
 	if err != nil {
-		return "", errors.Wrap(err, "failed to withdraw token")
+		return hash, block.Number().Int64(), errors.Wrap(err, "failed to withdraw token")
 	}
 
-	return tx.Hash().Hex(), nil
+	fmt.Println("GOT HASH: ", tx.Hash().Hex())
+	fmt.Println("PREDICTED: ", hash)
+
+	return tx.Hash().Hex(), block.Number().Int64(), nil
 }

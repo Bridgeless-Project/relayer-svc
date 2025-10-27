@@ -2,6 +2,7 @@ package broadcaster
 
 import (
 	"github.com/Bridgeless-Project/relayer-svc/internal/db"
+	internalTypes "github.com/Bridgeless-Project/relayer-svc/internal/types"
 	"github.com/pkg/errors"
 )
 
@@ -9,7 +10,7 @@ import (
 func (b *Broadcaster) checkExistence(deposit db.Deposit) error {
 	_, exists := b.cache.Load(deposit.String())
 	if exists {
-		return errAlreadyExists
+		return internalTypes.ErrAlreadyExists
 	}
 
 	depositData, err := b.dbConn.Get(deposit.DepositIdentifier)
@@ -18,7 +19,7 @@ func (b *Broadcaster) checkExistence(deposit db.Deposit) error {
 	}
 
 	if depositData != nil {
-		return errAlreadyExists
+		return internalTypes.ErrAlreadyExists
 	}
 
 	return nil

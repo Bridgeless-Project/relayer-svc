@@ -5,6 +5,7 @@ import (
 	"crypto/sha256"
 	"encoding/binary"
 	"encoding/json"
+	"fmt"
 	"math/big"
 	"strconv"
 
@@ -102,10 +103,13 @@ func (c *Client) SendTx(ctx context.Context, instruction solana.Instruction) (*s
 	}
 
 	// Send transaction, and wait for confirmation:
-	_, err = c.chain.Rpc.SendTransaction(ctx, tx)
+	signTx, err := c.chain.Rpc.SendTransaction(ctx, tx)
 	if err != nil {
 		return &sign[0], errors.Wrap(err, "unable to send transaction")
 	}
+
+	fmt.Println("GOT:", signTx)
+	fmt.Println("PREDICTED: ", sign)
 
 	return &sign[0], nil
 }

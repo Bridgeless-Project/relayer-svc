@@ -194,6 +194,14 @@
         },
         "chainId": {
           "type": "string"
+        },
+        "withdrawalCoreBlock": {
+          "type": "string",
+          "format": "int64"
+        },
+        "withdrawalChainBlock": {
+          "type": "string",
+          "format": "int64"
         }
       }
     },

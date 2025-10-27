@@ -143,11 +143,13 @@ func (x *DepositIdentifier) GetChainId() string {
 }
 
 type WithdrawalIdentifier struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	TxHash        *string                `protobuf:"bytes,1,opt,name=tx_hash,json=txHash,proto3,oneof" json:"tx_hash,omitempty"`
-	ChainId       string                 `protobuf:"bytes,2,opt,name=chain_id,json=chainId,proto3" json:"chain_id,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	state                protoimpl.MessageState `protogen:"open.v1"`
+	TxHash               *string                `protobuf:"bytes,1,opt,name=tx_hash,json=txHash,proto3,oneof" json:"tx_hash,omitempty"`
+	ChainId              string                 `protobuf:"bytes,2,opt,name=chain_id,json=chainId,proto3" json:"chain_id,omitempty"`
+	WithdrawalCoreBlock  *int64                 `protobuf:"varint,3,opt,name=withdrawal_core_block,json=withdrawalCoreBlock,proto3,oneof" json:"withdrawal_core_block,omitempty"`
+	WithdrawalChainBlock *int64                 `protobuf:"varint,4,opt,name=withdrawal_chain_block,json=withdrawalChainBlock,proto3,oneof" json:"withdrawal_chain_block,omitempty"`
+	unknownFields        protoimpl.UnknownFields
+	sizeCache            protoimpl.SizeCache
 }
 
 func (x *WithdrawalIdentifier) Reset() {
@@ -192,6 +194,20 @@ func (x *WithdrawalIdentifier) GetChainId() string {
 		return x.ChainId
 	}
 	return ""
+}
+
+func (x *WithdrawalIdentifier) GetWithdrawalCoreBlock() int64 {
+	if x != nil && x.WithdrawalCoreBlock != nil {
+		return *x.WithdrawalCoreBlock
+	}
+	return 0
+}
+
+func (x *WithdrawalIdentifier) GetWithdrawalChainBlock() int64 {
+	if x != nil && x.WithdrawalChainBlock != nil {
+		return *x.WithdrawalChainBlock
+	}
+	return 0
 }
 
 type TransferData struct {
@@ -319,12 +335,16 @@ const file_deposit_proto_rawDesc = "" +
 	"\x11DepositIdentifier\x12\x17\n" +
 	"\atx_hash\x18\x01 \x01(\tR\x06txHash\x12\x19\n" +
 	"\btx_nonce\x18\x02 \x01(\x03R\atxNonce\x12\x19\n" +
-	"\bchain_id\x18\x03 \x01(\tR\achainId\"[\n" +
+	"\bchain_id\x18\x03 \x01(\tR\achainId\"\x84\x02\n" +
 	"\x14WithdrawalIdentifier\x12\x1c\n" +
 	"\atx_hash\x18\x01 \x01(\tH\x00R\x06txHash\x88\x01\x01\x12\x19\n" +
-	"\bchain_id\x18\x02 \x01(\tR\achainIdB\n" +
+	"\bchain_id\x18\x02 \x01(\tR\achainId\x127\n" +
+	"\x15withdrawal_core_block\x18\x03 \x01(\x03H\x01R\x13withdrawalCoreBlock\x88\x01\x01\x129\n" +
+	"\x16withdrawal_chain_block\x18\x04 \x01(\x03H\x02R\x14withdrawalChainBlock\x88\x01\x01B\n" +
 	"\n" +
-	"\b_tx_hash\"\xa3\x03\n" +
+	"\b_tx_hashB\x18\n" +
+	"\x16_withdrawal_core_blockB\x19\n" +
+	"\x17_withdrawal_chain_block\"\xa3\x03\n" +
 	"\fTransferData\x12\x1b\n" +
 	"\x06sender\x18\x01 \x01(\tH\x00R\x06sender\x88\x01\x01\x12\x1a\n" +
 	"\breceiver\x18\x02 \x01(\tR\breceiver\x12%\n" +

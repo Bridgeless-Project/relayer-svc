@@ -12,10 +12,12 @@ import (
 )
 
 const (
-	depositsTable   = "deposits"
-	depositsTxHash  = "tx_hash"
-	depositsTxNonce = "tx_nonce"
-	depositsChainId = "chain_id"
+	depositsTable        = "deposits"
+	depositsTxHash       = "tx_hash"
+	depositsTxNonce      = "tx_nonce"
+	depositsChainId      = "chain_id"
+	withdrawalCoreBlock  = "withdrawal_core_block"
+	withdrawalChainBlock = "withdrawal_chain_block"
 
 	depositsDepositor        = "depositor"
 	depositsDepositAmount    = "deposit_amount"
@@ -41,6 +43,22 @@ const (
 type depositsQ struct {
 	db       *pgdb.DB
 	selector squirrel.SelectBuilder
+}
+
+func (d *depositsQ) UpdateWithdrawalCoreBlock(identifier db.DepositIdentifier, i int64) error {
+	query := squirrel.Update(depositsTable).
+		Set(withdrawalCoreBlock, i).
+		Where(identifierToPredicate(identifier))
+
+	return d.db.Exec(query)
+}
+
+func (d *depositsQ) UpdateWithdrawalChainBlock(identifier db.DepositIdentifier, i int64) error {
+	query := squirrel.Update(depositsTable).
+		Set(withdrawalChainBlock, i).
+		Where(identifierToPredicate(identifier))
+
+	return d.db.Exec(query)
 }
 
 func (d *depositsQ) GetDefault() (*db.Deposit, error) {

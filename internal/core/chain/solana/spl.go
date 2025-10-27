@@ -6,23 +6,24 @@ import (
 	"github.com/Bridgeless-Project/relayer-svc/internal/core/chain/solana/contract"
 	"github.com/Bridgeless-Project/relayer-svc/internal/db"
 	"github.com/gagliardetto/solana-go"
+	"github.com/gagliardetto/solana-go/rpc"
 	"github.com/pkg/errors"
 )
 
-func (c *Client) withdrawSPL(ctx context.Context, depositData db.Deposit) (string, error) {
+func (c *Client) withdrawSPL(ctx context.Context, depositData db.Deposit) (string, int64, error) {
 	withdrawalCtx, err := c.getWithdrawalContext(depositData)
 	if err != nil {
-		return "", errors.Wrap(err, "failed to get withdrawal context")
+		return "", 0, errors.Wrap(err, "failed to get withdrawal context")
 	}
 
 	vault, err := c.getSPLVault(ctx, depositData)
 	if err != nil {
-		return "", errors.Wrap(err, "failed to get withdrawal SPL vault")
+		return "", 0, errors.Wrap(err, "failed to get withdrawal SPL vault")
 	}
 
 	tokenInfo, err := c.chain.Rpc.GetAccountInfo(ctx, withdrawalCtx.Token)
 	if err != nil {
-		return "", errors.Wrap(err, "failed to get token info")
+		return "", 0, errors.Wrap(err, "failed to get token info")
 	}
 
 	withdrawInstruction := contract.NewWithdrawSplInstruction(
@@ -42,15 +43,24 @@ func (c *Client) withdrawSPL(ctx context.Context, depositData db.Deposit) (strin
 		tokenInfo.Value.Owner,
 	)
 
+	block, err := c.chain.Rpc.GetLatestBlockhash(ctx, rpc.CommitmentFinalized)
+	if err != nil {
+		return "", 0, errors.Wrap(err, "failed to get blockhash")
+	}
+
 	txHash, err := c.SendTx(ctx, withdrawInstruction.Build())
 	if err != nil {
 
 		if txHash != nil {
-			return txHash.String(), errors.Wrap(err, "failed to send withdrawal tx")
+			return txHash.String(),
+				int64(block.Value.LastValidBlockHeight),
+				errors.Wrap(err, "failed to send withdrawal tx")
 		}
 
-		return "", errors.Wrap(err, "unable to send withdrawal token instruction")
+		return "",
+			int64(block.Value.LastValidBlockHeight),
+			errors.Wrap(err, "unable to send withdrawal token instruction")
 	}
 
-	return txHash.String(), nil
+	return txHash.String(), int64(block.Value.LastValidBlockHeight), nil
 }

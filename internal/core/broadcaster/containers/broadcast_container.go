@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/Bridgeless-Project/relayer-svc/internal/core/chain"
+	"github.com/Bridgeless-Project/relayer-svc/internal/core/connector"
 	"github.com/Bridgeless-Project/relayer-svc/internal/db"
 	internalTypes "github.com/Bridgeless-Project/relayer-svc/internal/types"
 	"github.com/pkg/errors"
@@ -11,21 +12,24 @@ import (
 )
 
 type broadcastContainer struct {
-	id          string
-	dbQ         db.DepositsQ
-	deposit     db.Deposit
-	chainClient chain.Client
+	id            string
+	dbQ           db.DepositsQ
+	deposit       db.Deposit
+	chainClient   chain.Client
+	coreConnector *connector.Connector
 
 	logger *logan.Entry
 }
 
-func NewBroadcastContainer(chainClient chain.Client, deposit db.Deposit, dbQ db.DepositsQ, logger *logan.Entry) WithdrawalContainer {
+func NewBroadcastContainer(chainClient chain.Client, deposit db.Deposit, dbQ db.DepositsQ,
+	coreConnector *connector.Connector, logger *logan.Entry) WithdrawalContainer {
 	return &broadcastContainer{
-		id:          deposit.String(),
-		chainClient: chainClient,
-		deposit:     deposit,
-		dbQ:         dbQ,
-		logger:      logger.WithField("broadcast_container", deposit.String()),
+		id:            deposit.String(),
+		chainClient:   chainClient,
+		deposit:       deposit,
+		dbQ:           dbQ,
+		coreConnector: coreConnector,
+		logger:        logger.WithField("broadcast_container", deposit.String()),
 	}
 }
 
@@ -54,14 +58,24 @@ func (b *broadcastContainer) Run(ctx context.Context) (*db.Deposit, error) {
 	}
 
 	if err = executeWithdrawal(ctx, b.chainClient, b.deposit, b.logger); err != nil {
-		b.logger.WithError(err).Error("failed to process deposit")
+		b.logger.WithError(err).Error("failed to process withdrawal")
 
 		updateErr := b.dbQ.UpdateStatus(b.deposit.DepositIdentifier, internalTypes.WithdrawalStatus_WITHDRAWAL_STATUS_FAILED)
 		if updateErr != nil {
 			b.logger.WithError(updateErr).Error("failed to update deposit status to FAILED")
 		}
 
-		return nil, errors.Wrap(err, "failed to process deposit")
+		if b.deposit.WithdrawalTxHash == nil {
+			b.deposit.WithdrawalTxHash = ptr(defaultWithdrawalHash)
+		}
+
+		updateErr = b.dbQ.UpdateWithdrawalTx(b.deposit.DepositIdentifier, *b.deposit.WithdrawalTxHash)
+		if updateErr != nil {
+			b.logger.WithError(updateErr).Error("failed to update deposit withdrawal tx")
+		}
+
+		return &b.deposit, nil
+
 	}
 
 	if err = b.dbQ.UpdateWithdrawalTx(b.deposit.DepositIdentifier, *b.deposit.WithdrawalTxHash); err != nil {
