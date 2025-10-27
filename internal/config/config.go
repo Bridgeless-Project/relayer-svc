@@ -17,6 +17,7 @@ type Config interface {
 	chain.Chainer
 	connector.ConnectorConfigurer
 	Retrier
+	TendermintConnector
 }
 
 type config struct {
@@ -29,6 +30,7 @@ type config struct {
 	chain.Chainer
 	connector.ConnectorConfigurer
 	Retrier
+	TendermintConnector
 }
 
 func New(getter kv.Getter) Config {
@@ -41,5 +43,6 @@ func New(getter kv.Getter) Config {
 		Chainer:              chain.NewChainer(getter),
 		ConnectorConfigurer:  connector.NewConnectorConfigurer(getter),
 		Retrier:              NewRetrier(getter),
+		TendermintConnector:  NewTenderminter(getter),
 	}
 }

@@ -14,6 +14,7 @@ import (
 	"github.com/Bridgeless-Project/relayer-svc/internal/types"
 	internalTypes "github.com/Bridgeless-Project/relayer-svc/internal/types"
 	"github.com/pkg/errors"
+	"github.com/tendermint/tendermint/rpc/client/http"
 	"gitlab.com/distributed_lab/logan/v3"
 )
 
@@ -21,6 +22,8 @@ type Broadcaster struct {
 	coreConnector *connector.Connector
 	clientsRepo   chain.Repository
 	handlerChan   chan containers.WithdrawalContainer
+
+	tendermintClient *http.HTTP
 
 	dbConn db.DepositsQ
 	logger *logan.Entry
@@ -31,16 +34,17 @@ type Broadcaster struct {
 }
 
 func New(coreConnector *connector.Connector, dbConn db.DepositsQ, clientsRepo chain.Repository,
-	retries uint, retryTimeout time.Duration, logger *logan.Entry) *Broadcaster {
+	retries uint, retryTimeout time.Duration, tendermintClient *http.HTTP, logger *logan.Entry) *Broadcaster {
 	return &Broadcaster{
-		coreConnector: coreConnector,
-		clientsRepo:   clientsRepo,
-		handlerChan:   make(chan containers.WithdrawalContainer),
-		dbConn:        dbConn,
-		logger:        logger,
-		cache:         sync.Map{},
-		retries:       retries,
-		retryTimeout:  retryTimeout,
+		coreConnector:    coreConnector,
+		clientsRepo:      clientsRepo,
+		handlerChan:      make(chan containers.WithdrawalContainer),
+		dbConn:           dbConn,
+		logger:           logger,
+		cache:            sync.Map{},
+		retries:          retries,
+		tendermintClient: tendermintClient,
+		retryTimeout:     retryTimeout,
 	}
 }
 
@@ -61,6 +65,10 @@ func (b *Broadcaster) Run(ctx context.Context) {
 			if err != nil {
 				b.logger.WithError(err).Error(fmt.Sprintf("error processing withdrawal, container ID: %s",
 					container.ID()))
+				continue
+			}
+
+			if deposit == nil {
 				continue
 			}
 
@@ -113,7 +121,7 @@ func (b *Broadcaster) Broadcast(deposit db.Deposit) error {
 	}
 
 	go func() {
-		b.handlerChan <- containers.NewBroadcastContainer(chainClient, deposit, b.dbConn, b.logger)
+		b.handlerChan <- containers.NewBroadcastContainer(chainClient, deposit, b.dbConn, b.coreConnector, b.tendermintClient, b.logger)
 	}()
 
 	return nil
@@ -138,7 +146,7 @@ func (b *Broadcaster) CatchUp(deposit db.Deposit) error {
 
 	go func() {
 		b.handlerChan <- containers.NewCatchUpContainer(chainClient, deposit, b.dbConn,
-			b.coreConnector, b.logger)
+			b.coreConnector, b.tendermintClient, b.logger)
 	}()
 
 	return nil

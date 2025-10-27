@@ -69,7 +69,7 @@ func runService(ctx context.Context, cfg config.Config, catchUp bool, startHeigh
 	}
 
 	broadcaster := withdrawalBroadcaster.New(connector, dtb, clientsRepo, cfg.RetryAttempts(), cfg.RetryTimeout(),
-		logger.WithField("component", "broadcaster"))
+		cfg.TendermintHttpClient(), logger.WithField("component", "broadcaster"))
 
 	observer := coreObserver.New(cfg.TendermintHttpClient(), cfg.RetryAttempts(), cfg.RetryTimeout(),
 		cfg.ObserverPollingInterval(), blocksQ, dtb, broadcaster, clientsRepo,

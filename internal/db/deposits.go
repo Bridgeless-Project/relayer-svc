@@ -13,10 +13,8 @@ type DepositsQ interface {
 	Get(identifier DepositIdentifier) (*Deposit, error)
 	GetWithStatus(status types.WithdrawalStatus) ([]Deposit, error)
 
-	UpdateWithdrawalTx(DepositIdentifier, string) error
 	UpdateStatus(DepositIdentifier, types.WithdrawalStatus) error
-	UpdateWithdrawalCoreBlock(DepositIdentifier, int64) error
-	UpdateWithdrawalChainBlock(DepositIdentifier, int64) error
+	UpdateWithdrawalDetails(Deposit) error
 
 	Transaction(f func() error) error
 }

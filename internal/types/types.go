@@ -6,4 +6,5 @@ var (
 	ErrFailedToBroadcast   = errors.New("failed to broadcast transaction")
 	ErrAlreadyExists       = errors.New("transaction already exists")
 	ErrWithdrawalProcessed = errors.New("withdrawal already processed")
+	ErrAlreadySubmitted    = errors.New("withdrawal already submitted")
 )
