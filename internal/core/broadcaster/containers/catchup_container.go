@@ -12,6 +12,8 @@ import (
 )
 
 type catchupContainer struct {
+	id string
+
 	dbQ           db.DepositsQ
 	deposit       db.Deposit
 	chainClient   chain.Client
@@ -23,6 +25,7 @@ type catchupContainer struct {
 func NewCatchUpContainer(chainClient chain.Client, deposit db.Deposit, dbQ db.DepositsQ,
 	connector *connector.Connector, logger *logan.Entry) WithdrawalContainer {
 	return &catchupContainer{
+		id:            deposit.String(),
 		chainClient:   chainClient,
 		deposit:       deposit,
 		dbQ:           dbQ,
@@ -32,15 +35,15 @@ func NewCatchUpContainer(chainClient chain.Client, deposit db.Deposit, dbQ db.De
 }
 
 func (c *catchupContainer) ID() string {
-	return c.ID()
+	return c.id
 }
 
 func (c *catchupContainer) Run(ctx context.Context) (*db.Deposit, error) {
 	switch c.deposit.WithdrawalStatus {
 	case internalTypes.WithdrawalStatus_WITHDRAWAL_STATUS_PROCESSING:
-		return c.Process(ctx)
+		return c.ProcessWithdraw(ctx)
 	case internalTypes.WithdrawalStatus_WITHDRAWAL_STATUS_PENDING:
-		return c.Process(ctx)
+		return c.ProcessWithdraw(ctx)
 	case internalTypes.WithdrawalStatus_WITHDRAWAL_STATUS_SUBMITTING_TO_CORE:
 		submitted, err := c.isSubmitted(ctx)
 		if err != nil {
@@ -48,8 +51,7 @@ func (c *catchupContainer) Run(ctx context.Context) (*db.Deposit, error) {
 		}
 
 		if submitted {
-			c.logger.Warnf("deposit: %s is already submitted", c.deposit.String())
-			return nil, nil
+			err = c.dbQ.UpdateStatus(c.deposit.DepositIdentifier, internalTypes.WithdrawalStatus_WITHDRAWAL_STATUS_PROCESSED)
 		}
 
 		return &c.deposit, nil
@@ -58,7 +60,12 @@ func (c *catchupContainer) Run(ctx context.Context) (*db.Deposit, error) {
 	return &c.deposit, nil
 }
 
-func (c *catchupContainer) Process(ctx context.Context) (*db.Deposit, error) {
+func (c *catchupContainer) ProcessWithdraw(ctx context.Context) (*db.Deposit, error) {
+	if err := c.dbQ.UpdateStatus(c.deposit.DepositIdentifier,
+		internalTypes.WithdrawalStatus_WITHDRAWAL_STATUS_PROCESSING); err != nil {
+		return nil, errors.Wrap(err, "failed to update deposit status processing")
+	}
+
 	processed, err := c.chainClient.IsProcessed(ctx, c.deposit)
 	if err != nil {
 		return nil, errors.Wrap(err, "error checking if deposit exists on chain")
@@ -67,8 +74,12 @@ func (c *catchupContainer) Process(ctx context.Context) (*db.Deposit, error) {
 	// TODO: Investigate the ways to retrieve the hash of processed tx
 	// if deposit is already processed just skip it for now
 	if processed {
-		c.logger.Warnf("deposit %s is already processed", c.deposit.String())
-		return nil, nil
+		err = c.dbQ.UpdateStatus(c.deposit.DepositIdentifier, internalTypes.WithdrawalStatus_WITHDRAWAL_STATUS_PROCESSED)
+		if err != nil {
+			c.logger.WithError(err).Error("failed to update deposit status to processed")
+		}
+
+		return nil, internalTypes.ErrWithdrawalProcessed
 	}
 
 	err = executeWithdrawal(ctx, c.chainClient, c.deposit, c.logger)
@@ -83,7 +94,24 @@ func (c *catchupContainer) Process(ctx context.Context) (*db.Deposit, error) {
 		return nil, errors.Wrap(err, "error checking if deposit exists on chain")
 	}
 
-	return nil, nil
+	if err = c.dbQ.UpdateWithdrawalTx(c.deposit.DepositIdentifier, *c.deposit.WithdrawalTxHash); err != nil {
+
+		updateErr := c.dbQ.UpdateStatus(c.deposit.DepositIdentifier, internalTypes.WithdrawalStatus_WITHDRAWAL_STATUS_FAILED)
+		if updateErr != nil {
+			c.logger.WithError(updateErr).Error("failed to update deposit status to FAILED")
+		}
+
+		return &c.deposit, errors.Wrap(err, "failed to update deposit withdrawal tx")
+	}
+
+	c.deposit.WithdrawalStatus = internalTypes.WithdrawalStatus_WITHDRAWAL_STATUS_SUBMITTING_TO_CORE
+	err = c.dbQ.UpdateStatus(c.deposit.DepositIdentifier, internalTypes.WithdrawalStatus_WITHDRAWAL_STATUS_SUBMITTING_TO_CORE)
+	if err != nil {
+		return &c.deposit, errors.Wrap(err, "failed to update deposit withdrawal status to submit")
+	}
+
+	return &c.deposit, nil
+
 }
 
 func (c *catchupContainer) isSubmitted(ctx context.Context) (bool, error) {

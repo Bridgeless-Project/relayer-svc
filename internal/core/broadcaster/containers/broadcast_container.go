@@ -11,6 +11,7 @@ import (
 )
 
 type broadcastContainer struct {
+	id          string
 	dbQ         db.DepositsQ
 	deposit     db.Deposit
 	chainClient chain.Client
@@ -20,6 +21,7 @@ type broadcastContainer struct {
 
 func NewBroadcastContainer(chainClient chain.Client, deposit db.Deposit, dbQ db.DepositsQ, logger *logan.Entry) WithdrawalContainer {
 	return &broadcastContainer{
+		id:          deposit.String(),
 		chainClient: chainClient,
 		deposit:     deposit,
 		dbQ:         dbQ,
@@ -28,7 +30,7 @@ func NewBroadcastContainer(chainClient chain.Client, deposit db.Deposit, dbQ db.
 }
 
 func (b *broadcastContainer) ID() string {
-	return b.ID()
+	return b.id
 }
 
 func (b *broadcastContainer) Run(ctx context.Context) (*db.Deposit, error) {
@@ -43,12 +45,12 @@ func (b *broadcastContainer) Run(ctx context.Context) (*db.Deposit, error) {
 			return &b.deposit, errors.Wrap(err, "failed to update deposit status to already exists")
 		}
 
-		return &b.deposit, internalTypes.ErrAlreadyExists
+		return nil, internalTypes.ErrAlreadyExists
 	}
 
 	if err = b.dbQ.UpdateStatus(b.deposit.DepositIdentifier,
 		internalTypes.WithdrawalStatus_WITHDRAWAL_STATUS_PROCESSING); err != nil {
-		return &b.deposit, errors.Wrap(err, "failed to update deposit status processing")
+		return nil, errors.Wrap(err, "failed to update deposit status processing")
 	}
 
 	if err = executeWithdrawal(ctx, b.chainClient, b.deposit, b.logger); err != nil {
@@ -59,7 +61,7 @@ func (b *broadcastContainer) Run(ctx context.Context) (*db.Deposit, error) {
 			b.logger.WithError(updateErr).Error("failed to update deposit status to FAILED")
 		}
 
-		return &b.deposit, errors.Wrap(err, "failed to process deposit")
+		return nil, errors.Wrap(err, "failed to process deposit")
 	}
 
 	if err = b.dbQ.UpdateWithdrawalTx(b.deposit.DepositIdentifier, *b.deposit.WithdrawalTxHash); err != nil {
@@ -69,13 +71,13 @@ func (b *broadcastContainer) Run(ctx context.Context) (*db.Deposit, error) {
 			b.logger.WithError(updateErr).Error("failed to update deposit status to FAILED")
 		}
 
-		return &b.deposit, errors.Wrap(err, "failed to update deposit withdrawal tx")
+		return nil, errors.Wrap(err, "failed to update deposit withdrawal tx")
 	}
 
 	b.deposit.WithdrawalStatus = internalTypes.WithdrawalStatus_WITHDRAWAL_STATUS_SUBMITTING_TO_CORE
 	err = b.dbQ.UpdateStatus(b.deposit.DepositIdentifier, internalTypes.WithdrawalStatus_WITHDRAWAL_STATUS_SUBMITTING_TO_CORE)
 	if err != nil {
-		return &b.deposit, errors.Wrap(err, "failed to update deposit withdrawal status to submit")
+		return nil, errors.Wrap(err, "failed to update deposit withdrawal status to submit")
 	}
 
 	return &b.deposit, nil

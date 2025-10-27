@@ -64,10 +64,6 @@ func (b *Broadcaster) Run(ctx context.Context) {
 				continue
 			}
 
-			if deposit == nil {
-				continue
-			}
-
 			updateTx := func() error {
 				return b.coreConnector.UpdateTxInfo(ctx, *deposit)
 			}
