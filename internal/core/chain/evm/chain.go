@@ -6,6 +6,7 @@ import (
 	"math/big"
 
 	"github.com/Bridgeless-Project/relayer-svc/internal/core/chain"
+	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/ethclient"
@@ -48,7 +49,7 @@ func FromChain(c chain.Chain) Chain {
 	return chain
 }
 
-func (c *Client) prepareTxOpts(ctx context.Context) (*bind.TransactOpts, error) {
+func (c *Client) prepareTxOpts(ctx context.Context, data []byte) (*bind.TransactOpts, error) {
 	gasPrice, err := c.chain.Rpc.SuggestGasPrice(ctx)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to fetch gas price")
@@ -71,5 +72,19 @@ func (c *Client) prepareTxOpts(ctx context.Context) (*bind.TransactOpts, error) 
 	tx.Nonce = big.NewInt(0).SetUint64(nonce)
 
 	tx.GasPrice = gasPrice
+
+	callMsg := ethereum.CallMsg{
+		From:     c.walletAddress,
+		To:       &c.chain.BridgeAddress,
+		GasPrice: gasPrice,
+		Data:     data,
+	}
+
+	gasLimit, err := c.chain.Rpc.EstimateGas(ctx, callMsg)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to estimate gas limit")
+	}
+
+	tx.GasLimit = gasLimit
 	return tx, nil
 }

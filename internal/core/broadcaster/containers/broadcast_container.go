@@ -60,7 +60,7 @@ func (b *broadcastContainer) Run(ctx context.Context) (*db.Deposit, error) {
 		return nil, errors.Wrap(err, "failed to update deposit status processing")
 	}
 
-	b.deposit, err = executeWithdrawal(ctx, b.chainClient, *b.deposit, b.tendermintClient, b.logger)
+	err = executeWithdrawal(ctx, b.chainClient, b.deposit, b.tendermintClient, b.logger)
 	if err != nil {
 		updateErr := b.dbQ.UpdateStatus(b.deposit.DepositIdentifier, internalTypes.WithdrawalStatus_WITHDRAWAL_STATUS_FAILED)
 		if updateErr != nil {

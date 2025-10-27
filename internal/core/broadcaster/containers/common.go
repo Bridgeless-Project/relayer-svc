@@ -11,7 +11,7 @@ import (
 	"gitlab.com/distributed_lab/logan/v3"
 )
 
-func executeWithdrawal(ctx context.Context, chainClient chain.Client, deposit db.Deposit, tendermintClient *http.HTTP, logger *logan.Entry) (*db.Deposit, error) {
+func executeWithdrawal(ctx context.Context, chainClient chain.Client, deposit *db.Deposit, tendermintClient *http.HTTP, logger *logan.Entry) error {
 	var (
 		txHash      string
 		err         error
@@ -20,12 +20,12 @@ func executeWithdrawal(ctx context.Context, chainClient chain.Client, deposit db
 
 	switch deposit.WithdrawalToken {
 	case core.DefaultNativeTokenAddress:
-		txHash, blockHeight, err = chainClient.WithdrawNative(ctx, deposit)
+		txHash, blockHeight, err = chainClient.WithdrawNative(ctx, *deposit)
 	default:
-		txHash, blockHeight, err = chainClient.WithdrawToken(ctx, deposit)
+		txHash, blockHeight, err = chainClient.WithdrawToken(ctx, *deposit)
 	}
 	if err != nil && txHash == "" {
-		return nil, errors.Wrap(err, "error processing withdrawal")
+		return errors.Wrap(err, "error processing withdrawal")
 	}
 
 	if err != nil {
@@ -38,10 +38,10 @@ func executeWithdrawal(ctx context.Context, chainClient chain.Client, deposit db
 
 	abci, err := tendermintClient.ABCIInfo(ctx)
 	if err != nil {
-		return &deposit, errors.Wrap(err, "error getting ABCI info")
+		return errors.Wrap(err, "error getting ABCI info")
 	}
 
 	deposit.WithdrawalCoreBlock = abci.Response.LastBlockHeight
 
-	return &deposit, nil
+	return nil
 }

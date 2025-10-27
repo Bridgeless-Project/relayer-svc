@@ -91,7 +91,7 @@ func (c *catchupContainer) ProcessWithdraw(ctx context.Context) (*db.Deposit, er
 		return nil, internalTypes.ErrWithdrawalProcessed
 	}
 
-	c.deposit, err = executeWithdrawal(ctx, c.chainClient, *c.deposit, c.tendermintClient, c.logger)
+	err = executeWithdrawal(ctx, c.chainClient, c.deposit, c.tendermintClient, c.logger)
 	if err != nil {
 
 		updateErr := c.dbQ.UpdateStatus(c.deposit.DepositIdentifier,

@@ -9,7 +9,6 @@ import (
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
-	"github.com/ethereum/go-ethereum/params"
 	"github.com/pkg/errors"
 )
 
@@ -26,30 +25,17 @@ func txHashToBytes32(txHash string) [32]byte {
 	return res
 }
 
-func (c *Client) getWithdrawalTxHash(method string, transactOpts *bind.TransactOpts, deposit db.Deposit) (string, error) {
-	chainId, ok := big.NewInt(0).SetString(deposit.ChainId, 10)
-	if !ok {
-		return "", errors.New("failed to set chain id to big")
-	}
-
-	data, err := c.getWithdrawalTxData(method, deposit)
-	if err != nil {
-		return "", errors.Wrap(err, "failed to get withdrawal tx data")
-	}
-
-	tx := types.NewTx(&types.DynamicFeeTx{
-		ChainID:   chainId,
-		Nonce:     transactOpts.Nonce.Uint64(),
-		GasTipCap: transactOpts.GasTipCap,
-		GasFeeCap: transactOpts.GasFeeCap,
-		Gas:       transactOpts.GasLimit,
-		To:        &c.chain.BridgeAddress,
-		Value:     transactOpts.Value,
-		Data:      data,
+func (c *Client) getWithdrawalTxHash(transactOpts *bind.TransactOpts, data []byte) (string, error) {
+	tx := types.NewTx(&types.LegacyTx{
+		Nonce:    transactOpts.Nonce.Uint64(),
+		Gas:      transactOpts.GasLimit,
+		To:       &c.chain.BridgeAddress,
+		Value:    transactOpts.Value,
+		GasPrice: transactOpts.GasPrice,
+		Data:     data,
 	})
 
-	signer := types.LatestSigner(&params.ChainConfig{ChainID: chainId})
-	signTx, err := types.SignTx(tx, signer, c.chain.OperatorPrivKey)
+	signTx, err := transactOpts.Signer(transactOpts.From, tx)
 	if err != nil {
 		return "", errors.Wrap(err, "failed to sign transaction")
 	}

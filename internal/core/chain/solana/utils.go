@@ -108,10 +108,7 @@ func (c *Client) SendTx(ctx context.Context, instruction solana.Instruction) (*s
 		return &sign[0], errors.Wrap(err, "unable to send transaction")
 	}
 
-	fmt.Println("GOT:", signTx)
-	fmt.Println("PREDICTED: ", sign)
-
-	return &sign[0], nil
+	return &signTx, nil
 }
 
 func processSignature(signature string) ([64]uint8, uint8, error) {
