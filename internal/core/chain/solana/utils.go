@@ -283,3 +283,25 @@ func (c *Client) getSignHash(data db.Deposit) ([]byte, error) {
 	hash := sha256.Sum256(buffer)
 	return hash[:], nil
 }
+
+func (c *Client) getLatestBlockWithRetry(ctx context.Context) (int64, error) {
+	var (
+		block *rpc.GetLatestBlockhashResult
+		err   error
+	)
+
+	getBlock := func() error {
+		block, err = c.chain.Rpc.GetLatestBlockhash(ctx, rpc.CommitmentFinalized)
+		if err != nil {
+			return err
+		}
+
+		return nil
+	}
+
+	if err = core.DoWithRetry(ctx, getBlock); err != nil {
+		return 0, errors.Wrap(err, "failed to get block")
+	}
+
+	return int64(block.Value.LastValidBlockHeight), nil
+}

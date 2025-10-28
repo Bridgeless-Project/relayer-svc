@@ -12,6 +12,7 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/pkg/errors"
 )
@@ -73,4 +74,26 @@ func (c *Client) IsProcessed(ctx context.Context, depositData db.Deposit) (bool,
 	}
 
 	return used, nil
+}
+
+func (c *Client) getBlockWithRetry(ctx context.Context) (int64, error) {
+	var (
+		header *types.Header
+		err    error
+	)
+	getBlock := func() error {
+		header, err = c.chain.Rpc.HeaderByNumber(ctx, nil)
+		if err != nil {
+			return errors.Wrap(err, "failed to get block header")
+		}
+
+		return nil
+	}
+
+	err = core.DoWithRetry(ctx, getBlock)
+	if err != nil {
+		return 0, errors.Wrap(err, "failed to get block")
+	}
+
+	return header.Number.Int64(), nil
 }

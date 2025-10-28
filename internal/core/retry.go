@@ -9,16 +9,21 @@ import (
 	"gitlab.com/distributed_lab/logan/v3"
 )
 
-func DoWithRetry(ctx context.Context, function func() error,
-	retries uint, retryTimeout time.Duration, logger *logan.Entry) error {
+var (
+	Retries      uint
+	RetryTimeout time.Duration
+	Logger       *logan.Entry
+)
+
+func DoWithRetry(ctx context.Context, function func() error) error {
 	err := retry.Do(
 		function,
-		retry.Attempts(retries),
-		retry.Delay(retryTimeout),
+		retry.Attempts(Retries),
+		retry.Delay(RetryTimeout),
 		retry.DelayType(retry.BackOffDelay),
 		retry.Context(ctx),
 		retry.OnRetry(func(n uint, err error) {
-			logger.WithError(err).WithField("attempt", n+1).Info("retrying step")
+			Logger.WithError(err).WithField("attempt", n+1).Info("retrying step")
 		}),
 	)
 

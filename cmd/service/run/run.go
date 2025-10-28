@@ -9,6 +9,7 @@ import (
 	"github.com/Bridgeless-Project/relayer-svc/cmd/utils"
 	"github.com/Bridgeless-Project/relayer-svc/internal/api"
 	"github.com/Bridgeless-Project/relayer-svc/internal/config"
+	"github.com/Bridgeless-Project/relayer-svc/internal/core"
 	withdrawalBroadcaster "github.com/Bridgeless-Project/relayer-svc/internal/core/broadcaster"
 	"github.com/Bridgeless-Project/relayer-svc/internal/core/chain/repository"
 	coreConnector "github.com/Bridgeless-Project/relayer-svc/internal/core/connector"
@@ -61,6 +62,7 @@ func runService(ctx context.Context, cfg config.Config, catchUp bool, startHeigh
 	clientsRepo := repository.NewClientsRepository(clients)
 	dtb := pg.NewDepositsQ(cfg.DB())
 	blocksQ := pg.NewBlocksQ(cfg.DB())
+	core.Logger = logger.WithField("component", "retrier")
 
 	connector, err := coreConnector.NewConnector(cfg.CoreConnectorConfig().Account, cfg.CoreConnectorConfig().Connection,
 		cfg.CoreConnectorConfig().Settings)

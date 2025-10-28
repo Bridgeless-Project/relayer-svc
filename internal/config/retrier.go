@@ -3,6 +3,7 @@ package config
 import (
 	"time"
 
+	"github.com/Bridgeless-Project/relayer-svc/internal/core"
 	"github.com/pkg/errors"
 	"gitlab.com/distributed_lab/figure/v3"
 	"gitlab.com/distributed_lab/kit/comfig"
@@ -48,6 +49,10 @@ func (r *retrier) config() *retrierCfg {
 		if err := figure.Out(&cfg).From(kv.MustGetStringMap(r.getter, retrierKey)).Please(); err != nil {
 			panic(errors.Wrap(err, "failed to figure out retry config"))
 		}
+
+		core.Retries = cfg.Retries
+		core.RetryTimeout = time.Duration(cfg.RetryTimeout) * time.Second
+
 		return &cfg
 	}).(*retrierCfg)
 }

@@ -159,7 +159,6 @@ func (d *depositsQ) UpdateWithdrawalDetails(deposit db.Deposit) error {
 		Set(depositsWithdrawalTxHash, deposit.WithdrawalTxHash).
 		Set(withdrawalChainBlock, deposit.WithdrawalChainBlock).
 		Set(withdrawalCoreBlock, deposit.WithdrawalCoreBlock).
-		Set(depositsWithdrawalStatus, types.WithdrawalStatus_WITHDRAWAL_STATUS_PROCESSED).
 		Where(identifierToPredicate(deposit.DepositIdentifier))
 
 	return d.db.Exec(query)

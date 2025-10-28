@@ -38,9 +38,9 @@ func (c *Client) WithdrawNative(ctx context.Context, depositData db.Deposit) (st
 		return "", 0, errors.Wrap(err, "failed to get withdrawal tx hash")
 	}
 
-	header, err := c.chain.Rpc.HeaderByNumber(ctx, nil)
+	block, err := c.getBlockWithRetry(ctx)
 	if err != nil {
-		return "", 0, errors.Wrap(err, "failed to get header by number")
+		return "", 0, errors.Wrap(err, "failed to get block")
 	}
 
 	tx, err := c.contractClient.WithdrawNative(
@@ -51,10 +51,10 @@ func (c *Client) WithdrawNative(ctx context.Context, depositData db.Deposit) (st
 		big.NewInt(depositData.TxNonce),
 		[][]byte{signatureBytes})
 	if err != nil {
-		return hash, header.Number.Int64(), errors.Wrap(err, "failed to withdraw native")
+		return hash, block, errors.Wrap(err, "failed to withdraw native")
 	}
 
-	return tx.Hash().Hex(), header.Number.Int64(), nil
+	return tx.Hash().Hex(), block, nil
 }
 
 func (c *Client) WithdrawToken(ctx context.Context, depositData db.Deposit) (string, int64, error) {
@@ -86,9 +86,9 @@ func (c *Client) WithdrawToken(ctx context.Context, depositData db.Deposit) (str
 		return "", 0, errors.Wrap(err, "failed to get withdrawal tx hash")
 	}
 
-	header, err := c.chain.Rpc.HeaderByNumber(ctx, nil)
+	block, err := c.getBlockWithRetry(ctx)
 	if err != nil {
-		return "", 0, errors.Wrap(err, "failed to get header by number")
+		return "", 0, errors.Wrap(err, "failed to get block")
 	}
 
 	tx, err := c.contractClient.WithdrawERC20(
@@ -101,8 +101,8 @@ func (c *Client) WithdrawToken(ctx context.Context, depositData db.Deposit) (str
 		depositData.IsWrappedToken,
 		[][]byte{signatureBytes})
 	if err != nil {
-		return hash, header.Number.Int64(), errors.Wrap(err, "failed to withdraw token")
+		return hash, block, errors.Wrap(err, "failed to withdraw token")
 	}
 
-	return tx.Hash().Hex(), header.Number.Int64(), nil
+	return tx.Hash().Hex(), block, nil
 }

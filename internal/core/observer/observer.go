@@ -141,7 +141,7 @@ func (o *Observer) getCurrentHeight(ctx context.Context) (uint64, error) {
 		return nil
 	}
 
-	if err := core.DoWithRetry(ctx, getCurrentHeight, o.retries, o.retryTimeout, o.logger); err != nil {
+	if err := core.DoWithRetry(ctx, getCurrentHeight); err != nil {
 		return 0, errors.Wrap(err, "failed to get current height")
 	}
 
@@ -161,7 +161,7 @@ func (o *Observer) fetchSubmitDepositEvents(ctx context.Context, height int64) (
 		return nil
 	}
 
-	if err := core.DoWithRetry(ctx, getBlockResult, o.retries, o.retryTimeout, o.logger); err != nil {
+	if err := core.DoWithRetry(ctx, getBlockResult); err != nil {
 		return nil, errors.Wrap(err, "failed to get block results")
 	}
 

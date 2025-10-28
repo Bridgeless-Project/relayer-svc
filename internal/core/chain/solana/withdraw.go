@@ -6,7 +6,6 @@ import (
 	"github.com/Bridgeless-Project/relayer-svc/internal/core/chain/solana/contract"
 	"github.com/Bridgeless-Project/relayer-svc/internal/db"
 	"github.com/gagliardetto/solana-go"
-	"github.com/gagliardetto/solana-go/rpc"
 	"github.com/pkg/errors"
 )
 
@@ -29,20 +28,20 @@ func (c *Client) WithdrawNative(ctx context.Context, depositData db.Deposit) (st
 		c.chain.OperatorWallet.PublicKey(),
 		solana.SystemProgramID)
 
-	block, err := c.chain.Rpc.GetLatestBlockhash(ctx, rpc.CommitmentFinalized)
+	blockNumber, err := c.getLatestBlockWithRetry(ctx)
 	if err != nil {
-		return "", 0, errors.Wrap(err, "failed to get blockhash")
+		return "", 0, errors.Wrap(err, "failed to get latest block number")
 	}
 
 	hash, err := c.SendTx(ctx, withdrawInstruction.Build())
 	if hash == nil {
 		return "",
-			int64(block.Value.LastValidBlockHeight),
+			blockNumber,
 			errors.Wrap(err, "failed to send withdrawal tx")
 	}
 
 	return hash.String(),
-		int64(block.Value.LastValidBlockHeight),
+		blockNumber,
 		errors.Wrap(err, "unable to send native withdrawal tx")
 }
 

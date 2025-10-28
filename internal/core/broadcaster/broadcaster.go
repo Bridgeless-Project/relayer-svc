@@ -72,7 +72,7 @@ func (b *Broadcaster) Run(ctx context.Context) {
 				return b.coreConnector.UpdateTxInfo(ctx, *deposit)
 			}
 
-			err = core.DoWithRetry(ctx, updateTx, b.retries, b.retryTimeout, b.logger)
+			err = core.DoWithRetry(ctx, updateTx)
 			if err != nil {
 				b.logger.WithError(err).Error(fmt.Sprintf("error updating withdrawal info for deposit: %s",
 					deposit.String()))
