@@ -47,12 +47,21 @@ func (b *broadcastContainer) Run(ctx context.Context) (*db.Deposit, error) {
 	}
 
 	if processed {
+		b.logger.Warnf("deposit already processed")
+
 		err = b.dbQ.UpdateStatus(b.deposit.DepositIdentifier, internalTypes.WithdrawalStatus_WITHDRAWAL_STATUS_ALREADY_EXISTS)
 		if err != nil {
-			return b.deposit, errors.Wrap(err, "failed to update deposit status to already exists")
+			b.logger.WithError(err).Error("failed to update deposit status to already-exists")
 		}
 
-		return nil, internalTypes.ErrAlreadyExists
+		b.deposit.WithdrawalTxHash = ptr(defaultWithdrawalHash)
+		err = b.dbQ.UpdateWithdrawalDetails(*b.deposit)
+		if err != nil {
+			b.logger.WithError(err).Error("failed to update withdrawal details")
+		}
+
+		// let the service submit the null hash to core
+		return b.deposit, nil
 	}
 
 	if err = b.dbQ.UpdateStatus(b.deposit.DepositIdentifier,
@@ -76,7 +85,7 @@ func (b *broadcastContainer) Run(ctx context.Context) (*db.Deposit, error) {
 			b.logger.WithError(updateErr).Error("failed to update withdrawal details")
 		}
 
-		return b.deposit, errors.Wrap(err, "failed to process withdrawal")
+		return nil, errors.Wrap(err, "failed to process withdrawal")
 	}
 
 	if err = b.dbQ.UpdateWithdrawalDetails(*b.deposit); err != nil {

@@ -79,6 +79,10 @@ func (b *Broadcaster) Run(ctx context.Context) {
 				continue
 			}
 
+			if deposit.WithdrawalStatus != internalTypes.WithdrawalStatus_WITHDRAWAL_STATUS_SUBMITTING_TO_CORE {
+				continue
+			}
+
 			err = b.dbConn.UpdateStatus(deposit.DepositIdentifier,
 				internalTypes.WithdrawalStatus_WITHDRAWAL_STATUS_PROCESSED)
 			if err != nil {

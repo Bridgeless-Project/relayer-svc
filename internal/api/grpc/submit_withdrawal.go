@@ -49,6 +49,10 @@ func (i Implementation) SubmitWithdrawal(ctx context.Context, identifier *intern
 		return nil, status.Error(codes.Internal, "unable to process withdrawal")
 	}
 
+	if deposit.WithdrawalTxHash != nil {
+		return nil, status.Error(codes.InvalidArgument, "deposit is already withdrawn")
+	}
+
 	err = broadcaster.Broadcast(*deposit)
 	if err != nil {
 		if errors.Is(err, internalTypes.ErrFailedToBroadcast) {

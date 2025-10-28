@@ -88,6 +88,13 @@ func (c *catchupContainer) ProcessWithdraw(ctx context.Context) (*db.Deposit, er
 			c.logger.WithError(err).Error("failed to update deposit status to processed")
 		}
 
+		if c.deposit.WithdrawalTxHash == nil {
+			c.deposit.WithdrawalTxHash = ptr(defaultWithdrawalHash)
+		}
+		err = c.dbQ.UpdateWithdrawalDetails(*c.deposit)
+		if err != nil {
+			c.logger.WithError(err).Error("failed to update deposit withdrawal details")
+		}
 		return nil, internalTypes.ErrWithdrawalProcessed
 	}
 
@@ -119,7 +126,7 @@ func (c *catchupContainer) ProcessWithdraw(ctx context.Context) (*db.Deposit, er
 			c.logger.WithError(updateErr).Error("failed to update deposit status to FAILED")
 		}
 
-		return c.deposit, errors.Wrap(err, "failed to update deposit withdrawal details")
+		return nil, errors.Wrap(err, "failed to update deposit withdrawal details")
 	}
 
 	c.deposit.WithdrawalStatus = internalTypes.WithdrawalStatus_WITHDRAWAL_STATUS_SUBMITTING_TO_CORE
