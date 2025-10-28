@@ -110,6 +110,8 @@ func (d *depositsQ) Insert(deposit db.Deposit) error {
 			depositsWithdrawalAmount: deposit.WithdrawalAmount,
 			depositsReceiver:         deposit.Receiver,
 			depositsDepositBlock:     deposit.DepositBlock,
+			withdrawalCoreBlock:      deposit.WithdrawalCoreBlock,
+			withdrawalChainBlock:     deposit.WithdrawalChainBlock,
 			depositsIsWrappedToken:   deposit.IsWrappedToken,
 			// can be 0x00... in case of native ones
 			depositsDepositToken: deposit.DepositToken,
@@ -198,40 +200,4 @@ func NewDepositsQ(db *pgdb.DB) db.DepositsQ {
 
 func (d *depositsQ) Transaction(f func() error) error {
 	return d.db.Transaction(f)
-}
-
-func (d *depositsQ) InsertProcessedDeposit(deposit db.Deposit) error {
-	stmt := squirrel.
-		Insert(depositsTable).
-		SetMap(map[string]interface{}{
-			depositsTxHash:           deposit.TxHash,
-			depositsTxNonce:          deposit.TxNonce,
-			depositsChainId:          deposit.ChainId,
-			depositsDepositAmount:    deposit.DepositAmount,
-			depositsWithdrawalAmount: deposit.WithdrawalAmount,
-			depositsCommissionAmount: deposit.CommissionAmount,
-			depositsReceiver:         strings.ToLower(deposit.Receiver),
-			depositsDepositBlock:     deposit.DepositBlock,
-			depositsIsWrappedToken:   deposit.IsWrappedToken,
-			// can be 0x00... in case of native ones
-			depositsDepositToken: strings.ToLower(deposit.DepositToken),
-			depositsDepositor:    deposit.Depositor,
-			// can be 0x00... in case of native ones
-			depositsWithdrawalToken:   strings.ToLower(deposit.WithdrawalToken),
-			depositsWithdrawalChainId: deposit.WithdrawalChainId,
-			depositsWithdrawalTxHash:  deposit.WithdrawalTxHash,
-			depositsSignature:         deposit.Signature,
-			depositsWithdrawalStatus:  types.WithdrawalStatus_WITHDRAWAL_STATUS_PROCESSED,
-			depositsReferralId:        deposit.ReferralId,
-		})
-
-	if err := d.db.Exec(stmt); err != nil {
-		if strings.Contains(err.Error(), "duplicate key value violates unique constraint") {
-			err = db.ErrAlreadySubmitted
-		}
-
-		return err
-	}
-
-	return nil
 }
