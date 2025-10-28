@@ -8,7 +8,7 @@ import (
 	"github.com/Bridgeless-Project/relayer-svc/internal/core/broadcaster"
 	"github.com/Bridgeless-Project/relayer-svc/internal/core/chain"
 	"github.com/Bridgeless-Project/relayer-svc/internal/db"
-	"github.com/Bridgeless-Project/relayer-svc/internal/types"
+	internalTypes "github.com/Bridgeless-Project/relayer-svc/internal/types"
 	"github.com/pkg/errors"
 	"github.com/tendermint/tendermint/rpc/client/http"
 	"github.com/tendermint/tendermint/rpc/core/types"
@@ -48,17 +48,16 @@ func New(client *http.HTTP, retries uint, retryTimeout, pollingInterval time.Dur
 func (o *Observer) Run(ctx context.Context, startHeight uint64, catchup bool) error {
 	// Firstly catch up pending deposits from db
 	if catchup {
-		deposits, err := o.depositsDb.GetWithStatus(types.WithdrawalStatus_WITHDRAWAL_STATUS_PENDING)
-		if err != nil {
-			return errors.Wrap(err, "failed to get unprocessed deposits")
+		if err := o.catchupWithStatus(internalTypes.WithdrawalStatus_WITHDRAWAL_STATUS_PENDING); err != nil {
+			o.logger.WithError(err).Error("catchup with status pending failed")
 		}
 
-		for _, deposit := range deposits {
-			err = o.broadcaster.CatchUp(deposit)
-			if err != nil {
-				o.logger.Errorf("failed to broadcast deposit to catchup deposit: %v", err)
-				continue
-			}
+		if err := o.catchupWithStatus(internalTypes.WithdrawalStatus_WITHDRAWAL_STATUS_PROCESSING); err != nil {
+			o.logger.WithError(err).Error("catchup with status processing failed")
+		}
+
+		if err := o.catchupWithStatus(internalTypes.WithdrawalStatus_WITHDRAWAL_STATUS_SUBMITTING_TO_CORE); err != nil {
+			o.logger.WithError(err).Error("catchup with status submitting failed")
 		}
 	}
 
@@ -195,6 +194,23 @@ func (o *Observer) broadcastDeposit(deposit db.Deposit) error {
 	err = o.broadcaster.Broadcast(deposit)
 	if err != nil {
 		return errors.Wrap(err, "failed to broadcast deposit")
+	}
+
+	return nil
+}
+
+func (o *Observer) catchupWithStatus(status internalTypes.WithdrawalStatus) error {
+	deposits, err := o.depositsDb.GetWithStatus(status)
+	if err != nil {
+		return errors.Wrap(err, "failed to get unprocessed deposits")
+	}
+
+	for _, deposit := range deposits {
+		err = o.broadcaster.CatchUp(deposit)
+		if err != nil {
+			o.logger.Errorf("failed to broadcast deposit to catchup deposit: %v", err)
+			continue
+		}
 	}
 
 	return nil

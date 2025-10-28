@@ -5,6 +5,7 @@ import (
 
 	"github.com/Bridgeless-Project/relayer-svc/internal/core"
 	"github.com/Bridgeless-Project/relayer-svc/internal/core/chain"
+	"github.com/Bridgeless-Project/relayer-svc/internal/core/chain/solana/contract"
 	"github.com/Bridgeless-Project/relayer-svc/internal/db"
 	"github.com/gagliardetto/solana-go/rpc"
 	"github.com/pkg/errors"
@@ -16,6 +17,8 @@ type Client struct {
 
 // NewBridgeClient creates a new bridge Client for the given chain.
 func NewBridgeClient(chain Chain) *Client {
+	contract.SetProgramID(chain.BridgeAddress)
+
 	return &Client{
 		chain: chain,
 	}
