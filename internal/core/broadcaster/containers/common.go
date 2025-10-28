@@ -13,7 +13,7 @@ import (
 
 func executeWithdrawal(ctx context.Context, chainClient chain.Client, deposit *db.Deposit, tendermintClient *http.HTTP, logger *logan.Entry) error {
 	var (
-		txHash      string
+		txHash      = defaultWithdrawalHash
 		err         error
 		blockHeight int64
 	)
@@ -24,24 +24,22 @@ func executeWithdrawal(ctx context.Context, chainClient chain.Client, deposit *d
 	default:
 		txHash, blockHeight, err = chainClient.WithdrawToken(ctx, *deposit)
 	}
-	if err != nil && txHash == "" {
-		return errors.Wrap(err, "error processing withdrawal")
-	}
 
-	if err != nil {
-		logger.WithError(err).Error("error processing withdrawal")
-	}
-
-	logger.Infof("Processed deposit %s withdrawal hash %s", deposit.String(), txHash)
 	deposit.WithdrawalTxHash = &txHash
 	deposit.WithdrawalChainBlock = blockHeight
 
-	abci, err := tendermintClient.ABCIInfo(ctx)
-	if err != nil {
+	abci, abciErr := tendermintClient.ABCIInfo(ctx)
+	if abciErr != nil {
 		return errors.Wrap(err, "error getting ABCI info")
 	}
 
 	deposit.WithdrawalCoreBlock = abci.Response.LastBlockHeight
+
+	if err != nil {
+		return errors.Wrap(err, "failed to execute withdrawal")
+	}
+
+	logger.Infof("Processed deposit %s withdrawal hash %s", deposit.String(), txHash)
 
 	return nil
 }
