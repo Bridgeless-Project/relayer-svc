@@ -1,9 +1,11 @@
 -- +migrate Up
+CREATE DOMAIN uint16 AS integer
+    CHECK (VALUE BETWEEN 0 AND 65535);
 
 CREATE TABLE IF NOT EXISTS deposits
 (
     tx_hash             VARCHAR(100) NOT NULL,
-    tx_nonce            INT          NOT NULL,
+    tx_nonce            BIGINT          NOT NULL,
     chain_id            VARCHAR(50)  NOT NULL,
 
     depositor           VARCHAR(100) NOT NULL,
@@ -23,7 +25,7 @@ CREATE TABLE IF NOT EXISTS deposits
 
     withdrawal_tx_hash  VARCHAR(100),
     tx_data TEXT,
-    referral_id INT     NOT NULL,
+    referral_id uint16 NOT NULL DEFAULT 0,
     withdrawal_chain_id VARCHAR(50) NOT NULL,
 
     PRIMARY KEY (tx_hash,tx_nonce,chain_id));
