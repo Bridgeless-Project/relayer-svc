@@ -104,13 +104,19 @@ func (o *Observer) fetchDeposits(ctx context.Context, startHeight uint64) error 
 			}
 
 			if err = o.blockDb.UpdateLatestBlockId(db.LatestBlock{BlockId: int64(startHeight)}); err != nil {
-				o.logger.WithError(err).Error("failed to update latest block height")
+				o.logger.WithError(err).
+					WithField("blockNumber", startHeight).
+					Error("failed to update latest block height")
+				startHeight++
 				continue
 			}
 
 			deposits, err := o.fetchSubmitDepositEvents(ctx, int64(startHeight))
 			if err != nil {
-				o.logger.WithError(err).Error("failed to fetch submit deposit events")
+				o.logger.WithError(err).
+					WithField("blockNumber", startHeight).
+					Error("failed to fetch submit deposit events")
+				startHeight++
 				continue
 			}
 
@@ -119,7 +125,10 @@ func (o *Observer) fetchDeposits(ctx context.Context, startHeight uint64) error 
 					if errors.Is(err, skippedDeposit) {
 						continue
 					}
-					o.logger.Warnf("failed to broadcast deposit: %v", err)
+					o.logger.
+						WithField("blockNumber", startHeight).
+						Warnf("failed to broadcast deposit: %v", err)
+					startHeight++
 					continue
 				}
 			}
@@ -165,7 +174,7 @@ func (o *Observer) fetchSubmitDepositEvents(ctx context.Context, height int64) (
 		return nil, errors.Wrap(err, "failed to get block results")
 	}
 
-	deposits, err := parseDepositsFromTxResults(blockResult.TxsResults)
+	deposits, err := o.parseDepositsFromTxResults(blockResult.TxsResults)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to parse deposits from tx results")
 	}

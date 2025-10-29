@@ -11,13 +11,20 @@ import (
 	abciTypes "github.com/tendermint/tendermint/abci/types"
 )
 
-func parseDepositsFromTxResults(txs []*abciTypes.ResponseDeliverTx) ([]*db.Deposit, error) {
+func (o *Observer) parseDepositsFromTxResults(txs []*abciTypes.ResponseDeliverTx) ([]*db.Deposit, error) {
 	var deposits []*db.Deposit
 
 	for _, tx := range txs {
 		var msgs []MsgEvent
+		fmt.Println("log: ", tx.Log)
+
+		if tx.Log == "" || !json.Valid([]byte(tx.Log)) {
+			o.logger.Warnf("skipping invalid tx log: %s", tx.Log)
+			continue
+		}
+
 		if err := json.Unmarshal([]byte(tx.Log), &msgs); err != nil {
-			return nil, errors.Wrap(err, "failed to unmarshal tx log")
+			return nil, errors.Wrap(err, fmt.Sprintf("Failed to unmarshal log: %v", tx.Log))
 		}
 		for _, msg := range msgs {
 			for _, event := range msg.Events {
