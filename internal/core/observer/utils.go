@@ -16,7 +16,6 @@ func (o *Observer) parseDepositsFromTxResults(txs []*abciTypes.ResponseDeliverTx
 
 	for _, tx := range txs {
 		var msgs []MsgEvent
-		fmt.Println("log: ", tx.Log)
 
 		if tx.Log == "" || !json.Valid([]byte(tx.Log)) {
 			o.logger.Warnf("skipping invalid tx log: %s", tx.Log)
