@@ -22,6 +22,7 @@ func (o *Observer) parseDepositsFromTxResults(txs []*abciTypes.ResponseDeliverTx
 			continue
 		}
 
+		o.logger.Debug("got log: " + tx.Log)
 		if err := json.Unmarshal([]byte(tx.Log), &msgs); err != nil {
 			return nil, errors.Wrap(err, fmt.Sprintf("Failed to unmarshal log: %v", tx.Log))
 		}
