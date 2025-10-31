@@ -31,7 +31,7 @@ func (c *Client) withdraw(ctx context.Context, body *cell.Cell) (string, error) 
 		return "", errors.Wrap(err, "error sending withdrawal transaction")
 	}
 
-	// TODO: Investigate derive of TON tx hash
+	// TODO: Investigate tracing of tx
 	return hex.EncodeToString(bytes), nil
 }
 
