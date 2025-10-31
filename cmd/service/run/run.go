@@ -58,7 +58,7 @@ func runService(ctx context.Context, cfg config.Config, catchUp bool, startHeigh
 	wg := new(sync.WaitGroup)
 	eg, ctx := errgroup.WithContext(ctx)
 	logger := cfg.Log()
-	clients := cfg.Clients()
+	clients := cfg.Clients(ctx)
 	clientsRepo := repository.NewClientsRepository(clients)
 	dtb := pg.NewDepositsQ(cfg.DB())
 	blocksQ := pg.NewBlocksQ(cfg.DB())

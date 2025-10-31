@@ -19,6 +19,7 @@ type Chain struct {
 	Rpc             *ethclient.Client
 	BridgeAddress   common.Address
 	OperatorPrivKey *ecdsa.PrivateKey
+	BlockTime       uint64
 }
 
 func FromChain(c chain.Chain) Chain {
@@ -35,15 +36,22 @@ func FromChain(c chain.Chain) Chain {
 		With(figure.EthereumHooks).Please(); err != nil {
 		panic(errors.Wrap(err, "failed to obtain Ethereum clients"))
 	}
+
 	if err := figure.Out(&chain.BridgeAddress).
 		FromInterface(c.BridgeAddresses).
 		With(figure.EthereumHooks).Please(); err != nil {
 		panic(errors.Wrap(err, "failed to obtain bridge addresses"))
 	}
+
 	if err := figure.Out(&chain.OperatorPrivKey).
 		FromInterface(c.OperatorPrivateKey).
 		With(figure.EthereumHooks).Please(); err != nil {
 		panic(errors.Wrap(err, "failed to obtain operator private key"))
+	}
+
+	if err := figure.Out(&chain.BlockTime).
+		FromInterface(c.BlockTime).Please(); err != nil {
+		panic(errors.Wrap(err, "failed to obtain block time"))
 	}
 
 	return chain

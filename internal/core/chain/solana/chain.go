@@ -1,11 +1,13 @@
 package solana
 
 import (
+	"context"
 	"reflect"
 
 	"github.com/Bridgeless-Project/relayer-svc/internal/core/chain"
 	"github.com/gagliardetto/solana-go"
 	"github.com/gagliardetto/solana-go/rpc"
+	"github.com/gagliardetto/solana-go/rpc/ws"
 	"github.com/pkg/errors"
 	"gitlab.com/distributed_lab/figure/v3"
 )
@@ -13,6 +15,7 @@ import (
 type Chain struct {
 	Id             string
 	Rpc            *rpc.Client
+	WsRpc          *ws.Client
 	BridgeAddress  solana.PublicKey
 	OperatorWallet *solana.Wallet
 
@@ -20,7 +23,8 @@ type Chain struct {
 }
 
 type Meta struct {
-	BridgeId string `fig:"bridge_id,required"`
+	BridgeId  string `fig:"bridge_id,required"`
+	IsTestnet bool   `fig:"is_testnet,required"`
 }
 
 var SolanaHooks = figure.Hooks{
@@ -60,7 +64,7 @@ var SolanaHooks = figure.Hooks{
 	},
 }
 
-func FromChain(c chain.Chain) Chain {
+func FromChain(ctx context.Context, c chain.Chain) Chain {
 	if c.Type != chain.TypeSolana {
 		panic("chain is not Solana")
 	}
@@ -87,6 +91,18 @@ func FromChain(c chain.Chain) Chain {
 		With(SolanaHooks).Please(); err != nil {
 		panic(errors.Wrap(err, "failed to obtain operator wallet"))
 	}
+
+	wsEndpoint := rpc.MainNetBeta_WS
+	if chain.Meta.IsTestnet {
+		wsEndpoint = rpc.TestNet_WS
+	}
+
+	wsRpc, err := ws.Connect(ctx, wsEndpoint)
+	if err != nil {
+		panic(errors.Wrap(err, "failed to connect to websocket"))
+	}
+
+	chain.WsRpc = wsRpc
 
 	return chain
 }

@@ -14,6 +14,7 @@ import (
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/gagliardetto/solana-go"
 	"github.com/gagliardetto/solana-go/rpc"
+	confirm "github.com/gagliardetto/solana-go/rpc/sendAndConfirmTransaction"
 	"github.com/pkg/errors"
 )
 
@@ -102,7 +103,7 @@ func (c *Client) SendTx(ctx context.Context, instruction solana.Instruction) (*s
 	}
 
 	// Send transaction, and wait for confirmation:
-	signTx, err := c.chain.Rpc.SendTransaction(ctx, tx)
+	signTx, err := confirm.SendAndConfirmTransaction(ctx, c.chain.Rpc, c.chain.WsRpc, tx)
 	if err != nil {
 		return &sign[0], errors.Wrap(err, "unable to send transaction")
 	}

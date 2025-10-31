@@ -3,6 +3,7 @@ package evm
 import (
 	"context"
 	"math/big"
+	"time"
 
 	"github.com/Bridgeless-Project/relayer-svc/internal/db"
 	"github.com/ethereum/go-ethereum/common"
@@ -52,6 +53,11 @@ func (c *Client) WithdrawNative(ctx context.Context, depositData db.Deposit) (st
 		[][]byte{signatureBytes})
 	if err != nil {
 		return hash, block, errors.Wrap(err, "failed to withdraw native")
+	}
+
+	err = c.finalize(ctx, tx.Hash())
+	if err != nil {
+		return hash, block, errors.Wrap(err, "failed to finalize")
 	}
 
 	return tx.Hash().Hex(), block, nil
@@ -104,5 +110,33 @@ func (c *Client) WithdrawToken(ctx context.Context, depositData db.Deposit) (str
 		return hash, block, errors.Wrap(err, "failed to withdraw token")
 	}
 
+	err = c.finalize(ctx, tx.Hash())
+	if err != nil {
+		return hash, block, errors.Wrap(err, "failed to finalize")
+	}
+
 	return tx.Hash().Hex(), block, nil
+}
+
+func (c *Client) finalize(ctx context.Context, txHash common.Hash) error {
+	ticker := time.NewTicker(time.Duration(c.chain.BlockTime) * time.Second)
+	defer ticker.Stop()
+	for {
+		select {
+		case <-ctx.Done():
+			return nil
+		case <-ticker.C:
+			_, pending, err := c.chain.Rpc.TransactionByHash(ctx, txHash)
+			if err != nil {
+				return errors.Wrap(err, "failed to fetch transaction receipt")
+			}
+
+			if pending {
+				continue
+			}
+
+			return nil
+		}
+
+	}
 }
