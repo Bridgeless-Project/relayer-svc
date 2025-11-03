@@ -5,7 +5,6 @@ import (
 	"math/big"
 
 	"github.com/Bridgeless-Project/relayer-svc/internal/db"
-	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/pkg/errors"
 	"github.com/xssnick/tonutils-go/address"
 	"github.com/xssnick/tonutils-go/tvm/cell"
@@ -29,11 +28,7 @@ func (c *Client) WithdrawNative(ctx context.Context, depositData db.Deposit) (st
 }
 
 func (c *Client) buildWithdrawNativeCell(depositData db.Deposit) (*cell.Cell, error) {
-	hashBytes, err := hexutil.Decode(depositData.TxHash)
-	if err != nil {
-		return nil, errors.Wrap(err, "error decoding txHash")
-	}
-	hashInt := big.NewInt(0).SetBytes(hashBytes)
+	hashInt := big.NewInt(0).SetBytes(txHashToBytes32(depositData.TxHash))
 
 	networkCell, err := getNetworkCell(depositData.WithdrawalChainId)
 	if err != nil {
