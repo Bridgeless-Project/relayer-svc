@@ -64,7 +64,7 @@ var SolanaHooks = figure.Hooks{
 	},
 }
 
-func FromChain(ctx context.Context, c chain.Chain) Chain {
+func FromChain(c chain.Chain) Chain {
 	if c.Type != chain.TypeSolana {
 		panic("chain is not Solana")
 	}
@@ -97,7 +97,7 @@ func FromChain(ctx context.Context, c chain.Chain) Chain {
 		wsEndpoint = rpc.TestNet_WS
 	}
 
-	wsRpc, err := ws.Connect(ctx, wsEndpoint)
+	wsRpc, err := ws.Connect(context.Background(), wsEndpoint)
 	if err != nil {
 		panic(errors.Wrap(err, "failed to connect to websocket"))
 	}

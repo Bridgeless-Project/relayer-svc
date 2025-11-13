@@ -1,7 +1,6 @@
 package config
 
 import (
-	"context"
 	"reflect"
 
 	"github.com/Bridgeless-Project/relayer-svc/internal/core/chain"
@@ -16,7 +15,7 @@ import (
 
 type Chainer interface {
 	Chains() []chain.Chain
-	Clients(ctx context.Context) []chain.Client
+	Clients() []chain.Client
 }
 
 type chainer struct {
@@ -31,7 +30,7 @@ func NewChainer(getter kv.Getter) Chainer {
 	}
 }
 
-func (c *chainer) Clients(ctx context.Context) []chain.Client {
+func (c *chainer) Clients() []chain.Client {
 	return c.clientsOnce.Do(func() interface{} {
 		chains := c.Chains()
 		clients := make([]chain.Client, len(chains))
@@ -39,7 +38,7 @@ func (c *chainer) Clients(ctx context.Context) []chain.Client {
 		for i, ch := range chains {
 			switch ch.Type {
 			case chain.TypeSolana:
-				clients[i] = solana.NewBridgeClient(solana.FromChain(ctx, ch))
+				clients[i] = solana.NewBridgeClient(solana.FromChain(ch))
 			case chain.TypeTON:
 				clients[i] = ton.NewBridgeClient(ton.FromChain(ch))
 			case chain.TypeEVM:
