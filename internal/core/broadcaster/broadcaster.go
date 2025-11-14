@@ -31,20 +31,17 @@ type Broadcaster struct {
 
 	retries      uint
 	retryTimeout time.Duration
+	txPoolSize   int64
 }
 
-func New(coreConnector *connector.Connector, dbConn db.DepositsQ, clientsRepo chain.Repository,
-	retries uint, retryTimeout time.Duration, tendermintClient *http.HTTP, logger *logan.Entry) *Broadcaster {
+func New(coreConnector *connector.Connector, dbConn db.DepositsQ, tendermintClient *http.HTTP, logger *logan.Entry) *Broadcaster {
 	return &Broadcaster{
 		coreConnector:    coreConnector,
-		clientsRepo:      clientsRepo,
 		handlerChan:      make(chan containers.WithdrawalContainer),
 		dbConn:           dbConn,
 		logger:           logger,
 		cache:            sync.Map{},
-		retries:          retries,
 		tendermintClient: tendermintClient,
-		retryTimeout:     retryTimeout,
 	}
 }
 
@@ -168,4 +165,24 @@ func (b *Broadcaster) checkExistence(deposit db.Deposit) error {
 	}
 
 	return nil
+}
+
+func (b *Broadcaster) WithClients(clients chain.Repository) *Broadcaster {
+	b.clientsRepo = clients
+	return b
+}
+
+func (b *Broadcaster) WithRetries(retries uint) *Broadcaster {
+	b.retries = retries
+	return b
+}
+
+func (b *Broadcaster) WithRetryTimeout(timeout time.Duration) *Broadcaster {
+	b.retryTimeout = timeout
+	return b
+}
+
+func (b *Broadcaster) WithTxPoolSize(txPoolSize int64) *Broadcaster {
+	b.txPoolSize = txPoolSize
+	return b
 }
