@@ -96,7 +96,7 @@ func (b *Broadcaster) Run(ctx context.Context) {
 func (b *Broadcaster) Broadcast(deposit db.Deposit) error {
 	_, ok := b.cache.Load(deposit.String())
 	if ok {
-		return internalTypes.ErrAlreadyExists
+		return errors.New(fmt.Sprintf("deposit %s already exists", deposit.String()))
 	}
 
 	deposit.WithdrawalStatus = types.WithdrawalStatus_WITHDRAWAL_STATUS_PENDING
@@ -105,11 +105,10 @@ func (b *Broadcaster) Broadcast(deposit db.Deposit) error {
 		if errors.Is(err, db.ErrAlreadySubmitted) {
 			// Store duplicate deposit identifier to cache to avoid spamming db with get queries
 			b.cache.Store(deposit.String(), nil)
-			return internalTypes.ErrAlreadyExists
+			return errors.Wrapf(err, "deposit %s already exists at db", deposit.String())
 		}
 
-		b.logger.WithError(err).Error("error inserting deposit")
-		return types.ErrFailedToBroadcast
+		return errors.Wrapf(err, "error storing deposit %s", deposit.String())
 	}
 
 	b.cache.Store(deposit.String(), nil)
@@ -135,13 +134,13 @@ func (b *Broadcaster) CatchUp(deposit db.Deposit) error {
 
 	err := b.dbConn.UpdateStatus(deposit.DepositIdentifier, types.WithdrawalStatus_WITHDRAWAL_STATUS_PENDING)
 	if err != nil {
-		return errors.Wrap(err, fmt.Sprintf("failed to update statu to pending: %s", deposit.String()))
+		return errors.Wrapf(err, "failed to update status to pending: %s", deposit.String())
 	}
 	b.cache.Store(deposit.String(), nil)
 
 	chainClient, err := b.clientsRepo.Client(deposit.WithdrawalChainId)
 	if err != nil {
-		return errors.Wrap(err, fmt.Sprintf("failed to get the withdrawal chain client: %s", deposit.String()))
+		return errors.Wrapf(err, "failed to get the withdrawal chain client: %s", deposit.String())
 	}
 
 	go func() {
@@ -156,7 +155,7 @@ func (b *Broadcaster) CatchUp(deposit db.Deposit) error {
 func (b *Broadcaster) checkExistence(deposit db.Deposit) error {
 	_, exists := b.cache.Load(deposit.String())
 	if exists {
-		return internalTypes.ErrAlreadyExists
+		return errors.Wrapf(internalTypes.ErrAlreadyExists, "deposit %s already exists in cache", deposit.String())
 	}
 
 	depositData, err := b.dbConn.Get(deposit.DepositIdentifier)
@@ -165,7 +164,7 @@ func (b *Broadcaster) checkExistence(deposit db.Deposit) error {
 	}
 
 	if depositData != nil {
-		return internalTypes.ErrAlreadyExists
+		return errors.Wrapf(internalTypes.ErrAlreadyExists, "deposit %s already exists in db", deposit.String())
 	}
 
 	return nil
