@@ -4,6 +4,7 @@ import (
 	"context"
 	"math/big"
 
+	"github.com/Bridgeless-Project/relayer-svc/internal/core"
 	"github.com/Bridgeless-Project/relayer-svc/internal/core/chain"
 	"github.com/Bridgeless-Project/relayer-svc/internal/db"
 	"github.com/ethereum/go-ethereum"
@@ -13,7 +14,14 @@ import (
 	"github.com/pkg/errors"
 )
 
-func (c *Client) WithdrawNative(ctx context.Context, depositData db.Deposit) (string, int64, error) {
+func (c *Client) Withdraw(ctx context.Context, depositData db.Deposit) (string, int64, error) {
+	if depositData.WithdrawalToken == core.DefaultNativeTokenAddress {
+		return c.withdrawNative(ctx, depositData)
+	}
+
+	return c.withdrawToken(ctx, depositData)
+}
+func (c *Client) withdrawNative(ctx context.Context, depositData db.Deposit) (string, int64, error) {
 	data, err := c.getWithdrawalTxData(withdrawNative, depositData)
 	if err != nil {
 		return "", 0, errors.Wrap(err, "failed to get withdrawal tx data")
@@ -65,7 +73,7 @@ func (c *Client) WithdrawNative(ctx context.Context, depositData db.Deposit) (st
 	return tx.Hash().Hex(), block, nil
 }
 
-func (c *Client) WithdrawToken(ctx context.Context, depositData db.Deposit) (string, int64, error) {
+func (c *Client) withdrawToken(ctx context.Context, depositData db.Deposit) (string, int64, error) {
 	data, err := c.getWithdrawalTxData(withdrawERC20, depositData)
 	if err != nil {
 		return "", 0, errors.Wrap(err, "failed to get withdrawal tx data")

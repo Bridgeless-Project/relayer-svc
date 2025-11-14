@@ -10,20 +10,18 @@ import (
 	"github.com/xssnick/tonutils-go/tvm/cell"
 )
 
-func (c *Client) WithdrawToken(ctx context.Context, depositData db.Deposit) (string, int64, error) {
-	ctxt := c.Chain.Client.Client().StickyContext(ctx)
-
-	body, err := c.buildWithdrawJettonCell(ctxt, depositData)
+func (c *Client) withdrawToken(ctx context.Context, depositData db.Deposit) (string, int64, error) {
+	body, err := c.buildWithdrawJettonCell(ctx, depositData)
 	if err != nil {
 		return "", 0, errors.Wrap(err, "error building withdraw jetton cell")
 	}
 
-	b, err := c.Chain.Client.GetMasterchainInfo(ctxt)
+	b, err := c.Chain.Client.GetMasterchainInfo(ctx)
 	if err != nil {
 		return "", 0, errors.Wrap(err, "error getting master chain info")
 	}
 
-	txHash, err := c.withdraw(ctxt, body)
+	txHash, err := c.withdraw(ctx, body)
 
 	return txHash, int64(b.SeqNo), errors.Wrapf(err, "failed to withdraw jetton")
 }
