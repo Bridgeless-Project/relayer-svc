@@ -3,11 +3,13 @@ package evm
 import (
 	"context"
 	"math/big"
-	"time"
 
+	"github.com/Bridgeless-Project/relayer-svc/internal/core/chain"
 	"github.com/Bridgeless-Project/relayer-svc/internal/db"
+	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
+	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/pkg/errors"
 )
 
@@ -119,23 +121,30 @@ func (c *Client) WithdrawToken(ctx context.Context, depositData db.Deposit) (str
 }
 
 func (c *Client) finalize(ctx context.Context, txHash common.Hash) error {
-	ticker := time.NewTicker(time.Duration(c.chain.BlockTime) * time.Second)
-	defer ticker.Stop()
+	txReceiptsQuery := &ethereum.TransactionReceiptsQuery{TransactionHashes: []common.Hash{txHash}}
+	receipts := make(chan []*types.Receipt)
+	sub, err := c.chain.Rpc.SubscribeTransactionReceipts(ctx, txReceiptsQuery, receipts)
+	if err != nil {
+		return errors.Wrap(err, "failed to subscribe to receipts")
+	}
+
+	defer sub.Unsubscribe()
+
 	for {
 		select {
 		case <-ctx.Done():
 			return nil
-		case <-ticker.C:
-			_, pending, err := c.chain.Rpc.TransactionByHash(ctx, txHash)
-			if err != nil {
-				return errors.Wrap(err, "failed to fetch transaction receipt")
-			}
+		case receipt := <-receipts:
+			for _, rec := range receipt {
 
-			if pending {
-				continue
-			}
+				if rec.TxHash == txHash {
+					if rec.Status != types.ReceiptStatusSuccessful {
+						return chain.ErrTransactionFailed
+					}
 
-			return nil
+					return nil
+				}
+			}
 		}
 
 	}

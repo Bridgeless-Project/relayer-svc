@@ -2,6 +2,8 @@ package observer
 
 import (
 	"context"
+	"encoding/json"
+	"fmt"
 	"time"
 
 	"github.com/Bridgeless-Project/relayer-svc/internal/core"
@@ -10,6 +12,7 @@ import (
 	"github.com/Bridgeless-Project/relayer-svc/internal/db"
 	internalTypes "github.com/Bridgeless-Project/relayer-svc/internal/types"
 	"github.com/pkg/errors"
+	abciTypes "github.com/tendermint/tendermint/abci/types"
 	"github.com/tendermint/tendermint/rpc/client/http"
 	"github.com/tendermint/tendermint/rpc/core/types"
 	"gitlab.com/distributed_lab/logan/v3"
@@ -223,4 +226,39 @@ func (o *Observer) catchupWithStatus(status internalTypes.WithdrawalStatus) erro
 	}
 
 	return nil
+}
+
+func (o *Observer) parseDepositsFromTxResults(txs []*abciTypes.ResponseDeliverTx) ([]*db.Deposit, error) {
+	var deposits []*db.Deposit
+
+	for _, tx := range txs {
+		var msgs []MsgEvent
+
+		if tx.Log == "" || !json.Valid([]byte(tx.Log)) {
+			o.logger.Warnf("skipping invalid tx log: %s", tx.Log)
+			continue
+		}
+
+		o.logger.Debug("got log: " + tx.Log)
+		if err := json.Unmarshal([]byte(tx.Log), &msgs); err != nil {
+			return nil, errors.Wrap(err, fmt.Sprintf("Failed to unmarshal log: %v", tx.Log))
+		}
+		for _, msg := range msgs {
+			for _, event := range msg.Events {
+				if event.Type != eventDepositSubmitted {
+					continue
+				}
+
+				deposit, err := parseSubmittedDeposit(event.Attributes)
+				if err != nil {
+					return nil, errors.Wrap(err, "failed to parse deposit")
+				}
+
+				deposits = append(deposits, deposit)
+			}
+		}
+
+	}
+
+	return deposits, nil
 }

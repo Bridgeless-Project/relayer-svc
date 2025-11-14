@@ -19,7 +19,7 @@ type Chain struct {
 	Rpc             *ethclient.Client
 	BridgeAddress   common.Address
 	OperatorPrivKey *ecdsa.PrivateKey
-	BlockTime       uint64
+	WSTimeout       int64
 }
 
 func FromChain(c chain.Chain) Chain {
@@ -49,8 +49,8 @@ func FromChain(c chain.Chain) Chain {
 		panic(errors.Wrap(err, "failed to obtain operator private key"))
 	}
 
-	if err := figure.Out(&chain.BlockTime).
-		FromInterface(c.BlockTime).Please(); err != nil {
+	if err := figure.Out(&chain.WSTimeout).
+		FromInterface(c.WSTimeout).Please(); err != nil {
 		panic(errors.Wrap(err, "failed to obtain block time"))
 	}
 
@@ -72,7 +72,7 @@ func (c *Client) prepareTxOpts(ctx context.Context, data []byte) (*bind.Transact
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to generate transactor")
 	}
-	nonce, err := c.chain.Rpc.NonceAt(ctx, c.walletAddress, nil)
+	nonce, err := c.chain.Rpc.PendingNonceAt(ctx, c.walletAddress)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to fetch operator account nonce")
 	}

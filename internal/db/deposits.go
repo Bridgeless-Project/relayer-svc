@@ -34,25 +34,22 @@ func (di *DepositIdentifier) String() string {
 type Deposit struct {
 	DepositIdentifier
 
-	Depositor            string `structs:"depositor" db:"depositor"`
-	DepositAmount        string `structs:"deposit_amount" db:"deposit_amount"`
-	DepositToken         string `structs:"deposit_token" db:"deposit_token"`
-	Receiver             string `structs:"receiver" db:"receiver"`
-	WithdrawalToken      string `structs:"withdrawal_token" db:"withdrawal_token"`
-	DepositBlock         int64  `structs:"deposit_block" db:"deposit_block"`
-	WithdrawalCoreBlock  int64  `structs:"withdrawal_core_block" db:"withdrawal_core_block"`
-	WithdrawalChainBlock int64  `structs:"withdrawal_chain_block" db:"withdrawal_chain_block"`
-	CommissionAmount     string `structs:"commission_amount" db:"commission_amount"`
-	ReferralId           uint16 `structs:"referral_id" db:"referral_id"`
+	Depositor            string                 `structs:"depositor" db:"depositor"`
+	DepositAmount        string                 `structs:"deposit_amount" db:"deposit_amount"`
+	DepositToken         string                 `structs:"deposit_token" db:"deposit_token"`
+	Receiver             string                 `structs:"receiver" db:"receiver"`
+	DepositBlock         int64                  `structs:"deposit_block" db:"deposit_block"`
+	CommissionAmount     string                 `structs:"commission_amount" db:"commission_amount"`
+	ReferralId           uint16                 `structs:"referral_id" db:"referral_id"`
+	IsWrappedToken       bool                   `structs:"is_wrapped_token" db:"is_wrapped_token"`
+	WithdrawalStatus     types.WithdrawalStatus `structs:"withdrawal_status" db:"withdrawal_status"`
+	WithdrawalToken      string                 `structs:"withdrawal_token" db:"withdrawal_token"`
+	WithdrawalChainBlock int64                  `structs:"withdrawal_chain_block" db:"withdrawal_chain_block"`
+	WithdrawalCoreBlock  int64                  `structs:"withdrawal_core_block" db:"withdrawal_core_block"`
+	WithdrawalTxHash     *string                `structs:"withdrawal_tx_hash" db:"withdrawal_tx_hash"`
+	WithdrawalChainId    string                 `structs:"withdrawal_chain_id" db:"withdrawal_chain_id"`
+	WithdrawalAmount     string                 `structs:"withdrawal_amount" db:"withdrawal_amount"`
 
-	WithdrawalStatus types.WithdrawalStatus `structs:"withdrawal_status" db:"withdrawal_status"`
-
-	WithdrawalTxHash  *string `structs:"withdrawal_tx_hash" db:"withdrawal_tx_hash"`
-	WithdrawalChainId string  `structs:"withdrawal_chain_id" db:"withdrawal_chain_id"`
-	WithdrawalAmount  string  `structs:"withdrawal_amount" db:"withdrawal_amount"`
-
-	IsWrappedToken bool   `structs:"is_wrapped_token" db:"is_wrapped_token"`
-	TxData         string `structs:"tx_data" db:"tx_data"`
-
+	TxData    string `structs:"tx_data" db:"tx_data"`
 	Signature string `structs:"signature" db:"signature"`
 }

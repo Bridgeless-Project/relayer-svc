@@ -33,7 +33,7 @@ type Chain struct {
 	Rpc                any    `fig:"rpc,required"`
 	BridgeAddresses    any    `fig:"bridge_address,required"`
 	OperatorPrivateKey string `fig:"operator_private_key,required"`
-	BlockTime          uint64 `fig:"block_time"`
+	WSTimeout          int64  `fig:"ws_timeout"`
 
 	Meta any `fig:"meta"`
 }

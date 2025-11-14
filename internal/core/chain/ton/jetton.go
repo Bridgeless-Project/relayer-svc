@@ -141,3 +141,32 @@ func (c *Client) getWithdrawalJettonHash(ctx context.Context, deposit db.Deposit
 
 	return resBig.Bytes(), nil
 }
+
+func (c *Client) deriveJettonAddress(ctx context.Context, ownerAddress, jettonAddress *address.Address) (*address.Address, error) {
+	block, err := c.Chain.Client.CurrentMasterchainInfo(ctx)
+	if err != nil {
+		return nil, errors.Wrap(err, "error getting current masterchain info")
+	}
+
+	queryCell := cell.BeginCell()
+	err = queryCell.StoreAddr(ownerAddress)
+	if err != nil {
+		return nil, errors.Wrap(err, "error storing owner address")
+	}
+
+	res, err := c.Chain.Client.WaitForBlock(block.SeqNo).RunGetMethod(ctx, block, jettonAddress, getJettonWalletMethod, queryCell.EndCell().BeginParse())
+	if err != nil {
+		return nil, errors.Wrap(err, "error getting jetton address")
+	}
+
+	resSlice, err := res.Slice(0)
+	if err != nil {
+		return nil, errors.Wrap(err, "error getting result slice")
+	}
+	val, err := resSlice.LoadAddr()
+	if err != nil {
+		return nil, errors.Wrap(err, "error loading jetton address")
+	}
+
+	return val, nil
+}
