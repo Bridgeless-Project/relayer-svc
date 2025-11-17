@@ -155,7 +155,21 @@ func (c *Client) finalize(ctx context.Context, txHash common.Hash) error {
 	for {
 		select {
 		case <-ctxt.Done():
-			return errors.New("timeout waiting for tx finalize")
+			receipt, err := c.chain.Rpc.TransactionReceipt(ctxt, txHash)
+			if err != nil {
+				if errors.Is(err, ethereum.NotFound) {
+					return errors.New("timeout waiting for tx finalize")
+				}
+
+				return errors.Wrap(err, "failed to get transaction receipt")
+			}
+
+			if receipt.Status == types.ReceiptStatusSuccessful {
+				return nil
+			}
+
+			return errors.New("transaction failed on network")
+
 		case header, ok := <-headerChan:
 			if !ok {
 				return errors.New("receipt channel closed")
@@ -164,7 +178,7 @@ func (c *Client) finalize(ctx context.Context, txHash common.Hash) error {
 			blockNumber := rpc.BlockNumber(header.Number.Int64())
 
 			receipts, err := c.chain.Rpc.BlockReceipts(
-				ctx,
+				ctxt,
 				rpc.BlockNumberOrHash{
 					BlockNumber: &blockNumber,
 				},
