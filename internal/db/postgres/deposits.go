@@ -2,7 +2,6 @@ package pg
 
 import (
 	"database/sql"
-	"strings"
 
 	"github.com/Bridgeless-Project/relayer-svc/internal/db"
 	"github.com/Bridgeless-Project/relayer-svc/internal/types"
@@ -126,10 +125,6 @@ func (d *depositsQ) Insert(deposit db.Deposit) error {
 		})
 
 	if err := d.db.Exec(stmt); err != nil {
-		if strings.Contains(err.Error(), "duplicate key value violates unique constraint") {
-			err = db.ErrAlreadySubmitted
-		}
-
 		return err
 	}
 

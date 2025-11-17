@@ -4,7 +4,6 @@ import (
 	"fmt"
 
 	"github.com/Bridgeless-Project/relayer-svc/internal/types"
-	"github.com/pkg/errors"
 )
 
 type DepositsQ interface {
@@ -18,8 +17,6 @@ type DepositsQ interface {
 
 	Transaction(f func() error) error
 }
-
-var ErrAlreadySubmitted = errors.New("transaction already submitted")
 
 type DepositIdentifier struct {
 	TxHash  string `structs:"tx_hash" db:"tx_hash"`
