@@ -155,7 +155,7 @@ func (c *Client) finalize(ctx context.Context, txHash common.Hash) error {
 	for {
 		select {
 		case <-ctxt.Done():
-			receipt, err := c.chain.Rpc.TransactionReceipt(ctxt, txHash)
+			receipt, err := c.chain.Rpc.TransactionReceipt(ctx, txHash)
 			if err != nil {
 				if errors.Is(err, ethereum.NotFound) {
 					return errors.New("timeout waiting for tx finalize")
