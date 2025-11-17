@@ -3,14 +3,15 @@ package evm
 import (
 	"context"
 	"math/big"
+	"time"
 
 	"github.com/Bridgeless-Project/relayer-svc/internal/core"
-	"github.com/Bridgeless-Project/relayer-svc/internal/core/chain"
 	"github.com/Bridgeless-Project/relayer-svc/internal/db"
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/ethereum/go-ethereum/rpc"
 	"github.com/pkg/errors"
 )
 
@@ -129,29 +130,59 @@ func (c *Client) withdrawToken(ctx context.Context, depositData db.Deposit) (str
 }
 
 func (c *Client) finalize(ctx context.Context, txHash common.Hash) error {
-	txReceiptsQuery := &ethereum.TransactionReceiptsQuery{TransactionHashes: []common.Hash{txHash}}
-	receipts := make(chan []*types.Receipt)
-	sub, err := c.chain.Rpc.SubscribeTransactionReceipts(ctx, txReceiptsQuery, receipts)
-	if err != nil {
-		return errors.Wrap(err, "failed to subscribe to receipts")
+	ctxt, cancel := context.WithDeadline(ctx, time.Now().Add(time.Duration(c.chain.WSTimeout)*time.Second))
+	defer cancel()
+
+	headerChan := make(chan *types.Header)
+	var (
+		sub ethereum.Subscription
+		err error
+	)
+
+	subscribeToWs := func() error {
+		sub, err = c.chain.WSRpc.SubscribeNewHead(ctxt, headerChan)
+		if err != nil {
+			return errors.Wrap(err, "failed to subscribe to headers")
+		}
+
+		return nil
+	}
+	if err = core.DoWithRetry(ctx, subscribeToWs); err != nil {
+		return err
 	}
 
 	defer sub.Unsubscribe()
-
 	for {
 		select {
-		case <-ctx.Done():
-			return nil
-		case receipt := <-receipts:
-			for _, rec := range receipt {
+		case <-ctxt.Done():
+			return errors.New("timeout waiting for tx finalize")
+		case header, ok := <-headerChan:
+			if !ok {
+				return errors.New("receipt channel closed")
+			}
 
-				if rec.TxHash == txHash {
-					if rec.Status != types.ReceiptStatusSuccessful {
-						return chain.ErrTransactionFailed
-					}
+			blockNumber := rpc.BlockNumber(header.Number.Int64())
 
+			receipts, err := c.chain.Rpc.BlockReceipts(
+				ctx,
+				rpc.BlockNumberOrHash{
+					BlockNumber: &blockNumber,
+				},
+			)
+			if err != nil {
+				return errors.Wrap(err, "failed to get block receipts")
+			}
+
+			for _, receipt := range receipts {
+				if receipt.TxHash != txHash {
+					continue
+				}
+
+				if receipt.Status == types.ReceiptStatusSuccessful {
 					return nil
 				}
+
+				return errors.New("tx failed on network")
 			}
 		}
 

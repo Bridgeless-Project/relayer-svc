@@ -24,6 +24,7 @@ type Chain struct {
 	Client                ton.APIClientWrapped
 	BridgeContractAddress *address.Address
 	RPC                   RPC
+	Workers               int
 	OperatorPrivateKey    ed25519.PrivateKey `fig:"operator_private_key,required"`
 }
 
@@ -54,6 +55,10 @@ func FromChain(c chain.Chain) Chain {
 		FromInterface(c.OperatorPrivateKey).
 		With(privateKeyHook).Please(); err != nil {
 		panic(errors.Wrap(err, "failed to obtain operator private key"))
+	}
+
+	if err = figure.Out(&tonChain.Workers).FromInterface(c.Workers).Please(); err != nil {
+		panic(errors.Wrap(err, "failed to obtain workers number"))
 	}
 
 	return tonChain

@@ -76,6 +76,10 @@ func (c *Client) Type() chain.Type {
 	return chain.TypeTON
 }
 
+func (c *Client) Workers() int {
+	return c.Chain.Workers
+}
+
 func (c *Client) TransactionHashValid(hash string) bool {
 	return core.DefaultTransactionHashPattern.MatchString(hash)
 }

@@ -18,6 +18,7 @@ type Chain struct {
 	WsRpc          *ws.Client
 	BridgeAddress  solana.PublicKey
 	OperatorWallet *solana.Wallet
+	Workers        int
 
 	Meta Meta
 }
@@ -90,6 +91,9 @@ func FromChain(c chain.Chain) Chain {
 		FromInterface(c.OperatorPrivateKey).
 		With(SolanaHooks).Please(); err != nil {
 		panic(errors.Wrap(err, "failed to obtain operator wallet"))
+	}
+	if err := figure.Out(&chain.Workers).FromInterface(c.Workers).Please(); err != nil {
+		panic(errors.Wrap(err, "failed to obtain workers number"))
 	}
 
 	wsEndpoint := rpc.MainNetBeta_WS

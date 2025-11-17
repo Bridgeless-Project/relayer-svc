@@ -34,6 +34,8 @@ func (p *Client) Type() chain.Type {
 	return chain.TypeSolana
 }
 
+func (p *Client) Workers() int { return p.chain.Workers }
+
 func (p *Client) TransactionHashValid(hash string) bool {
 	return core.SolanaTransactionHashPattern.MatchString(hash)
 }

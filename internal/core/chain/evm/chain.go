@@ -19,6 +19,8 @@ type Chain struct {
 	Rpc             *ethclient.Client
 	BridgeAddress   common.Address
 	OperatorPrivKey *ecdsa.PrivateKey
+	Workers         int
+	WSRpc           *ethclient.Client
 	WSTimeout       int64
 }
 
@@ -51,7 +53,15 @@ func FromChain(c chain.Chain) Chain {
 
 	if err := figure.Out(&chain.WSTimeout).
 		FromInterface(c.WSTimeout).Please(); err != nil {
-		panic(errors.Wrap(err, "failed to obtain block time"))
+		panic(errors.Wrap(err, "failed to obtain ws timeout time"))
+	}
+
+	if err := figure.Out(&chain.Workers).FromInterface(c.Workers).Please(); err != nil {
+		panic(errors.Wrap(err, "failed to obtain workers number"))
+	}
+
+	if err := figure.Out(&chain.WSRpc).FromInterface(c.WSRpc).With(figure.EthereumHooks).Please(); err != nil {
+		panic(errors.Wrap(err, "failed to obtain ws rpc address"))
 	}
 
 	return chain
