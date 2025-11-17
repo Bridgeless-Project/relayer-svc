@@ -94,9 +94,8 @@ func runService(ctx context.Context, cfg config.Config, catchUp bool, startHeigh
 		defer wg.Done()
 		broadcaster.
 			WithClients(clientsRepo).
-			WithRetries(cfg.RetryAttempts()).
-			WithRetryTimeout(cfg.RetryTimeout()).
-			WithTxPoolSize(cfg.TxPoolSize()).
+			WithChainTxPoolSize(cfg.ChainTxPoolSize()).
+			WithSubmitTxPool(cfg.SubmitTxPoolSize()).
 			Run(ctx)
 
 		return nil

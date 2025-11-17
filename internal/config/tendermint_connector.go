@@ -21,7 +21,7 @@ type tenderminter struct {
 	once   comfig.Once
 }
 
-func (t tenderminter) TendermintHttpClient() *http.HTTP {
+func (t *tenderminter) TendermintHttpClient() *http.HTTP {
 	cfg := t.config()
 	client, err := http.New(cfg.RPC, "/websocket")
 	if err != nil {
@@ -36,7 +36,7 @@ func (t tenderminter) TendermintHttpClient() *http.HTTP {
 }
 
 func NewTenderminter(getter kv.Getter) TendermintConnector {
-	return tenderminter{
+	return &tenderminter{
 		getter: getter,
 	}
 }

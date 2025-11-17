@@ -14,6 +14,7 @@ var (
 type Client interface {
 	Type() Type
 	ChainId() string
+	Workers() int
 
 	TransactionHashValid(hash string) bool
 	IsProcessed(ctx context.Context, depositData db.Deposit) (bool, error)
@@ -24,6 +25,7 @@ type Client interface {
 type Repository interface {
 	Client(chainId string) (Client, error)
 	SupportsChain(chainId string) bool
+	Clients() map[string]Client
 }
 
 type Chain struct {
@@ -33,6 +35,8 @@ type Chain struct {
 	BridgeAddresses    any    `fig:"bridge_address,required"`
 	OperatorPrivateKey string `fig:"operator_private_key,required"`
 	WSTimeout          int64  `fig:"ws_timeout"`
+	WSRpc              any    `fig:"ws_rpc"`
+	Workers            int    `fig:"workers,required"`
 
 	Meta any `fig:"meta"`
 }

@@ -19,11 +19,11 @@ type retrier struct {
 	once   comfig.Once
 }
 
-func (r retrier) RetryAttempts() uint {
+func (r *retrier) RetryAttempts() uint {
 	return r.config().Retries
 }
 
-func (r retrier) RetryTimeout() time.Duration {
+func (r *retrier) RetryTimeout() time.Duration {
 	return time.Duration(r.config().RetryTimeout) * time.Second
 }
 
@@ -38,7 +38,7 @@ type retrierCfg struct {
 }
 
 func NewRetrier(getter kv.Getter) Retrier {
-	return retrier{
+	return &retrier{
 		getter: getter,
 	}
 }
