@@ -10,11 +10,13 @@ import (
 const yamlKey = "broadcaster"
 
 type BroadcasterConfigurer interface {
-	TxPoolSize() int64
+	ChainTxPoolSize() int64
+	SubmitTxPoolSize() int64
 }
 
 type BroadcasterConfig struct {
-	TxPoolSize int64 `fig:"tx_pool_size,required"`
+	TxPoolSize       int64 `fig:"chain_tx_pool_size,required"`
+	SubmitTxPoolSize int64 `fig:"submit_tx_pool_size,required"`
 }
 
 type configurer struct {
@@ -28,11 +30,12 @@ func NewBroadcasterConfigurer(getter kv.Getter) BroadcasterConfigurer {
 	}
 }
 
-func (b *configurer) TxPoolSize() int64 {
+func (b *configurer) ChainTxPoolSize() int64 {
 	return b.Config().TxPoolSize
 }
+func (b *configurer) SubmitTxPoolSize() int64 { return b.Config().SubmitTxPoolSize }
 
-func (c *configurer) Config() BroadcasterConfig {
+func (c *configurer) Config() *BroadcasterConfig {
 	return c.once.Do(func() interface{} {
 		cfg := &BroadcasterConfig{}
 
@@ -44,5 +47,5 @@ func (c *configurer) Config() BroadcasterConfig {
 		}
 
 		return cfg
-	}).(BroadcasterConfig)
+	}).(*BroadcasterConfig)
 }
