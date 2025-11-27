@@ -19,7 +19,7 @@ type Client interface {
 	TransactionHashValid(hash string) bool
 	IsProcessed(ctx context.Context, depositData db.Deposit) (bool, error)
 
-	Withdraw(ctx context.Context, depositData db.Deposit) (string, int64, error)
+	Withdraw(ctx context.Context, depositData *db.Deposit) (string, int64, error)
 }
 
 type Repository interface {

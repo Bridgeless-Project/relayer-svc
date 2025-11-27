@@ -10,7 +10,7 @@ import (
 	"github.com/pkg/errors"
 )
 
-func (c *Client) getSPLVault(ctx context.Context, deposit db.Deposit) (*solana.PublicKey, error) {
+func (c *Client) getSPLVault(ctx context.Context, deposit *db.Deposit) (*solana.PublicKey, error) {
 	tokenAccount, err := solana.PublicKeyFromBase58(deposit.WithdrawalToken)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to retrieve withdrawal token account")

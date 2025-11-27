@@ -84,7 +84,7 @@ func (c *Client) TransactionHashValid(hash string) bool {
 	return core.DefaultTransactionHashPattern.MatchString(hash)
 }
 
-func (c *Client) Withdraw(ctx context.Context, depositData db.Deposit) (string, int64, error) {
+func (c *Client) Withdraw(ctx context.Context, depositData *db.Deposit) (string, int64, error) {
 	ctxt := c.Chain.Client.Client().StickyContext(ctx)
 
 	if depositData.WithdrawalToken == core.DefaultNativeTokenAddress {

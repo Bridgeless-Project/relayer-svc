@@ -10,7 +10,7 @@ import (
 	"github.com/xssnick/tonutils-go/tvm/cell"
 )
 
-func (c *Client) withdrawToken(ctx context.Context, depositData db.Deposit) (string, int64, error) {
+func (c *Client) withdrawToken(ctx context.Context, depositData *db.Deposit) (string, int64, error) {
 	body, err := c.buildWithdrawJettonCell(ctx, depositData)
 	if err != nil {
 		return "", 0, errors.Wrap(err, "error building withdraw jetton cell")
@@ -26,7 +26,7 @@ func (c *Client) withdrawToken(ctx context.Context, depositData db.Deposit) (str
 	return txHash, int64(b.SeqNo), errors.Wrapf(err, "failed to withdraw jetton")
 }
 
-func (c *Client) buildWithdrawJettonCell(ctx context.Context, depositData db.Deposit) (*cell.Cell, error) {
+func (c *Client) buildWithdrawJettonCell(ctx context.Context, depositData *db.Deposit) (*cell.Cell, error) {
 	hashInt := big.NewInt(0).SetBytes(txHashToBytes32(depositData.TxHash))
 	signCell, err := getSignatureCell(depositData.Signature)
 	if err != nil {

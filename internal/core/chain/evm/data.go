@@ -30,7 +30,7 @@ func (c *Client) getWithdrawalTxHash(transactOpts *bind.TransactOpts, data []byt
 
 }
 
-func (c *Client) getWithdrawalTxData(method string, depositData db.Deposit) ([]byte, error) {
+func (c *Client) getWithdrawalTxData(method string, depositData *db.Deposit) ([]byte, error) {
 	amount, ok := new(big.Int).SetString(depositData.WithdrawalAmount, 10)
 	if !ok {
 		return nil, errors.New("failed to parse withdrawal amount")

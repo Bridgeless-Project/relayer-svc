@@ -15,7 +15,7 @@ import (
 	"github.com/pkg/errors"
 )
 
-func (c *Client) getSignHash(data db.Deposit) ([]byte, error) {
+func (c *Client) getSignHash(data *db.Deposit) ([]byte, error) {
 	amount, err := strconv.ParseUint(data.WithdrawalAmount, 10, 64)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to parse withdrawal amount")
@@ -73,7 +73,7 @@ func (c *Client) getLatestBlockWithRetry(ctx context.Context) (int64, error) {
 	return int64(block.Value.LastValidBlockHeight), nil
 }
 
-func (c *Client) getWithdrawalContext(depositData db.Deposit) (*withdrawalContext, error) {
+func (c *Client) getWithdrawalContext(depositData *db.Deposit) (*withdrawalContext, error) {
 	signatureBytes, recId, err := processSignature(depositData.Signature)
 	if err != nil {
 		return nil, errors.Wrap(err, "unable to process signature")

@@ -36,7 +36,7 @@ func New(coreConnector *connector.Connector, dbConn db.DepositsQ, tendermintClie
 		dbConn:           dbConn,
 		logger:           logger,
 		cache:            sync.Map{},
-		wg:               &sync.WaitGroup{},
+		wg:               new(sync.WaitGroup),
 		tendermintClient: tendermintClient,
 	}
 }

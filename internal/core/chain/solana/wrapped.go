@@ -9,7 +9,7 @@ import (
 	"github.com/pkg/errors"
 )
 
-func (c *Client) withdrawWrapped(ctx context.Context, depositData db.Deposit) (string, int64, error) {
+func (c *Client) withdrawWrapped(ctx context.Context, depositData *db.Deposit) (string, int64, error) {
 	withdrawalCtx, err := c.getWithdrawalContext(depositData)
 	if err != nil {
 		return "", 0, errors.Wrap(err, "failed to get withdrawal context")

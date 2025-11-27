@@ -10,7 +10,7 @@ import (
 	"github.com/pkg/errors"
 )
 
-func (c *Client) Withdraw(ctx context.Context, depositData db.Deposit) (string, int64, error) {
+func (c *Client) Withdraw(ctx context.Context, depositData *db.Deposit) (string, int64, error) {
 	if depositData.WithdrawalToken == core.DefaultNativeTokenAddress {
 		return c.withdrawNative(ctx, depositData)
 	}
@@ -18,7 +18,7 @@ func (c *Client) Withdraw(ctx context.Context, depositData db.Deposit) (string, 
 	return c.withdrawToken(ctx, depositData)
 }
 
-func (c *Client) withdrawNative(ctx context.Context, depositData db.Deposit) (string, int64, error) {
+func (c *Client) withdrawNative(ctx context.Context, depositData *db.Deposit) (string, int64, error) {
 	withdrawalCtx, err := c.getWithdrawalContext(depositData)
 	if err != nil {
 		return "", 0, errors.Wrap(err, "failed to get withdrawal context")
@@ -54,7 +54,7 @@ func (c *Client) withdrawNative(ctx context.Context, depositData db.Deposit) (st
 		errors.Wrap(err, "unable to send native withdrawal tx")
 }
 
-func (c *Client) withdrawToken(ctx context.Context, depositData db.Deposit) (string, int64, error) {
+func (c *Client) withdrawToken(ctx context.Context, depositData *db.Deposit) (string, int64, error) {
 	receiverPub, err := solana.PublicKeyFromBase58(depositData.Receiver)
 	if err != nil {
 		return "", 0, errors.Wrap(err, "failed to decode receiver public key")
