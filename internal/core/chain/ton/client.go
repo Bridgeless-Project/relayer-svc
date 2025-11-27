@@ -76,7 +76,7 @@ func (c *Client) Type() chain.Type {
 	return chain.TypeTON
 }
 
-func (c *Client) Workers() int {
+func (c *Client) WorkersCount() int {
 	return c.Chain.Workers
 }
 

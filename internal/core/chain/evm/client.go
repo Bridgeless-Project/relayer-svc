@@ -54,7 +54,7 @@ func (p *Client) Type() chain.Type {
 	return chain.TypeEVM
 }
 
-func (p *Client) Workers() int { return p.chain.Workers }
+func (p *Client) WorkersCount() int { return p.chain.Workers }
 
 func (p *Client) AddressValid(addr string) bool {
 	return common.IsHexAddress(addr)

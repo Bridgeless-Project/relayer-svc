@@ -47,7 +47,7 @@ func (b *Broadcaster) Run(ctx context.Context) {
 	for chainID, client := range b.clientsRepo.Clients() {
 		handlerChan := make(chan containers.WithdrawalContainer, b.chainTxPoolSize)
 
-		for id := 1; id <= client.Workers(); id++ {
+		for id := range client.WorkersCount() {
 			b.wg.Add(1)
 			go b.runNetworkWorker(ctx, chainID, handlerChan, id)
 		}

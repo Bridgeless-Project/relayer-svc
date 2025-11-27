@@ -14,7 +14,7 @@ var (
 type Client interface {
 	Type() Type
 	ChainId() string
-	Workers() int
+	WorkersCount() int
 
 	TransactionHashValid(hash string) bool
 	IsProcessed(ctx context.Context, depositData db.Deposit) (bool, error)
