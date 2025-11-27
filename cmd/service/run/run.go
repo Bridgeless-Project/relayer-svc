@@ -62,7 +62,10 @@ func runService(ctx context.Context, cfg config.Config, catchUp bool, startHeigh
 	clientsRepo := repository.NewClientsRepository(clients)
 	dtb := pg.NewDepositsQ(cfg.DB())
 	blocksQ := pg.NewBlocksQ(cfg.DB())
+
 	core.Logger = logger.WithField("component", "retrier")
+	core.Retries = cfg.RetryAttempts()
+	core.RetryTimeout = cfg.RetryTimeout()
 
 	connector, err := coreConnector.NewConnector(cfg.CoreConnectorConfig().Account, cfg.CoreConnectorConfig().Connection,
 		cfg.CoreConnectorConfig().Settings)
