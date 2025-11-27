@@ -5,13 +5,24 @@ import (
 	"math/big"
 	"time"
 
+	"github.com/Bridgeless-Project/relayer-svc/internal/core"
 	"github.com/Bridgeless-Project/relayer-svc/internal/db"
+	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
+	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/ethereum/go-ethereum/rpc"
 	"github.com/pkg/errors"
 )
 
-func (c *Client) WithdrawNative(ctx context.Context, depositData db.Deposit) (string, int64, error) {
+func (c *Client) Withdraw(ctx context.Context, depositData *db.Deposit) (string, int64, error) {
+	if depositData.WithdrawalToken == core.DefaultNativeTokenAddress {
+		return c.withdrawNative(ctx, depositData)
+	}
+
+	return c.withdrawToken(ctx, depositData)
+}
+func (c *Client) withdrawNative(ctx context.Context, depositData *db.Deposit) (string, int64, error) {
 	data, err := c.getWithdrawalTxData(withdrawNative, depositData)
 	if err != nil {
 		return "", 0, errors.Wrap(err, "failed to get withdrawal tx data")
@@ -63,7 +74,7 @@ func (c *Client) WithdrawNative(ctx context.Context, depositData db.Deposit) (st
 	return tx.Hash().Hex(), block, nil
 }
 
-func (c *Client) WithdrawToken(ctx context.Context, depositData db.Deposit) (string, int64, error) {
+func (c *Client) withdrawToken(ctx context.Context, depositData *db.Deposit) (string, int64, error) {
 	data, err := c.getWithdrawalTxData(withdrawERC20, depositData)
 	if err != nil {
 		return "", 0, errors.Wrap(err, "failed to get withdrawal tx data")
@@ -119,23 +130,74 @@ func (c *Client) WithdrawToken(ctx context.Context, depositData db.Deposit) (str
 }
 
 func (c *Client) finalize(ctx context.Context, txHash common.Hash) error {
-	ticker := time.NewTicker(time.Duration(c.chain.BlockTime) * time.Second)
-	defer ticker.Stop()
+	ctxt, cancel := context.WithDeadline(ctx, time.Now().Add(time.Duration(c.chain.WSTimeout)*time.Second))
+	defer cancel()
+
+	headerChan := make(chan *types.Header)
+	var (
+		sub ethereum.Subscription
+		err error
+	)
+
+	subscribeToWs := func() error {
+		sub, err = c.chain.WSRpc.SubscribeNewHead(ctxt, headerChan)
+		if err != nil {
+			return errors.Wrap(err, "failed to subscribe to headers")
+		}
+
+		return nil
+	}
+	if err = core.DoWithRetry(ctx, subscribeToWs); err != nil {
+		return err
+	}
+
+	defer sub.Unsubscribe()
 	for {
 		select {
-		case <-ctx.Done():
-			return nil
-		case <-ticker.C:
-			_, pending, err := c.chain.Rpc.TransactionByHash(ctx, txHash)
+		case <-ctxt.Done():
+			receipt, err := c.chain.Rpc.TransactionReceipt(ctx, txHash)
 			if err != nil {
-				return errors.Wrap(err, "failed to fetch transaction receipt")
+				if errors.Is(err, ethereum.NotFound) {
+					return errors.New("timeout waiting for tx finalize")
+				}
+
+				return errors.Wrap(err, "failed to get transaction receipt")
 			}
 
-			if pending {
-				continue
+			if receipt.Status == types.ReceiptStatusSuccessful {
+				return nil
 			}
 
-			return nil
+			return errors.New("transaction failed on network")
+
+		case header, ok := <-headerChan:
+			if !ok {
+				return errors.New("receipt channel closed")
+			}
+
+			blockNumber := rpc.BlockNumber(header.Number.Int64())
+
+			receipts, err := c.chain.Rpc.BlockReceipts(
+				ctxt,
+				rpc.BlockNumberOrHash{
+					BlockNumber: &blockNumber,
+				},
+			)
+			if err != nil {
+				return errors.Wrap(err, "failed to get block receipts")
+			}
+
+			for _, receipt := range receipts {
+				if receipt.TxHash != txHash {
+					continue
+				}
+
+				if receipt.Status == types.ReceiptStatusSuccessful {
+					return nil
+				}
+
+				return errors.New("tx failed on network")
+			}
 		}
 
 	}

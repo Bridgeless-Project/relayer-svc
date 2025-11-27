@@ -19,7 +19,9 @@ type Chain struct {
 	Rpc             *ethclient.Client
 	BridgeAddress   common.Address
 	OperatorPrivKey *ecdsa.PrivateKey
-	BlockTime       uint64
+	Workers         int
+	WSRpc           *ethclient.Client
+	WSTimeout       int64
 }
 
 func FromChain(c chain.Chain) Chain {
@@ -49,9 +51,17 @@ func FromChain(c chain.Chain) Chain {
 		panic(errors.Wrap(err, "failed to obtain operator private key"))
 	}
 
-	if err := figure.Out(&chain.BlockTime).
-		FromInterface(c.BlockTime).Please(); err != nil {
-		panic(errors.Wrap(err, "failed to obtain block time"))
+	if err := figure.Out(&chain.WSTimeout).
+		FromInterface(c.WSTimeout).Please(); err != nil {
+		panic(errors.Wrap(err, "failed to obtain ws timeout time"))
+	}
+
+	if err := figure.Out(&chain.Workers).FromInterface(c.Workers).Please(); err != nil {
+		panic(errors.Wrap(err, "failed to obtain workers number"))
+	}
+
+	if err := figure.Out(&chain.WSRpc).FromInterface(c.WSRpc).With(figure.EthereumHooks).Please(); err != nil {
+		panic(errors.Wrap(err, "failed to obtain ws rpc address"))
 	}
 
 	return chain
@@ -72,7 +82,7 @@ func (c *Client) prepareTxOpts(ctx context.Context, data []byte) (*bind.Transact
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to generate transactor")
 	}
-	nonce, err := c.chain.Rpc.NonceAt(ctx, c.walletAddress, nil)
+	nonce, err := c.chain.Rpc.PendingNonceAt(ctx, c.walletAddress)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to fetch operator account nonce")
 	}

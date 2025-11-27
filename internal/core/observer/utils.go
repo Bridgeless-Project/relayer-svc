@@ -1,50 +1,13 @@
 package observer
 
 import (
-	"encoding/json"
 	"fmt"
 	"strconv"
 
 	bridgeTypes "github.com/Bridgeless-Project/bridgeless-core/v12/x/bridge/types"
 	"github.com/Bridgeless-Project/relayer-svc/internal/db"
 	"github.com/pkg/errors"
-	abciTypes "github.com/tendermint/tendermint/abci/types"
 )
-
-func (o *Observer) parseDepositsFromTxResults(txs []*abciTypes.ResponseDeliverTx) ([]*db.Deposit, error) {
-	var deposits []*db.Deposit
-
-	for _, tx := range txs {
-		var msgs []MsgEvent
-
-		if tx.Log == "" || !json.Valid([]byte(tx.Log)) {
-			o.logger.Warnf("skipping invalid tx log: %s", tx.Log)
-			continue
-		}
-
-		o.logger.Debug("got log: " + tx.Log)
-		if err := json.Unmarshal([]byte(tx.Log), &msgs); err != nil {
-			return nil, errors.Wrap(err, fmt.Sprintf("Failed to unmarshal log: %v", tx.Log))
-		}
-		for _, msg := range msgs {
-			for _, event := range msg.Events {
-				if event.Type != eventDepositSubmitted {
-					continue
-				}
-
-				deposit, err := parseSubmittedDeposit(event.Attributes)
-				if err != nil {
-					return nil, errors.Wrap(err, "failed to parse deposit")
-				}
-
-				deposits = append(deposits, deposit)
-			}
-		}
-
-	}
-
-	return deposits, nil
-}
 
 func parseSubmittedDeposit(attributes []Attribute) (*db.Deposit, error) {
 	deposit := &db.Deposit{}

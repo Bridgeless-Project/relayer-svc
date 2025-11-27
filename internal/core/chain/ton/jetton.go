@@ -10,25 +10,23 @@ import (
 	"github.com/xssnick/tonutils-go/tvm/cell"
 )
 
-func (c *Client) WithdrawToken(ctx context.Context, depositData db.Deposit) (string, int64, error) {
-	ctxt := c.Chain.Client.Client().StickyContext(ctx)
-
-	body, err := c.buildWithdrawJettonCell(ctxt, depositData)
+func (c *Client) withdrawToken(ctx context.Context, depositData *db.Deposit) (string, int64, error) {
+	body, err := c.buildWithdrawJettonCell(ctx, depositData)
 	if err != nil {
 		return "", 0, errors.Wrap(err, "error building withdraw jetton cell")
 	}
 
-	b, err := c.Chain.Client.GetMasterchainInfo(ctxt)
+	b, err := c.Chain.Client.GetMasterchainInfo(ctx)
 	if err != nil {
 		return "", 0, errors.Wrap(err, "error getting master chain info")
 	}
 
-	txHash, err := c.withdraw(ctxt, body)
+	txHash, err := c.withdraw(ctx, body)
 
 	return txHash, int64(b.SeqNo), errors.Wrapf(err, "failed to withdraw jetton")
 }
 
-func (c *Client) buildWithdrawJettonCell(ctx context.Context, depositData db.Deposit) (*cell.Cell, error) {
+func (c *Client) buildWithdrawJettonCell(ctx context.Context, depositData *db.Deposit) (*cell.Cell, error) {
 	hashInt := big.NewInt(0).SetBytes(txHashToBytes32(depositData.TxHash))
 	signCell, err := getSignatureCell(depositData.Signature)
 	if err != nil {
@@ -140,4 +138,33 @@ func (c *Client) getWithdrawalJettonHash(ctx context.Context, deposit db.Deposit
 	}
 
 	return resBig.Bytes(), nil
+}
+
+func (c *Client) deriveJettonAddress(ctx context.Context, ownerAddress, jettonAddress *address.Address) (*address.Address, error) {
+	block, err := c.Chain.Client.CurrentMasterchainInfo(ctx)
+	if err != nil {
+		return nil, errors.Wrap(err, "error getting current masterchain info")
+	}
+
+	queryCell := cell.BeginCell()
+	err = queryCell.StoreAddr(ownerAddress)
+	if err != nil {
+		return nil, errors.Wrap(err, "error storing owner address")
+	}
+
+	res, err := c.Chain.Client.WaitForBlock(block.SeqNo).RunGetMethod(ctx, block, jettonAddress, getJettonWalletMethod, queryCell.EndCell().BeginParse())
+	if err != nil {
+		return nil, errors.Wrap(err, "error getting jetton address")
+	}
+
+	resSlice, err := res.Slice(0)
+	if err != nil {
+		return nil, errors.Wrap(err, "error getting result slice")
+	}
+	val, err := resSlice.LoadAddr()
+	if err != nil {
+		return nil, errors.Wrap(err, "error loading jetton address")
+	}
+
+	return val, nil
 }

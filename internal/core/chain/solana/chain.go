@@ -18,6 +18,7 @@ type Chain struct {
 	WsRpc          *ws.Client
 	BridgeAddress  solana.PublicKey
 	OperatorWallet *solana.Wallet
+	Workers        int
 
 	Meta Meta
 }
@@ -64,7 +65,7 @@ var SolanaHooks = figure.Hooks{
 	},
 }
 
-func FromChain(ctx context.Context, c chain.Chain) Chain {
+func FromChain(c chain.Chain) Chain {
 	if c.Type != chain.TypeSolana {
 		panic("chain is not Solana")
 	}
@@ -91,13 +92,16 @@ func FromChain(ctx context.Context, c chain.Chain) Chain {
 		With(SolanaHooks).Please(); err != nil {
 		panic(errors.Wrap(err, "failed to obtain operator wallet"))
 	}
+	if err := figure.Out(&chain.Workers).FromInterface(c.Workers).Please(); err != nil {
+		panic(errors.Wrap(err, "failed to obtain workers number"))
+	}
 
 	wsEndpoint := rpc.MainNetBeta_WS
 	if chain.Meta.IsTestnet {
 		wsEndpoint = rpc.TestNet_WS
 	}
 
-	wsRpc, err := ws.Connect(ctx, wsEndpoint)
+	wsRpc, err := ws.Connect(context.Background(), wsEndpoint)
 	if err != nil {
 		panic(errors.Wrap(err, "failed to connect to websocket"))
 	}

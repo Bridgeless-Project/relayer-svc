@@ -3,7 +3,6 @@ package containers
 import (
 	"context"
 
-	"github.com/Bridgeless-Project/relayer-svc/internal/core"
 	"github.com/Bridgeless-Project/relayer-svc/internal/core/chain"
 	"github.com/Bridgeless-Project/relayer-svc/internal/db"
 	"github.com/pkg/errors"
@@ -12,18 +11,7 @@ import (
 )
 
 func executeWithdrawal(ctx context.Context, chainClient chain.Client, deposit *db.Deposit, tendermintClient *http.HTTP, logger *logan.Entry) error {
-	var (
-		txHash      = defaultWithdrawalHash
-		err         error
-		blockHeight int64
-	)
-
-	switch deposit.WithdrawalToken {
-	case core.DefaultNativeTokenAddress:
-		txHash, blockHeight, err = chainClient.WithdrawNative(ctx, *deposit)
-	default:
-		txHash, blockHeight, err = chainClient.WithdrawToken(ctx, *deposit)
-	}
+	txHash, blockHeight, err := chainClient.Withdraw(ctx, deposit)
 
 	deposit.WithdrawalTxHash = &txHash
 	deposit.WithdrawalChainBlock = blockHeight

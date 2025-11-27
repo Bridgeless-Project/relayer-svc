@@ -58,7 +58,7 @@ func runService(ctx context.Context, cfg config.Config, catchUp bool, startHeigh
 	wg := new(sync.WaitGroup)
 	eg, ctx := errgroup.WithContext(ctx)
 	logger := cfg.Log()
-	clients := cfg.Clients(ctx)
+	clients := cfg.Clients()
 	clientsRepo := repository.NewClientsRepository(clients)
 	dtb := pg.NewDepositsQ(cfg.DB())
 	blocksQ := pg.NewBlocksQ(cfg.DB())
@@ -70,12 +70,9 @@ func runService(ctx context.Context, cfg config.Config, catchUp bool, startHeigh
 		return errors.Wrap(err, "failed to create connector")
 	}
 
-	broadcaster := withdrawalBroadcaster.New(connector, dtb, clientsRepo, cfg.RetryAttempts(), cfg.RetryTimeout(),
-		cfg.TendermintHttpClient(), logger.WithField("component", "broadcaster"))
+	broadcaster := withdrawalBroadcaster.New(connector, dtb, cfg.TendermintHttpClient(), logger.WithField("component", "broadcaster"))
 
-	observer := coreObserver.New(cfg.TendermintHttpClient(), cfg.RetryAttempts(), cfg.RetryTimeout(),
-		cfg.ObserverPollingInterval(), blocksQ, dtb, broadcaster, clientsRepo,
-		logger.WithField("component", "observer"))
+	observer := coreObserver.New(cfg.TendermintHttpClient(), blocksQ, dtb, broadcaster, logger.WithField("component", "observer"))
 
 	apiServer := api.NewServer(cfg.ApiGrpcListener(), cfg.ApiHttpListener(), dtb, connector, broadcaster, clientsRepo,
 		logger.WithField("component", "api-server"))
@@ -93,12 +90,20 @@ func runService(ctx context.Context, cfg config.Config, catchUp bool, startHeigh
 	wg.Add(2)
 	eg.Go(func() error {
 		defer wg.Done()
-		broadcaster.Run(ctx)
+		broadcaster.
+			WithClients(clientsRepo).
+			WithChainTxPoolSize(cfg.ChainTxPoolSize()).
+			WithSubmitTxPool(cfg.SubmitTxPoolSize()).
+			Run(ctx)
+
 		return nil
 	})
 	eg.Go(func() error {
 		defer wg.Done()
-		return errors.Wrap(observer.Run(ctx, startHeight, catchUp), "error while running observer")
+		return errors.Wrap(observer.
+			WithClientsRepo(clientsRepo).
+			WithPollingInterval(cfg.ObserverPollingInterval()).
+			Run(ctx, startHeight, catchUp), "error while running observer")
 	})
 
 	err = eg.Wait()

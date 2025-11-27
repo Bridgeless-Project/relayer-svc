@@ -10,7 +10,7 @@ import (
 	"github.com/xssnick/tonutils-go/tvm/cell"
 )
 
-func (c *Client) WithdrawNative(ctx context.Context, depositData db.Deposit) (string, int64, error) {
+func (c *Client) withdrawNative(ctx context.Context, depositData *db.Deposit) (string, int64, error) {
 	ctxt := c.Chain.Client.Client().StickyContext(ctx)
 	withdrawNativeCell, err := c.buildWithdrawNativeCell(depositData)
 	if err != nil {
@@ -27,7 +27,7 @@ func (c *Client) WithdrawNative(ctx context.Context, depositData db.Deposit) (st
 	return hash, int64(b.SeqNo), errors.Wrapf(err, "failed to withdraw native")
 }
 
-func (c *Client) buildWithdrawNativeCell(depositData db.Deposit) (*cell.Cell, error) {
+func (c *Client) buildWithdrawNativeCell(depositData *db.Deposit) (*cell.Cell, error) {
 	hashInt := big.NewInt(0).SetBytes(txHashToBytes32(depositData.TxHash))
 
 	networkCell, err := getNetworkCell(depositData.WithdrawalChainId)

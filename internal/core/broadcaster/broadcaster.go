@@ -2,16 +2,12 @@ package broadcaster
 
 import (
 	"context"
-	"fmt"
 	"sync"
-	"time"
 
-	"github.com/Bridgeless-Project/relayer-svc/internal/core"
 	"github.com/Bridgeless-Project/relayer-svc/internal/core/broadcaster/containers"
 	"github.com/Bridgeless-Project/relayer-svc/internal/core/chain"
 	"github.com/Bridgeless-Project/relayer-svc/internal/core/connector"
 	"github.com/Bridgeless-Project/relayer-svc/internal/db"
-	"github.com/Bridgeless-Project/relayer-svc/internal/types"
 	internalTypes "github.com/Bridgeless-Project/relayer-svc/internal/types"
 	"github.com/pkg/errors"
 	"github.com/tendermint/tendermint/rpc/client/http"
@@ -21,7 +17,8 @@ import (
 type Broadcaster struct {
 	coreConnector *connector.Connector
 	clientsRepo   chain.Repository
-	handlerChan   chan containers.WithdrawalContainer
+	workersMap    map[string]chan containers.WithdrawalContainer
+	submitChan    chan *db.Deposit
 
 	tendermintClient *http.HTTP
 
@@ -29,99 +26,84 @@ type Broadcaster struct {
 	logger *logan.Entry
 	cache  sync.Map
 
-	retries      uint
-	retryTimeout time.Duration
+	wg              *sync.WaitGroup
+	chainTxPoolSize int64
 }
 
-func New(coreConnector *connector.Connector, dbConn db.DepositsQ, clientsRepo chain.Repository,
-	retries uint, retryTimeout time.Duration, tendermintClient *http.HTTP, logger *logan.Entry) *Broadcaster {
+func New(coreConnector *connector.Connector, dbConn db.DepositsQ, tendermintClient *http.HTTP, logger *logan.Entry) *Broadcaster {
 	return &Broadcaster{
 		coreConnector:    coreConnector,
-		clientsRepo:      clientsRepo,
-		handlerChan:      make(chan containers.WithdrawalContainer),
 		dbConn:           dbConn,
 		logger:           logger,
 		cache:            sync.Map{},
-		retries:          retries,
+		wg:               new(sync.WaitGroup),
 		tendermintClient: tendermintClient,
-		retryTimeout:     retryTimeout,
 	}
 }
 
 func (b *Broadcaster) Run(ctx context.Context) {
-	for {
-		select {
-		case <-ctx.Done():
-			b.logger.Debug("context canceled. Stopping broadcaster")
-			return
-		case container, ok := <-b.handlerChan:
-			if !ok {
-				ctx.Done()
-				b.logger.Debug("deposit channel is closed. Stopping broadcaster")
-				return
-			}
+	b.workersMap = make(map[string]chan containers.WithdrawalContainer)
 
-			deposit, err := container.Run(ctx)
-			if err != nil {
-				b.logger.WithError(err).Error(fmt.Sprintf("error processing withdrawal, container ID: %s",
-					container.ID()))
-				continue
-			}
+	for chainID, client := range b.clientsRepo.Clients() {
+		handlerChan := make(chan containers.WithdrawalContainer, b.chainTxPoolSize)
 
-			updateTx := func() error {
-				return b.coreConnector.UpdateTxInfo(ctx, *deposit)
-			}
-
-			err = core.DoWithRetry(ctx, updateTx)
-			if err != nil {
-				b.logger.WithError(err).Error(fmt.Sprintf("error updating withdrawal info for deposit: %s",
-					deposit.String()))
-				continue
-			}
-
-			if deposit.WithdrawalStatus != internalTypes.WithdrawalStatus_WITHDRAWAL_STATUS_SUBMITTING_TO_CORE {
-				continue
-			}
-
-			err = b.dbConn.UpdateStatus(deposit.DepositIdentifier,
-				internalTypes.WithdrawalStatus_WITHDRAWAL_STATUS_PROCESSED)
-			if err != nil {
-				b.logger.WithError(err).Error(fmt.Sprintf("error updating withdrawal status to processed for deposit: %s",
-					deposit.String()))
-			}
+		for id := range client.WorkersCount() {
+			b.wg.Add(1)
+			go b.runNetworkWorker(ctx, chainID, handlerChan, id)
 		}
+
+		b.workersMap[chainID] = handlerChan
 	}
+
+	b.wg.Add(1)
+	go b.runCoreSubmitter(ctx)
+
+	b.wg.Wait()
+	for _, ch := range b.workersMap {
+		close(ch)
+	}
+
+	close(b.submitChan)
 }
 
 func (b *Broadcaster) Broadcast(deposit db.Deposit) error {
-	_, ok := b.cache.Load(deposit.String())
-	if ok {
-		return internalTypes.ErrAlreadyExists
-	}
-
-	deposit.WithdrawalStatus = types.WithdrawalStatus_WITHDRAWAL_STATUS_PENDING
-	err := b.dbConn.Insert(deposit)
+	err := b.checkExistence(deposit)
 	if err != nil {
-		if errors.Is(err, db.ErrAlreadySubmitted) {
+		if errors.Is(err, internalTypes.ErrAlreadyExists) {
 			// Store duplicate deposit identifier to cache to avoid spamming db with get queries
-			b.cache.Store(deposit.String(), nil)
-			return internalTypes.ErrAlreadyExists
+			_, ok := b.cache.Load(deposit.TxHash)
+			if !ok {
+				b.cache.Store(deposit.String(), nil)
+			}
+
+			return errors.Wrapf(err, "deposit %s already exists at db", deposit.String())
 		}
 
-		b.logger.WithError(err).Error("error inserting deposit")
-		return types.ErrFailedToBroadcast
+		return errors.Wrap(err, "error checking existence")
+	}
+
+	deposit.WithdrawalStatus = internalTypes.WithdrawalStatus_WITHDRAWAL_STATUS_PENDING
+	err = b.dbConn.Insert(deposit)
+	if err != nil {
+		return errors.Wrapf(err, "error storing deposit %s", deposit.String())
 	}
 
 	b.cache.Store(deposit.String(), nil)
 
 	chainClient, err := b.clientsRepo.Client(deposit.WithdrawalChainId)
 	if err != nil {
-		b.logger.WithError(err).Error("failed to get the withdrawal chain client")
-		return types.ErrFailedToBroadcast
+		return errors.Wrapf(internalTypes.ErrFailedToBroadcast, "failed to get the withdrawal chain client, error: %s", err.Error())
 	}
 
 	go func() {
-		b.handlerChan <- containers.NewBroadcastContainer(chainClient, deposit, b.dbConn, b.coreConnector, b.tendermintClient, b.logger)
+		b.workersMap[deposit.WithdrawalChainId] <- containers.NewBroadcastContainer(
+			chainClient,
+			deposit,
+			b.dbConn,
+			b.coreConnector,
+			b.tendermintClient,
+			b.logger,
+		)
 	}()
 
 	return nil
@@ -133,21 +115,61 @@ func (b *Broadcaster) CatchUp(deposit db.Deposit) error {
 		return internalTypes.ErrAlreadyExists
 	}
 
-	err := b.dbConn.UpdateStatus(deposit.DepositIdentifier, types.WithdrawalStatus_WITHDRAWAL_STATUS_PENDING)
+	err := b.dbConn.UpdateStatus(deposit.DepositIdentifier, internalTypes.WithdrawalStatus_WITHDRAWAL_STATUS_PENDING)
 	if err != nil {
-		return errors.Wrap(err, fmt.Sprintf("failed to update statu to pending: %s", deposit.String()))
+		return errors.Wrapf(err, "failed to update status to pending: %s", deposit.String())
 	}
 	b.cache.Store(deposit.String(), nil)
 
 	chainClient, err := b.clientsRepo.Client(deposit.WithdrawalChainId)
 	if err != nil {
-		return errors.Wrap(err, fmt.Sprintf("failed to get the withdrawal chain client: %s", deposit.String()))
+		return errors.Wrapf(err, "failed to get the withdrawal chain client: %s", deposit.String())
 	}
 
 	go func() {
-		b.handlerChan <- containers.NewCatchUpContainer(chainClient, deposit, b.dbConn,
-			b.coreConnector, b.tendermintClient, b.logger)
+		b.workersMap[deposit.WithdrawalChainId] <- containers.NewCatchUpContainer(
+			chainClient,
+			deposit,
+			b.dbConn,
+			b.coreConnector,
+			b.tendermintClient,
+			b.logger,
+		)
 	}()
 
 	return nil
+}
+
+// checkExistence checks whether deposit persists in cache or database
+func (b *Broadcaster) checkExistence(deposit db.Deposit) error {
+	_, exists := b.cache.Load(deposit.String())
+	if exists {
+		return errors.Wrapf(internalTypes.ErrAlreadyExists, "deposit %s already exists in cache", deposit.String())
+	}
+
+	depositData, err := b.dbConn.Get(deposit.DepositIdentifier)
+	if err != nil {
+		return errors.Wrap(err, "failed to retrieve deposit data")
+	}
+
+	if depositData != nil {
+		return errors.Wrapf(internalTypes.ErrAlreadyExists, "deposit %s already exists in db", deposit.String())
+	}
+
+	return nil
+}
+
+func (b *Broadcaster) WithClients(clients chain.Repository) *Broadcaster {
+	b.clientsRepo = clients
+	return b
+}
+
+func (b *Broadcaster) WithChainTxPoolSize(txPoolSize int64) *Broadcaster {
+	b.chainTxPoolSize = txPoolSize
+	return b
+}
+
+func (b *Broadcaster) WithSubmitTxPool(txPoolSize int64) *Broadcaster {
+	b.submitChan = make(chan *db.Deposit, txPoolSize)
+	return b
 }
