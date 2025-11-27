@@ -20,8 +20,6 @@ import (
 
 type Observer struct {
 	client          *http.HTTP
-	retries         uint
-	retryTimeout    time.Duration
 	pollingInterval time.Duration
 	logger          *logan.Entry
 	clientsRepo     chain.Repository
@@ -32,20 +30,25 @@ type Observer struct {
 	broadcaster *broadcaster.Broadcaster
 }
 
-func New(client *http.HTTP, retries uint, retryTimeout, pollingInterval time.Duration, blocksDb db.BlocksQ,
-	depositsDb db.DepositsQ, brcst *broadcaster.Broadcaster, clientsRepo chain.Repository, logger *logan.Entry) *Observer {
+func New(client *http.HTTP, blocksDb db.BlocksQ, depositsDb db.DepositsQ, brcst *broadcaster.Broadcaster, logger *logan.Entry) *Observer {
 
 	return &Observer{
-		client:          client,
-		retries:         retries,
-		retryTimeout:    retryTimeout,
-		pollingInterval: pollingInterval,
-		blockDb:         blocksDb,
-		depositsDb:      depositsDb,
-		broadcaster:     brcst,
-		clientsRepo:     clientsRepo,
-		logger:          logger,
+		client:      client,
+		blockDb:     blocksDb,
+		depositsDb:  depositsDb,
+		broadcaster: brcst,
+		logger:      logger,
 	}
+}
+
+func (o *Observer) WithClientsRepo(clientsRepo chain.Repository) *Observer {
+	o.clientsRepo = clientsRepo
+	return o
+}
+
+func (o *Observer) WithPollingInterval(pollingInterval time.Duration) *Observer {
+	o.pollingInterval = pollingInterval
+	return o
 }
 
 func (o *Observer) Run(ctx context.Context, startHeight uint64, catchup bool) error {

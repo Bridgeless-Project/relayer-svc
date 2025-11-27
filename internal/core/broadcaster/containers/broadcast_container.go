@@ -41,7 +41,7 @@ func (b *broadcastContainer) ID() string {
 }
 
 func (b *broadcastContainer) Run(ctx context.Context) (*db.Deposit, error) {
-	processed, err := b.isAlreadyProcessed(ctx)
+	processed, err := b.chainClient.IsProcessed(ctx, *b.deposit)
 	if err != nil {
 
 		b.deposit.WithdrawalStatus = internalTypes.WithdrawalStatus_WITHDRAWAL_STATUS_FAILED
@@ -116,13 +116,4 @@ func (b *broadcastContainer) Run(ctx context.Context) (*db.Deposit, error) {
 	}
 
 	return b.deposit, nil
-}
-
-func (b *broadcastContainer) isAlreadyProcessed(ctx context.Context) (bool, error) {
-	processed, err := b.chainClient.IsProcessed(ctx, *b.deposit)
-	if err != nil {
-		return false, errors.Wrap(err, "error validating withdrawal existence on chain")
-	}
-
-	return processed, nil
 }
