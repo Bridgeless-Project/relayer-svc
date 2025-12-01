@@ -26,20 +26,6 @@ func (i Implementation) SubmitWithdrawal(ctx context.Context, identifier *intern
 		return nil, status.Errorf(codes.InvalidArgument, "invalid identifier %s: %v", identifier, err)
 	}
 
-	client, err := clients.Client(identifier.ChainId)
-	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, fmt.Sprintf("chain %s is not supported", identifier.ChainId))
-	}
-
-	err = common.ValidateTxHash(identifier, client)
-	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, "invalid chain identifier %s: %v", identifier, err)
-	}
-
-	if !client.TransactionHashValid(identifier.TxHash) {
-		return nil, status.Error(codes.InvalidArgument, "invalid transaction hash")
-	}
-
 	deposit, err := connector.GetDeposit(ctx, common.ToDbIdentifier(identifier))
 	if err != nil {
 		if strings.Contains(err.Error(), "not found") {
@@ -47,6 +33,15 @@ func (i Implementation) SubmitWithdrawal(ctx context.Context, identifier *intern
 		}
 
 		return nil, status.Error(codes.Internal, "unable to process withdrawal")
+	}
+
+	if ok := clients.SupportsChain(deposit.WithdrawalChainId); !ok {
+		return nil, status.Error(codes.InvalidArgument, fmt.Sprintf("client does not support the chain %s",
+			deposit.WithdrawalChainId))
+	}
+
+	if deposit.WithdrawalTxHash != nil {
+		return nil, status.Error(codes.InvalidArgument, "deposit is already withdrawn")
 	}
 
 	err = broadcaster.Broadcast(*deposit)

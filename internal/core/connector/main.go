@@ -68,14 +68,13 @@ func NewConnector(account core.Account, conn *grpc.ClientConn, settings Settings
 
 }
 
-func (c *Connector) getAccountSequence() uint64 {
-	c.mu.Lock()
-	defer c.mu.Unlock()
+func (c *Connector) getAccountSequence(ctx context.Context) (uint64, error) {
+	accountData, err := getAccountData(ctx, c.auther, c.account.CosmosAddress())
+	if err != nil {
+		return 0, errors.Wrap(err, "failed to get account data")
+	}
 
-	seq := c.accountSequence
-	c.accountSequence++
-
-	return seq
+	return accountData.Sequence, nil
 }
 
 func (c *Connector) submitMsgs(ctx context.Context, msgs ...sdk.Msg) error {
@@ -85,7 +84,7 @@ func (c *Connector) submitMsgs(ctx context.Context, msgs ...sdk.Msg) error {
 
 	feeAmount := gasLimit * c.settings.MinGasPrice
 
-	tx, err := c.buildTx(gasLimit, feeAmount, msgs...)
+	tx, err := c.buildTx(ctx, gasLimit, feeAmount, msgs...)
 	if err != nil {
 		return errors.Wrap(err, "failed to build transaction")
 	}
@@ -109,20 +108,23 @@ func (c *Connector) submitMsgs(ctx context.Context, msgs ...sdk.Msg) error {
 }
 
 // buildTx builds a transaction from the given messages.
-func (c *Connector) buildTx(gasLimit, feeAmount uint64, msgs ...sdk.Msg) ([]byte, error) {
+func (c *Connector) buildTx(ctx context.Context, gasLimit, feeAmount uint64, msgs ...sdk.Msg) ([]byte, error) {
 	txBuilder := c.txConfiger.NewTxBuilder()
 
 	if err := txBuilder.SetMsgs(msgs...); err != nil {
 		return nil, errors.Wrap(err, "failed to set messages")
 	}
 
-	sequence := c.getAccountSequence()
+	sequence, err := c.getAccountSequence(ctx)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to get account sequence")
+	}
 
 	txBuilder.SetGasLimit(gasLimit)
 	txBuilder.SetFeeAmount(sdk.Coins{sdk.NewInt64Coin(c.settings.Denom, int64(feeAmount))})
 
 	signMode := c.txConfiger.SignModeHandler().DefaultMode()
-	err := txBuilder.SetSignatures(signing.SignatureV2{
+	err = txBuilder.SetSignatures(signing.SignatureV2{
 		PubKey: c.account.PublicKey(),
 		Data: &signing.SingleSignatureData{
 			SignMode:  signMode,

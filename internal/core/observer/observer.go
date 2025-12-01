@@ -2,13 +2,17 @@ package observer
 
 import (
 	"context"
+	"encoding/json"
+	"fmt"
 	"time"
 
+	"github.com/Bridgeless-Project/relayer-svc/internal/core"
 	"github.com/Bridgeless-Project/relayer-svc/internal/core/broadcaster"
 	"github.com/Bridgeless-Project/relayer-svc/internal/core/chain"
 	"github.com/Bridgeless-Project/relayer-svc/internal/db"
-	"github.com/Bridgeless-Project/relayer-svc/internal/types"
+	internalTypes "github.com/Bridgeless-Project/relayer-svc/internal/types"
 	"github.com/pkg/errors"
+	abciTypes "github.com/tendermint/tendermint/abci/types"
 	"github.com/tendermint/tendermint/rpc/client/http"
 	"github.com/tendermint/tendermint/rpc/core/types"
 	"gitlab.com/distributed_lab/logan/v3"
@@ -16,8 +20,6 @@ import (
 
 type Observer struct {
 	client          *http.HTTP
-	retries         int64
-	retryTimeout    time.Duration
 	pollingInterval time.Duration
 	logger          *logan.Entry
 	clientsRepo     chain.Repository
@@ -28,36 +30,40 @@ type Observer struct {
 	broadcaster *broadcaster.Broadcaster
 }
 
-func New(client *http.HTTP, retries int64, retryTimeout, pollingInterval time.Duration, blocksDb db.BlocksQ,
-	depositsDb db.DepositsQ, brcst *broadcaster.Broadcaster, clientsRepo chain.Repository, logger *logan.Entry) *Observer {
+func New(client *http.HTTP, blocksDb db.BlocksQ, depositsDb db.DepositsQ, brcst *broadcaster.Broadcaster, logger *logan.Entry) *Observer {
 
 	return &Observer{
-		client:          client,
-		retries:         retries,
-		retryTimeout:    retryTimeout,
-		pollingInterval: pollingInterval,
-		blockDb:         blocksDb,
-		depositsDb:      depositsDb,
-		broadcaster:     brcst,
-		clientsRepo:     clientsRepo,
-		logger:          logger,
+		client:      client,
+		blockDb:     blocksDb,
+		depositsDb:  depositsDb,
+		broadcaster: brcst,
+		logger:      logger,
 	}
+}
+
+func (o *Observer) WithClientsRepo(clientsRepo chain.Repository) *Observer {
+	o.clientsRepo = clientsRepo
+	return o
+}
+
+func (o *Observer) WithPollingInterval(pollingInterval time.Duration) *Observer {
+	o.pollingInterval = pollingInterval
+	return o
 }
 
 func (o *Observer) Run(ctx context.Context, startHeight uint64, catchup bool) error {
 	// Firstly catch up pending deposits from db
 	if catchup {
-		deposits, err := o.depositsDb.GetWithStatus(types.WithdrawalStatus_WITHDRAWAL_STATUS_PENDING)
-		if err != nil {
-			return errors.Wrap(err, "failed to get unprocessed deposits")
+		if err := o.catchupWithStatus(internalTypes.WithdrawalStatus_WITHDRAWAL_STATUS_PENDING); err != nil {
+			o.logger.WithError(err).Error("catchup with status pending failed")
 		}
 
-		for _, deposit := range deposits {
-			err = o.broadcaster.Broadcast(deposit)
-			if err != nil {
-				o.logger.Errorf("failed to broadcast deposit: %v", err)
-				continue
-			}
+		if err := o.catchupWithStatus(internalTypes.WithdrawalStatus_WITHDRAWAL_STATUS_PROCESSING); err != nil {
+			o.logger.WithError(err).Error("catchup with status processing failed")
+		}
+
+		if err := o.catchupWithStatus(internalTypes.WithdrawalStatus_WITHDRAWAL_STATUS_SUBMITTING_TO_CORE); err != nil {
+			o.logger.WithError(err).Error("catchup with status submitting failed")
 		}
 	}
 
@@ -104,22 +110,31 @@ func (o *Observer) fetchDeposits(ctx context.Context, startHeight uint64) error 
 			}
 
 			if err = o.blockDb.UpdateLatestBlockId(db.LatestBlock{BlockId: int64(startHeight)}); err != nil {
-				o.logger.WithError(err).Error("failed to update latest block height")
+				o.logger.WithError(err).
+					WithField("blockNumber", startHeight).
+					Error("failed to update latest block height")
+				startHeight++
 				continue
 			}
 
 			deposits, err := o.fetchSubmitDepositEvents(ctx, int64(startHeight))
 			if err != nil {
-				o.logger.WithError(err).Error("failed to fetch submit deposit events")
+				o.logger.WithError(err).
+					WithField("blockNumber", startHeight).
+					Error("failed to fetch submit deposit events")
+				startHeight++
 				continue
 			}
 
 			for _, deposit := range deposits {
-				if err = o.broadcastDeposit(ctx, *deposit); err != nil {
+				if err = o.broadcastDeposit(*deposit); err != nil {
 					if errors.Is(err, skippedDeposit) {
 						continue
 					}
-					o.logger.Warnf("failed to broadcast deposit: %v", err)
+					o.logger.
+						WithField("blockNumber", startHeight).
+						Warnf("failed to broadcast deposit: %v", err)
+					startHeight++
 					continue
 				}
 			}
@@ -141,7 +156,7 @@ func (o *Observer) getCurrentHeight(ctx context.Context) (uint64, error) {
 		return nil
 	}
 
-	if err := o.doWithRetry(ctx, getCurrentHeight); err != nil {
+	if err := core.DoWithRetry(ctx, getCurrentHeight); err != nil {
 		return 0, errors.Wrap(err, "failed to get current height")
 	}
 
@@ -161,11 +176,11 @@ func (o *Observer) fetchSubmitDepositEvents(ctx context.Context, height int64) (
 		return nil
 	}
 
-	if err := o.doWithRetry(ctx, getBlockResult); err != nil {
+	if err := core.DoWithRetry(ctx, getBlockResult); err != nil {
 		return nil, errors.Wrap(err, "failed to get block results")
 	}
 
-	deposits, err := parseDepositsFromTxResults(blockResult.TxsResults)
+	deposits, err := o.parseDepositsFromTxResults(blockResult.TxsResults)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to parse deposits from tx results")
 	}
@@ -181,7 +196,7 @@ func (o *Observer) isProcessed(deposit db.Deposit) (bool, error) {
 	return false, nil
 }
 
-func (o *Observer) broadcastDeposit(ctx context.Context, deposit db.Deposit) error {
+func (o *Observer) broadcastDeposit(deposit db.Deposit) error {
 	processed, err := o.isProcessed(deposit)
 	if err != nil {
 		return errors.Wrap(err, "failed to check if deposit is processed")
@@ -197,4 +212,56 @@ func (o *Observer) broadcastDeposit(ctx context.Context, deposit db.Deposit) err
 	}
 
 	return nil
+}
+
+func (o *Observer) catchupWithStatus(status internalTypes.WithdrawalStatus) error {
+	deposits, err := o.depositsDb.GetWithStatus(status)
+	if err != nil {
+		return errors.Wrap(err, "failed to get unprocessed deposits")
+	}
+
+	for _, deposit := range deposits {
+		err = o.broadcaster.CatchUp(deposit)
+		if err != nil {
+			o.logger.Errorf("failed to broadcast deposit to catchup deposit: %v", err)
+			continue
+		}
+	}
+
+	return nil
+}
+
+func (o *Observer) parseDepositsFromTxResults(txs []*abciTypes.ResponseDeliverTx) ([]*db.Deposit, error) {
+	var deposits []*db.Deposit
+
+	for _, tx := range txs {
+		var msgs []MsgEvent
+
+		if tx.Log == "" || !json.Valid([]byte(tx.Log)) {
+			o.logger.Warnf("skipping invalid tx log: %s", tx.Log)
+			continue
+		}
+
+		o.logger.Debug("got log: " + tx.Log)
+		if err := json.Unmarshal([]byte(tx.Log), &msgs); err != nil {
+			return nil, errors.Wrap(err, fmt.Sprintf("Failed to unmarshal log: %v", tx.Log))
+		}
+		for _, msg := range msgs {
+			for _, event := range msg.Events {
+				if event.Type != eventDepositSubmitted {
+					continue
+				}
+
+				deposit, err := parseSubmittedDeposit(event.Attributes)
+				if err != nil {
+					return nil, errors.Wrap(err, "failed to parse deposit")
+				}
+
+				deposits = append(deposits, deposit)
+			}
+		}
+
+	}
+
+	return deposits, nil
 }

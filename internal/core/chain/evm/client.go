@@ -12,23 +12,15 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/pkg/errors"
 )
 
-const (
-	EventDepositedNative = "DepositedNative"
-	EventDepositedERC20  = "DepositedERC20"
-)
-
-var events = []string{
-	EventDepositedNative,
-	EventDepositedERC20,
-}
-
 type Client struct {
 	chain          Chain
 	contractClient *contracts.Bridge
+	abi            *abi.ABI
 	walletAddress  common.Address
 }
 
@@ -37,15 +29,6 @@ func NewBridgeClient(chain Chain) *Client {
 	bridgeAbi, err := abi.JSON(strings.NewReader(contracts.BridgeMetaData.ABI))
 	if err != nil {
 		panic(errors.Wrap(err, "failed to parse bridge ABI"))
-	}
-
-	depositEvents := make([]abi.Event, len(events))
-	for i, event := range events {
-		depositEvent, ok := bridgeAbi.Events[event]
-		if !ok {
-			panic("wrong bridge ABI events")
-		}
-		depositEvents[i] = depositEvent
 	}
 
 	contractClient, err := contracts.NewBridge(chain.BridgeAddress, chain.Rpc)
@@ -57,6 +40,7 @@ func NewBridgeClient(chain Chain) *Client {
 
 	return &Client{
 		chain:          chain,
+		abi:            &bridgeAbi,
 		contractClient: contractClient,
 		walletAddress:  walletAddress,
 	}
@@ -69,6 +53,8 @@ func (p *Client) ChainId() string {
 func (p *Client) Type() chain.Type {
 	return chain.TypeEVM
 }
+
+func (p *Client) WorkersCount() int { return p.chain.Workers }
 
 func (p *Client) AddressValid(addr string) bool {
 	return common.IsHexAddress(addr)
@@ -90,4 +76,26 @@ func (c *Client) IsProcessed(ctx context.Context, depositData db.Deposit) (bool,
 	}
 
 	return used, nil
+}
+
+func (c *Client) getBlockWithRetry(ctx context.Context) (int64, error) {
+	var (
+		header *types.Header
+		err    error
+	)
+	getBlock := func() error {
+		header, err = c.chain.Rpc.HeaderByNumber(ctx, nil)
+		if err != nil {
+			return errors.Wrap(err, "failed to get block header")
+		}
+
+		return nil
+	}
+
+	err = core.DoWithRetry(ctx, getBlock)
+	if err != nil {
+		return 0, errors.Wrap(err, "failed to get block")
+	}
+
+	return header.Number.Int64(), nil
 }

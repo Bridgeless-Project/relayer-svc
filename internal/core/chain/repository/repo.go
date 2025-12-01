@@ -27,6 +27,10 @@ func (p clientsRepository) Client(chainId string) (chain.Client, error) {
 	return cl, nil
 }
 
+func (p clientsRepository) Clients() map[string]chain.Client {
+	return p.clients
+}
+
 func (p clientsRepository) SupportsChain(chainId string) bool {
 	_, ok := p.clients[chainId]
 	return ok

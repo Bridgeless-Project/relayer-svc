@@ -9,15 +9,15 @@ import (
 	"github.com/pkg/errors"
 )
 
-func (c *Client) withdrawWrapped(ctx context.Context, depositData db.Deposit) (string, error) {
+func (c *Client) withdrawWrapped(ctx context.Context, depositData *db.Deposit) (string, int64, error) {
 	withdrawalCtx, err := c.getWithdrawalContext(depositData)
 	if err != nil {
-		return "", errors.Wrap(err, "failed to get withdrawal context")
+		return "", 0, errors.Wrap(err, "failed to get withdrawal context")
 	}
 
 	tokenData, err := c.getTokenMetadata(withdrawalCtx.Token)
 	if err != nil {
-		return "", errors.Wrap(err, "failed to get withdrawal token metadata")
+		return "", 0, errors.Wrap(err, "failed to get withdrawal token metadata")
 	}
 
 	withdrawInstruction := contract.NewWithdrawWrappedInstruction(
@@ -37,10 +37,24 @@ func (c *Client) withdrawWrapped(ctx context.Context, depositData db.Deposit) (s
 		solana.SystemProgramID,
 		solana.Token2022ProgramID,
 	)
-	txHash, err := c.SendTx(ctx, withdrawInstruction.Build())
+
+	blockNumber, err := c.getLatestBlockWithRetry(ctx)
 	if err != nil {
-		return "", errors.Wrap(err, "unable to send withdrawal wrapped instruction")
+		return "", 0, errors.Wrap(err, "failed to get latest block number")
 	}
 
-	return txHash.String(), nil
+	txHash, err := c.SendTx(ctx, withdrawInstruction.Build())
+	if err != nil {
+		if txHash != nil {
+			return txHash.String(),
+				blockNumber,
+				errors.Wrapf(err, "unable to send withdrawal wrapped instruction")
+		}
+
+		return "",
+			blockNumber,
+			errors.Wrap(err, "unable to send withdrawal wrapped instruction")
+	}
+
+	return txHash.String(), blockNumber, nil
 }

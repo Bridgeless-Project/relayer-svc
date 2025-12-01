@@ -194,6 +194,14 @@
         },
         "chainId": {
           "type": "string"
+        },
+        "withdrawalCoreBlock": {
+          "type": "string",
+          "format": "int64"
+        },
+        "withdrawalChainBlock": {
+          "type": "string",
+          "format": "int64"
         }
       }
     },
@@ -203,6 +211,7 @@
         "WITHDRAWAL_STATUS_UNSPECIFIED",
         "WITHDRAWAL_STATUS_PENDING",
         "WITHDRAWAL_STATUS_PROCESSING",
+        "WITHDRAWAL_STATUS_SUBMITTING_TO_CORE",
         "WITHDRAWAL_STATUS_PROCESSED",
         "WITHDRAWAL_STATUS_FAILED",
         "WITHDRAWAL_STATUS_ALREADY_EXISTS"

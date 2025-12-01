@@ -9,20 +9,20 @@ import (
 	"github.com/pkg/errors"
 )
 
-func (c *Client) withdrawSPL(ctx context.Context, depositData db.Deposit) (string, error) {
+func (c *Client) withdrawSPL(ctx context.Context, depositData *db.Deposit) (string, int64, error) {
 	withdrawalCtx, err := c.getWithdrawalContext(depositData)
 	if err != nil {
-		return "", errors.Wrap(err, "failed to get withdrawal context")
+		return "", 0, errors.Wrap(err, "failed to get withdrawal context")
 	}
 
 	vault, err := c.getSPLVault(ctx, depositData)
 	if err != nil {
-		return "", errors.Wrap(err, "failed to get withdrawal SPL vault")
+		return "", 0, errors.Wrap(err, "failed to get withdrawal SPL vault")
 	}
 
 	tokenInfo, err := c.chain.Rpc.GetAccountInfo(ctx, withdrawalCtx.Token)
 	if err != nil {
-		return "", errors.Wrap(err, "failed to get token info")
+		return "", 0, errors.Wrap(err, "failed to get token info")
 	}
 
 	withdrawInstruction := contract.NewWithdrawSplInstruction(
@@ -42,9 +42,24 @@ func (c *Client) withdrawSPL(ctx context.Context, depositData db.Deposit) (strin
 		tokenInfo.Value.Owner,
 	)
 
+	blockNumber, err := c.getLatestBlockWithRetry(ctx)
+	if err != nil {
+		return "", 0, errors.Wrap(err, "failed to get latest block number")
+	}
+
 	txHash, err := c.SendTx(ctx, withdrawInstruction.Build())
 	if err != nil {
-		return "", errors.Wrap(err, "unable to send withdrawal token instruction")
+
+		if txHash != nil {
+			return txHash.String(),
+				blockNumber,
+				errors.Wrap(err, "failed to send withdrawal tx")
+		}
+
+		return "",
+			blockNumber,
+			errors.Wrap(err, "unable to send withdrawal token instruction")
 	}
-	return txHash.String(), nil
+
+	return txHash.String(), blockNumber, nil
 }

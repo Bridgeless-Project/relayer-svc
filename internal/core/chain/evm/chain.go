@@ -6,6 +6,7 @@ import (
 	"math/big"
 
 	"github.com/Bridgeless-Project/relayer-svc/internal/core/chain"
+	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/ethclient"
@@ -18,6 +19,9 @@ type Chain struct {
 	Rpc             *ethclient.Client
 	BridgeAddress   common.Address
 	OperatorPrivKey *ecdsa.PrivateKey
+	Workers         int
+	WSRpc           *ethclient.Client
+	WSTimeout       int64
 }
 
 func FromChain(c chain.Chain) Chain {
@@ -34,21 +38,36 @@ func FromChain(c chain.Chain) Chain {
 		With(figure.EthereumHooks).Please(); err != nil {
 		panic(errors.Wrap(err, "failed to obtain Ethereum clients"))
 	}
+
 	if err := figure.Out(&chain.BridgeAddress).
 		FromInterface(c.BridgeAddresses).
 		With(figure.EthereumHooks).Please(); err != nil {
 		panic(errors.Wrap(err, "failed to obtain bridge addresses"))
 	}
+
 	if err := figure.Out(&chain.OperatorPrivKey).
 		FromInterface(c.OperatorPrivateKey).
 		With(figure.EthereumHooks).Please(); err != nil {
 		panic(errors.Wrap(err, "failed to obtain operator private key"))
 	}
 
+	if err := figure.Out(&chain.WSTimeout).
+		FromInterface(c.WSTimeout).Please(); err != nil {
+		panic(errors.Wrap(err, "failed to obtain ws timeout time"))
+	}
+
+	if err := figure.Out(&chain.Workers).FromInterface(c.Workers).Please(); err != nil {
+		panic(errors.Wrap(err, "failed to obtain workers number"))
+	}
+
+	if err := figure.Out(&chain.WSRpc).FromInterface(c.WSRpc).With(figure.EthereumHooks).Please(); err != nil {
+		panic(errors.Wrap(err, "failed to obtain ws rpc address"))
+	}
+
 	return chain
 }
 
-func (c *Client) prepareTxOpts(ctx context.Context) (*bind.TransactOpts, error) {
+func (c *Client) prepareTxOpts(ctx context.Context, data []byte) (*bind.TransactOpts, error) {
 	gasPrice, err := c.chain.Rpc.SuggestGasPrice(ctx)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to fetch gas price")
@@ -63,7 +82,7 @@ func (c *Client) prepareTxOpts(ctx context.Context) (*bind.TransactOpts, error) 
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to generate transactor")
 	}
-	nonce, err := c.chain.Rpc.NonceAt(ctx, c.walletAddress, nil)
+	nonce, err := c.chain.Rpc.PendingNonceAt(ctx, c.walletAddress)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to fetch operator account nonce")
 	}
@@ -71,5 +90,19 @@ func (c *Client) prepareTxOpts(ctx context.Context) (*bind.TransactOpts, error) 
 	tx.Nonce = big.NewInt(0).SetUint64(nonce)
 
 	tx.GasPrice = gasPrice
+
+	callMsg := ethereum.CallMsg{
+		From:     c.walletAddress,
+		To:       &c.chain.BridgeAddress,
+		GasPrice: gasPrice,
+		Data:     data,
+	}
+
+	gasLimit, err := c.chain.Rpc.EstimateGas(ctx, callMsg)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to estimate gas limit")
+	}
+
+	tx.GasLimit = gasLimit
 	return tx, nil
 }

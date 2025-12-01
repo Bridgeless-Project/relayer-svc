@@ -52,8 +52,10 @@ func ToStatusResponse(d *database.Deposit) *apiTypes.CheckWithdrawalResponse {
 		Signature:        &d.Signature,
 	}
 	result.WithdrawalIdentifier = &types.WithdrawalIdentifier{
-		TxHash:  d.WithdrawalTxHash,
-		ChainId: d.WithdrawalChainId,
+		TxHash:               d.WithdrawalTxHash,
+		ChainId:              d.WithdrawalChainId,
+		WithdrawalChainBlock: &d.WithdrawalChainBlock,
+		WithdrawalCoreBlock:  &d.WithdrawalCoreBlock,
 	}
 
 	return result

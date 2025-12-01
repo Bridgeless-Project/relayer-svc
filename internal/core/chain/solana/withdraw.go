@@ -3,16 +3,25 @@ package solana
 import (
 	"context"
 
+	"github.com/Bridgeless-Project/relayer-svc/internal/core"
 	"github.com/Bridgeless-Project/relayer-svc/internal/core/chain/solana/contract"
 	"github.com/Bridgeless-Project/relayer-svc/internal/db"
 	"github.com/gagliardetto/solana-go"
 	"github.com/pkg/errors"
 )
 
-func (c *Client) WithdrawNative(ctx context.Context, depositData db.Deposit) (string, error) {
+func (c *Client) Withdraw(ctx context.Context, depositData *db.Deposit) (string, int64, error) {
+	if depositData.WithdrawalToken == core.DefaultNativeTokenAddress {
+		return c.withdrawNative(ctx, depositData)
+	}
+
+	return c.withdrawToken(ctx, depositData)
+}
+
+func (c *Client) withdrawNative(ctx context.Context, depositData *db.Deposit) (string, int64, error) {
 	withdrawalCtx, err := c.getWithdrawalContext(depositData)
 	if err != nil {
-		return "", errors.Wrap(err, "failed to get withdrawal context")
+		return "", 0, errors.Wrap(err, "failed to get withdrawal context")
 	}
 
 	withdrawInstruction := contract.NewWithdrawNativeInstruction(
@@ -28,34 +37,39 @@ func (c *Client) WithdrawNative(ctx context.Context, depositData db.Deposit) (st
 		c.chain.OperatorWallet.PublicKey(),
 		solana.SystemProgramID)
 
-	hash, err := c.SendTx(ctx, withdrawInstruction.Build())
+	blockNumber, err := c.getLatestBlockWithRetry(ctx)
 	if err != nil {
-		return "", errors.Wrap(err, "unable to send withdrawal")
+		return "", 0, errors.Wrap(err, "failed to get latest block number")
 	}
-	return hash.String(), nil
+
+	hash, err := c.SendTx(ctx, withdrawInstruction.Build())
+	if hash == nil {
+		return "",
+			blockNumber,
+			errors.Wrap(err, "failed to send withdrawal tx")
+	}
+
+	return hash.String(),
+		blockNumber,
+		errors.Wrap(err, "unable to send native withdrawal tx")
 }
 
-func (c *Client) WithdrawToken(ctx context.Context, depositData db.Deposit) (string, error) {
+func (c *Client) withdrawToken(ctx context.Context, depositData *db.Deposit) (string, int64, error) {
 	receiverPub, err := solana.PublicKeyFromBase58(depositData.Receiver)
 	if err != nil {
-		return "", errors.Wrap(err, "failed to decode receiver public key")
+		return "", 0, errors.Wrap(err, "failed to decode receiver public key")
 	}
 	_, err = c.chain.Rpc.GetAccountInfo(ctx, receiverPub)
 	if err != nil {
-		return "", errors.Wrap(err, "failed to get receiver account info")
+		return "", 0, errors.Wrap(err, "failed to get receiver account info")
 	}
 
 	if !depositData.IsWrappedToken {
-		txHash, err := c.withdrawSPL(ctx, depositData)
-		if err != nil {
-			return "", errors.Wrap(err, "failed to withdraw SPL token")
-		}
-		return txHash, nil
+		txHash, blockHeight, err := c.withdrawSPL(ctx, depositData)
+		return txHash, blockHeight, errors.Wrap(err, "failed to withdraw SPL token")
 	}
 
-	hash, err := c.withdrawWrapped(ctx, depositData)
-	if err != nil {
-		return "", errors.Wrap(err, "failed to withdraw wrapped token")
-	}
-	return hash, nil
+	txHash, blockHeight, err := c.withdrawWrapped(ctx, depositData)
+	return txHash, blockHeight, errors.Wrap(err, "failed to withdraw wrapped token")
+
 }

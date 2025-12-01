@@ -2,13 +2,11 @@ package ton
 
 import (
 	"bytes"
-	"context"
 	"fmt"
 
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/pkg/errors"
-	"github.com/xssnick/tonutils-go/address"
 	tonAddress "github.com/xssnick/tonutils-go/address"
 	"github.com/xssnick/tonutils-go/tvm/cell"
 )
@@ -41,35 +39,6 @@ func getSignatureCell(signature string) (*cell.Cell, error) {
 	}
 
 	return signatureCell.EndCell(), nil
-}
-
-func (c *Client) deriveJettonAddress(ctx context.Context, ownerAddress, jettonAddress *address.Address) (*address.Address, error) {
-	block, err := c.Chain.Client.CurrentMasterchainInfo(ctx)
-	if err != nil {
-		return nil, errors.Wrap(err, "error getting current masterchain info")
-	}
-
-	queryCell := cell.BeginCell()
-	err = queryCell.StoreAddr(ownerAddress)
-	if err != nil {
-		return nil, errors.Wrap(err, "error storing owner address")
-	}
-
-	res, err := c.Chain.Client.WaitForBlock(block.SeqNo).RunGetMethod(ctx, block, jettonAddress, getJettonWalletMethod, queryCell.EndCell().BeginParse())
-	if err != nil {
-		return nil, errors.Wrap(err, "error getting jetton address")
-	}
-
-	resSlice, err := res.Slice(0)
-	if err != nil {
-		return nil, errors.Wrap(err, "error getting result slice")
-	}
-	val, err := resSlice.LoadAddr()
-	if err != nil {
-		return nil, errors.Wrap(err, "error loading jetton address")
-	}
-
-	return val, nil
 }
 
 func fillBytesToSize(str string, size int, fill byte) ([]byte, error) {

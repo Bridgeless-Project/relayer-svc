@@ -5,33 +5,30 @@ import (
 	"math/big"
 
 	"github.com/Bridgeless-Project/relayer-svc/internal/db"
-	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/pkg/errors"
 	"github.com/xssnick/tonutils-go/address"
 	"github.com/xssnick/tonutils-go/tvm/cell"
 )
 
-func (c *Client) WithdrawNative(ctx context.Context, depositData db.Deposit) (txHash string, err error) {
+func (c *Client) withdrawNative(ctx context.Context, depositData *db.Deposit) (string, int64, error) {
 	ctxt := c.Chain.Client.Client().StickyContext(ctx)
 	withdrawNativeCell, err := c.buildWithdrawNativeCell(depositData)
 	if err != nil {
-		return "", errors.Wrap(err, "failed to build withdraw native cell")
+		return "", 0, errors.Wrap(err, "failed to build withdraw native cell")
+	}
+
+	b, err := c.Chain.Client.GetMasterchainInfo(ctxt)
+	if err != nil {
+		return "", 0, errors.Wrap(err, "failed to get master chain info")
 	}
 
 	hash, err := c.withdraw(ctxt, withdrawNativeCell)
-	if err != nil {
-		return "", errors.Wrap(err, "failed to process withdrawal")
-	}
 
-	return hash, nil
+	return hash, int64(b.SeqNo), errors.Wrapf(err, "failed to withdraw native")
 }
 
-func (c *Client) buildWithdrawNativeCell(depositData db.Deposit) (*cell.Cell, error) {
-	hashBytes, err := hexutil.Decode(depositData.TxHash)
-	if err != nil {
-		return nil, errors.Wrap(err, "error decoding txHash")
-	}
-	hashInt := big.NewInt(0).SetBytes(hashBytes)
+func (c *Client) buildWithdrawNativeCell(depositData *db.Deposit) (*cell.Cell, error) {
+	hashInt := big.NewInt(0).SetBytes(txHashToBytes32(depositData.TxHash))
 
 	networkCell, err := getNetworkCell(depositData.WithdrawalChainId)
 	if err != nil {

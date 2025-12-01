@@ -9,6 +9,7 @@ import (
 	"github.com/Bridgeless-Project/relayer-svc/cmd/utils"
 	"github.com/Bridgeless-Project/relayer-svc/internal/api"
 	"github.com/Bridgeless-Project/relayer-svc/internal/config"
+	"github.com/Bridgeless-Project/relayer-svc/internal/core"
 	withdrawalBroadcaster "github.com/Bridgeless-Project/relayer-svc/internal/core/broadcaster"
 	"github.com/Bridgeless-Project/relayer-svc/internal/core/chain/repository"
 	coreConnector "github.com/Bridgeless-Project/relayer-svc/internal/core/connector"
@@ -62,16 +63,19 @@ func runService(ctx context.Context, cfg config.Config, catchUp bool, startHeigh
 	dtb := pg.NewDepositsQ(cfg.DB())
 	blocksQ := pg.NewBlocksQ(cfg.DB())
 
+	core.Logger = logger.WithField("component", "retrier")
+	core.Retries = cfg.RetryAttempts()
+	core.RetryTimeout = cfg.RetryTimeout()
+
 	connector, err := coreConnector.NewConnector(cfg.CoreConnectorConfig().Account, cfg.CoreConnectorConfig().Connection,
 		cfg.CoreConnectorConfig().Settings)
 	if err != nil {
 		return errors.Wrap(err, "failed to create connector")
 	}
 
-	broadcaster := withdrawalBroadcaster.New(connector, dtb, clientsRepo, logger.WithField("component", "broadcaster"))
+	broadcaster := withdrawalBroadcaster.New(connector, dtb, cfg.TendermintHttpClient(), logger.WithField("component", "broadcaster"))
 
-	observer := coreObserver.New(cfg.TendermintHttpClient(), cfg.ObserverRetries(), cfg.ObserverRetryTimeout(),
-		cfg.ObserverPollingInterval(), blocksQ, dtb, broadcaster, clientsRepo, logger)
+	observer := coreObserver.New(cfg.TendermintHttpClient(), blocksQ, dtb, broadcaster, logger.WithField("component", "observer"))
 
 	apiServer := api.NewServer(cfg.ApiGrpcListener(), cfg.ApiHttpListener(), dtb, connector, broadcaster, clientsRepo,
 		logger.WithField("component", "api-server"))
@@ -89,12 +93,20 @@ func runService(ctx context.Context, cfg config.Config, catchUp bool, startHeigh
 	wg.Add(2)
 	eg.Go(func() error {
 		defer wg.Done()
-		broadcaster.Run(ctx)
+		broadcaster.
+			WithClients(clientsRepo).
+			WithChainTxPoolSize(cfg.ChainTxPoolSize()).
+			WithSubmitTxPool(cfg.SubmitTxPoolSize()).
+			Run(ctx)
+
 		return nil
 	})
 	eg.Go(func() error {
 		defer wg.Done()
-		return errors.Wrap(observer.Run(ctx, startHeight, catchUp), "error while running observer")
+		return errors.Wrap(observer.
+			WithClientsRepo(clientsRepo).
+			WithPollingInterval(cfg.ObserverPollingInterval()).
+			Run(ctx, startHeight, catchUp), "error while running observer")
 	})
 
 	err = eg.Wait()
