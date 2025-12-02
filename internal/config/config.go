@@ -20,6 +20,7 @@ type Config interface {
 	Retrier
 	TendermintConnector
 	broadcaster.BroadcasterConfigurer
+	BlockDelaySetter
 }
 
 type config struct {
@@ -34,6 +35,7 @@ type config struct {
 	Retrier
 	TendermintConnector
 	broadcaster.BroadcasterConfigurer
+	BlockDelaySetter
 }
 
 func New(getter kv.Getter) Config {
@@ -48,5 +50,6 @@ func New(getter kv.Getter) Config {
 		Retrier:               NewRetrier(getter),
 		TendermintConnector:   NewTenderminter(getter),
 		BroadcasterConfigurer: broadcaster.NewBroadcasterConfigurer(getter),
+		BlockDelaySetter:      NewBlockDelaySetter(getter),
 	}
 }
