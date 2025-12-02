@@ -19,14 +19,14 @@ type blocksQ struct {
 	selector squirrel.SelectBuilder
 }
 
-func (d *blocksQ) Insert(block db.LatestBlock) (err error) {
+func (d *blocksQ) Insert(block db.LatestBlock) error {
 	stmt := squirrel.Insert(blocksTable).
-		SetMap(map[string]interface{}{
-			idField:            idIndex,
-			latestBlockIdField: block.BlockId,
-		})
+		Columns(idField, latestBlockIdField).
+		Values(idIndex, block.BlockId).
+		Suffix("ON CONFLICT (" + idField + ") DO UPDATE SET " +
+			latestBlockIdField + " = EXCLUDED." + latestBlockIdField)
 
-	return errors.Wrap(d.db.Exec(stmt), "failed to insert latest block")
+	return errors.Wrap(d.db.Exec(stmt), "failed to upsert latest block")
 }
 
 func (d *blocksQ) GetLatestBlock() (int64, error) {
