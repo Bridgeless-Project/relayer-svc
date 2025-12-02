@@ -140,11 +140,26 @@ func (b *Broadcaster) CatchUp(deposit db.Deposit) error {
 	return nil
 }
 
-// checkExistence checks whether deposit persists in cache or database
-func (b *Broadcaster) checkExistence(deposit db.Deposit) error {
+// checkExistence checks whether deposit persists in cache,database or chain
+func (b *Broadcaster) checkExistence(ctx context.Context, deposit db.Deposit) error {
 	_, exists := b.cache.Load(deposit.String())
 	if exists {
 		return errors.Wrapf(internalTypes.ErrAlreadyExists, "deposit %s already exists in cache", deposit.String())
+	}
+
+	client, err := b.clientsRepo.Client(deposit.WithdrawalChainId)
+	if err != nil {
+		return errors.Wrap(err, "failed to get the withdrawal chain client")
+	}
+
+	exists, err = client.IsProcessed(ctx, deposit)
+	if err != nil {
+		return errors.Wrap(err, "failed to check if deposit is processed on-chain")
+	}
+
+	if exists {
+		b.cache.Store(deposit.String(), nil)
+		return errors.Wrapf(internalTypes.ErrAlreadyExists, "deposit %s already processed on-chain", deposit.String())
 	}
 
 	depositData, err := b.dbConn.Get(deposit.DepositIdentifier)
