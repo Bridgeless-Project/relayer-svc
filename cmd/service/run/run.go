@@ -106,6 +106,7 @@ func runService(ctx context.Context, cfg config.Config, catchUp bool, startHeigh
 		return errors.Wrap(observer.
 			WithClientsRepo(clientsRepo).
 			WithPollingInterval(cfg.ObserverPollingInterval()).
+			WithBlockDelay(cfg.BlockDelay()).
 			Run(ctx, startHeight, catchUp), "error while running observer")
 	})
 

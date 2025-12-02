@@ -28,6 +28,7 @@ type Observer struct {
 	blockDb    db.BlocksQ
 
 	broadcaster *broadcaster.Broadcaster
+	blockDelay  time.Duration
 }
 
 func New(client *http.HTTP, blocksDb db.BlocksQ, depositsDb db.DepositsQ, brcst *broadcaster.Broadcaster, logger *logan.Entry) *Observer {
@@ -48,6 +49,11 @@ func (o *Observer) WithClientsRepo(clientsRepo chain.Repository) *Observer {
 
 func (o *Observer) WithPollingInterval(pollingInterval time.Duration) *Observer {
 	o.pollingInterval = pollingInterval
+	return o
+}
+
+func (o *Observer) WithBlockDelay(delay time.Duration) *Observer {
+	o.blockDelay = delay
 	return o
 }
 
@@ -126,6 +132,10 @@ func (o *Observer) fetchDeposits(ctx context.Context, startHeight uint64) error 
 				continue
 			}
 
+			if len(deposits) != 0 {
+				time.Sleep(o.blockDelay)
+			}
+
 			for _, deposit := range deposits {
 				if err = o.broadcastDeposit(*deposit); err != nil {
 					if errors.Is(err, skippedDeposit) {
@@ -134,7 +144,6 @@ func (o *Observer) fetchDeposits(ctx context.Context, startHeight uint64) error 
 					o.logger.
 						WithField("blockNumber", startHeight).
 						Warnf("failed to broadcast deposit: %v", err)
-					startHeight++
 					continue
 				}
 			}
