@@ -12,7 +12,7 @@ import (
 const blockDelayerKey = "block_delay"
 
 type BlockDelay struct {
-	BlockDelay int64 `fig:"block_delay,required"`
+	BlockDelay int64 `fig:"time,required"`
 }
 
 type BlockDelaySetter interface {
