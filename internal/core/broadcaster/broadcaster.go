@@ -67,7 +67,7 @@ func (b *Broadcaster) Run(ctx context.Context) {
 }
 
 func (b *Broadcaster) Broadcast(deposit db.Deposit) error {
-	err := b.checkExistence(deposit)
+	err := b.checkExistence(context.Background(), deposit)
 	if err != nil {
 		if errors.Is(err, internalTypes.ErrAlreadyExists) {
 			// Store duplicate deposit identifier to cache to avoid spamming db with get queries
