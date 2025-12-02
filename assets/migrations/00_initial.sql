@@ -32,7 +32,7 @@ CREATE TABLE IF NOT EXISTS deposits
 
 CREATE TABLE IF NOT EXISTS latest_block
 (
-    id INT NOT NULL,
+    id INT NOT NULL UNIQUE,
     latest_block_id INT NOT NULL
 );
 
