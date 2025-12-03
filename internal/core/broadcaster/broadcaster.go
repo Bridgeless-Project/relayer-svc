@@ -79,13 +79,14 @@ func (b *Broadcaster) Broadcast(deposit db.Deposit) error {
 			return errors.Wrap(err, "deposit already exists")
 		}
 
-		return errors.Wrap(err, "error checking existence")
+		return errors.Wrap(internalTypes.ErrFailedToBroadcast, err.Error())
 	}
 
 	deposit.WithdrawalStatus = internalTypes.WithdrawalStatus_WITHDRAWAL_STATUS_PENDING
 	err = b.dbConn.Insert(deposit)
 	if err != nil {
-		return errors.Wrapf(err, "error storing deposit %s", deposit.String())
+		return errors.Wrapf(internalTypes.ErrFailedToBroadcast, "%s: error storing deposit %s",
+			err.Error(), deposit.String())
 	}
 
 	b.cache.Store(deposit.String(), nil)

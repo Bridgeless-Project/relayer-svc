@@ -19,6 +19,7 @@ func (i Implementation) SubmitWithdrawal(ctx context.Context, identifier *intern
 		clients     = apiCtx.Clients(ctx)
 		connector   = apiCtx.Connector(ctx)
 		broadcaster = apiCtx.Broadcaster(ctx)
+		logger      = apiCtx.Logger(ctx)
 	)
 
 	err := common.ValidateIdentifier(identifier)
@@ -47,6 +48,8 @@ func (i Implementation) SubmitWithdrawal(ctx context.Context, identifier *intern
 	err = broadcaster.Broadcast(*deposit)
 	if err != nil {
 		if errors.Is(err, internalTypes.ErrFailedToBroadcast) {
+			logger.WithError(err).Error("broadcasting failed")
+
 			return nil, status.Error(codes.Internal, "failed to broadcast withdrawal")
 		}
 
