@@ -54,12 +54,12 @@ func (b *broadcastContainer) Run(ctx context.Context) (*db.Deposit, error) {
 	}
 
 	if processed {
-		b.logger.Warnf("deposit already processed")
+		b.logger.Warnf("deposit %s already withdrawn", b.deposit.String())
 
-		b.deposit.WithdrawalStatus = internalTypes.WithdrawalStatus_WITHDRAWAL_STATUS_ALREADY_EXISTS
+		b.deposit.WithdrawalStatus = internalTypes.WithdrawalStatus_WITHDRAWAL_STATUS_ALREADY_WITHDRAWN
 		err = b.dbQ.UpdateStatus(b.deposit.DepositIdentifier, b.deposit.WithdrawalStatus)
 		if err != nil {
-			b.logger.WithError(err).Error("failed to update deposit status to already-exists")
+			b.logger.WithError(err).Error("failed to update deposit status to already-withdrawn")
 		}
 
 		b.deposit.WithdrawalTxHash = ptr(defaultWithdrawalHash)

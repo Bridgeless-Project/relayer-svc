@@ -73,16 +73,14 @@ func (c *catchupContainer) Run(ctx context.Context) (*db.Deposit, error) {
 func (c *catchupContainer) ProcessWithdraw(ctx context.Context) (*db.Deposit, error) {
 
 	c.deposit.WithdrawalStatus = internalTypes.WithdrawalStatus_WITHDRAWAL_STATUS_PROCESSING
-	if err := c.dbQ.UpdateStatus(c.deposit.DepositIdentifier,
-		internalTypes.WithdrawalStatus_WITHDRAWAL_STATUS_PROCESSING); err != nil {
+	if err := c.dbQ.UpdateStatus(c.deposit.DepositIdentifier, c.deposit.WithdrawalStatus); err != nil {
 		return nil, errors.Wrap(err, "failed to update deposit status processing")
 	}
 
 	processed, err := c.chainClient.IsProcessed(ctx, *c.deposit)
 	if err != nil {
 		c.deposit.WithdrawalStatus = internalTypes.WithdrawalStatus_WITHDRAWAL_STATUS_FAILED
-		updateErr := c.dbQ.UpdateStatus(c.deposit.DepositIdentifier,
-			internalTypes.WithdrawalStatus_WITHDRAWAL_STATUS_FAILED)
+		updateErr := c.dbQ.UpdateStatus(c.deposit.DepositIdentifier, c.deposit.WithdrawalStatus)
 		if updateErr != nil {
 			c.logger.WithError(updateErr).Error("error updating deposit status to failed")
 		}
@@ -93,7 +91,7 @@ func (c *catchupContainer) ProcessWithdraw(ctx context.Context) (*db.Deposit, er
 	// if deposit is already processed just skip
 	if processed {
 		c.deposit.WithdrawalStatus = internalTypes.WithdrawalStatus_WITHDRAWAL_STATUS_PROCESSED
-		err = c.dbQ.UpdateStatus(c.deposit.DepositIdentifier, internalTypes.WithdrawalStatus_WITHDRAWAL_STATUS_PROCESSED)
+		err = c.dbQ.UpdateStatus(c.deposit.DepositIdentifier, c.deposit.WithdrawalStatus)
 		if err != nil {
 			c.logger.WithError(err).Error("failed to update deposit status to processed")
 		}
@@ -113,8 +111,7 @@ func (c *catchupContainer) ProcessWithdraw(ctx context.Context) (*db.Deposit, er
 	if err != nil {
 
 		c.deposit.WithdrawalStatus = internalTypes.WithdrawalStatus_WITHDRAWAL_STATUS_FAILED
-		updateErr := c.dbQ.UpdateStatus(c.deposit.DepositIdentifier,
-			internalTypes.WithdrawalStatus_WITHDRAWAL_STATUS_FAILED)
+		updateErr := c.dbQ.UpdateStatus(c.deposit.DepositIdentifier, c.deposit.WithdrawalStatus)
 		if updateErr != nil {
 			c.logger.WithError(updateErr).Error("error updating deposit status to failed")
 		}
@@ -134,7 +131,7 @@ func (c *catchupContainer) ProcessWithdraw(ctx context.Context) (*db.Deposit, er
 	if err = c.dbQ.UpdateWithdrawalDetails(*c.deposit); err != nil {
 
 		c.deposit.WithdrawalStatus = internalTypes.WithdrawalStatus_WITHDRAWAL_STATUS_FAILED
-		updateErr := c.dbQ.UpdateStatus(c.deposit.DepositIdentifier, internalTypes.WithdrawalStatus_WITHDRAWAL_STATUS_FAILED)
+		updateErr := c.dbQ.UpdateStatus(c.deposit.DepositIdentifier, c.deposit.WithdrawalStatus)
 		if updateErr != nil {
 			c.logger.WithError(updateErr).Error("failed to update deposit status to FAILED")
 		}
@@ -143,7 +140,7 @@ func (c *catchupContainer) ProcessWithdraw(ctx context.Context) (*db.Deposit, er
 	}
 
 	c.deposit.WithdrawalStatus = internalTypes.WithdrawalStatus_WITHDRAWAL_STATUS_SUBMITTING_TO_CORE
-	err = c.dbQ.UpdateStatus(c.deposit.DepositIdentifier, internalTypes.WithdrawalStatus_WITHDRAWAL_STATUS_SUBMITTING_TO_CORE)
+	err = c.dbQ.UpdateStatus(c.deposit.DepositIdentifier, c.deposit.WithdrawalStatus)
 	if err != nil {
 		return c.deposit, errors.Wrap(err, "failed to update deposit withdrawal status to submit")
 	}
