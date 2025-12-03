@@ -23,7 +23,7 @@ func DoWithRetry(ctx context.Context, function func() error) error {
 		retry.DelayType(retry.BackOffDelay),
 		retry.Context(ctx),
 		retry.OnRetry(func(n uint, err error) {
-			Logger.WithError(err).WithField("attempt", n+1).Info("retrying step")
+			Logger.WithError(err).WithField("attempt", n+1).Warn("retrying step")
 		}),
 	)
 

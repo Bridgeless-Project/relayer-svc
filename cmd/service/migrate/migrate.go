@@ -33,7 +33,7 @@ func execute(cfg config.Config, direction migrate.MigrationDirection) error {
 		return errors.Wrap(err, "failed to apply migrations")
 	}
 
-	cfg.Log().WithField("applied", applied).Info("migrations applied")
+	cfg.Log().WithField("applied", applied).Debug("migrations applied")
 
 	return nil
 }

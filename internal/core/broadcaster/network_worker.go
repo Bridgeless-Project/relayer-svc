@@ -9,7 +9,7 @@ import (
 func (b *Broadcaster) runNetworkWorker(ctx context.Context, chainID string, ch <-chan containers.WithdrawalContainer, workerId int) {
 	defer b.wg.Done()
 	log := b.logger.WithField("chain_id", chainID).WithField("worker_id", workerId)
-	log.Info("started broadcaster worker")
+	log.Debug("started broadcaster worker")
 
 	for {
 		select {

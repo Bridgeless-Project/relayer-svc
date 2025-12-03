@@ -26,14 +26,14 @@ func LoggerInterceptor(entry *logan.Entry) grpc.UnaryServerInterceptor {
 		logger := entry.WithField("method", info.FullMethod)
 		start := time.Now()
 
-		logger.Info("request started")
+		logger.Debug("request started")
 
 		res, err := handler(ctx, req)
 
 		logger.WithFields(logan.F{
 			"duration": time.Since(start),
 			"status":   status.Code(err),
-		}).Info("request finished")
+		}).Debug("request finished")
 
 		return res, err
 	}
