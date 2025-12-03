@@ -76,7 +76,7 @@ func (b *Broadcaster) Broadcast(deposit db.Deposit) error {
 				b.cache.Store(deposit.String(), nil)
 			}
 
-			return errors.Wrapf(err, "deposit %s already exists at db", deposit.String())
+			return errors.Wrap(err, "deposit already exists")
 		}
 
 		return errors.Wrap(err, "error checking existence")
@@ -144,7 +144,7 @@ func (b *Broadcaster) CatchUp(deposit db.Deposit) error {
 func (b *Broadcaster) checkExistence(ctx context.Context, deposit db.Deposit) error {
 	_, exists := b.cache.Load(deposit.String())
 	if exists {
-		return errors.Wrapf(internalTypes.ErrAlreadyExists, "deposit %s already exists in cache", deposit.String())
+		return errors.Wrapf(internalTypes.ErrAlreadyExists, "deposit %s already registered in service", deposit.String())
 	}
 
 	client, err := b.clientsRepo.Client(deposit.WithdrawalChainId)
@@ -168,7 +168,7 @@ func (b *Broadcaster) checkExistence(ctx context.Context, deposit db.Deposit) er
 	}
 
 	if depositData != nil {
-		return errors.Wrapf(internalTypes.ErrAlreadyExists, "deposit %s already exists in db", deposit.String())
+		return errors.Wrapf(internalTypes.ErrAlreadyExists, "deposit %s already saved", deposit.String())
 	}
 
 	return nil
