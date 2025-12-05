@@ -5,13 +5,19 @@ import (
 
 	bridgeTypes "github.com/Bridgeless-Project/bridgeless-core/v12/x/bridge/types"
 	"github.com/Bridgeless-Project/relayer-svc/internal/db"
+	"github.com/cosmos/cosmos-sdk/types"
 	"github.com/pkg/errors"
 )
 
-func (c *Connector) UpdateTxInfo(ctx context.Context, deposit db.Deposit) error {
-	msg := bridgeTypes.NewMsgUpdateTransaction(c.account.CosmosAddress(), toTransaction(deposit))
+func (c *Connector) UpdateTxInfo(ctx context.Context, deposits []*db.Deposit) error {
+	messages := make([]types.Msg, len(deposits))
 
-	err := c.submitMsgs(ctx, msg)
+	for i, d := range deposits {
+		msg := bridgeTypes.NewMsgUpdateTransaction(c.account.CosmosAddress(), toTransaction(*d))
+		messages[i] = msg
+	}
+
+	err := c.submitMsgs(ctx, messages...)
 	if err != nil {
 		return errors.Wrap(err, "failed to update tx info")
 	}

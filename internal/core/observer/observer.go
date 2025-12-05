@@ -116,11 +116,7 @@ func (o *Observer) fetchDeposits(ctx context.Context, startHeight uint64) error 
 				continue
 			}
 
-			missingBlocks := o.blockDistance - (currentHeight - startHeight)
-			if missingBlocks > 0 {
-				o.logger.Debugf("Waiting for %d blocks to continue...", missingBlocks)
-				time.Sleep(time.Duration(missingBlocks) * o.blockDelay)
-			}
+			o.waitForBlockDistance(ctx, startHeight)
 
 			if startHeight > currentHeight {
 				o.logger.Debug("Waiting for next block, currentHeight:", currentHeight)
@@ -162,6 +158,23 @@ func (o *Observer) fetchDeposits(ctx context.Context, startHeight uint64) error 
 
 			startHeight++
 		}
+	}
+}
+
+func (o *Observer) waitForBlockDistance(ctx context.Context, startHeight uint64) {
+	for {
+		currentHeight, err := o.getCurrentHeight(ctx)
+		if err != nil {
+			o.logger.WithError(err).Error("failed to get current height")
+			break
+		}
+
+		gap := currentHeight - startHeight
+		if gap >= o.blockDistance {
+			break
+		}
+
+		time.Sleep(o.blockDelay)
 	}
 }
 

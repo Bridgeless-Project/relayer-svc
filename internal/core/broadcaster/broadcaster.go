@@ -28,8 +28,10 @@ type Broadcaster struct {
 	logger *logan.Entry
 	cache  sync.Map
 
-	wg              *sync.WaitGroup
+	wg *sync.WaitGroup
+
 	chainTxPoolSize int64
+	submitBatchSize int64
 }
 
 func New(ctx context.Context, coreConnector *connector.Connector, dbConn db.DepositsQ, tendermintClient *http.HTTP, logger *logan.Entry) *Broadcaster {
@@ -196,7 +198,13 @@ func (b *Broadcaster) WithChainTxPoolSize(txPoolSize int64) *Broadcaster {
 	return b
 }
 
-func (b *Broadcaster) WithSubmitTxPool(txPoolSize int64) *Broadcaster {
+func (b *Broadcaster) WithSubmitTxPoolSize(txPoolSize int64) *Broadcaster {
 	b.submitChan = make(chan *db.Deposit, txPoolSize)
+
+	return b
+}
+
+func (b *Broadcaster) WithSubmitBatchSize(batchSize int64) *Broadcaster {
+	b.submitBatchSize = batchSize
 	return b
 }

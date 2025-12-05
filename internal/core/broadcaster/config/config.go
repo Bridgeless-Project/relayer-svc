@@ -12,11 +12,13 @@ const yamlKey = "broadcaster"
 type BroadcasterConfigurer interface {
 	ChainTxPoolSize() int64
 	SubmitTxPoolSize() int64
+	SubmitBatchSize() int64
 }
 
 type BroadcasterConfig struct {
 	TxPoolSize       int64 `fig:"chain_tx_pool_size,required"`
 	SubmitTxPoolSize int64 `fig:"submit_tx_pool_size,required"`
+	SubmitBatchSize  int64 `fig:"submit_batch_size,required"`
 }
 
 type configurer struct {
@@ -34,6 +36,8 @@ func (b *configurer) ChainTxPoolSize() int64 {
 	return b.Config().TxPoolSize
 }
 func (b *configurer) SubmitTxPoolSize() int64 { return b.Config().SubmitTxPoolSize }
+
+func (b *configurer) SubmitBatchSize() int64 { return b.Config().SubmitBatchSize }
 
 func (c *configurer) Config() *BroadcasterConfig {
 	return c.once.Do(func() interface{} {

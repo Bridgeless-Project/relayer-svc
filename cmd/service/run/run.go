@@ -102,7 +102,8 @@ func runService(ctx context.Context, cfg config.Config, catchUp bool, startHeigh
 		broadcaster.
 			WithClients(clientsRepo).
 			WithChainTxPoolSize(cfg.ChainTxPoolSize()).
-			WithSubmitTxPool(cfg.SubmitTxPoolSize()).
+			WithSubmitTxPoolSize(cfg.SubmitTxPoolSize()).
+			WithSubmitBatchSize(cfg.SubmitBatchSize()).
 			Run(ctx)
 
 		return nil
