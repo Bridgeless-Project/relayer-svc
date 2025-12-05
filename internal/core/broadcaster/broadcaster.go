@@ -15,6 +15,8 @@ import (
 )
 
 type Broadcaster struct {
+	ctx context.Context
+
 	coreConnector *connector.Connector
 	clientsRepo   chain.Repository
 	workersMap    map[string]chan containers.WithdrawalContainer
@@ -30,8 +32,9 @@ type Broadcaster struct {
 	chainTxPoolSize int64
 }
 
-func New(coreConnector *connector.Connector, dbConn db.DepositsQ, tendermintClient *http.HTTP, logger *logan.Entry) *Broadcaster {
+func New(ctx context.Context, coreConnector *connector.Connector, dbConn db.DepositsQ, tendermintClient *http.HTTP, logger *logan.Entry) *Broadcaster {
 	return &Broadcaster{
+		ctx:              ctx,
 		coreConnector:    coreConnector,
 		dbConn:           dbConn,
 		logger:           logger,
@@ -94,15 +97,25 @@ func (b *Broadcaster) Broadcast(deposit db.Deposit) error {
 		b.cache.Store(deposit.String(), nil)
 	}
 
+	b.wg.Add(1)
 	go func() {
-		b.workersMap[deposit.WithdrawalChainId] <- containers.NewBroadcastContainer(
+		defer b.wg.Done()
+		select {
+		case <-b.ctx.Done():
+			b.logger.Warnf("stopped broadcastig of deposit %s", deposit.String())
+			return
+
+		case b.workersMap[deposit.WithdrawalChainId] <- containers.NewBroadcastContainer(
 			chainClient,
 			deposit,
 			b.dbConn,
 			b.coreConnector,
 			b.tendermintClient,
 			b.logger,
-		)
+		):
+			return
+		}
+
 	}()
 
 	return nil
