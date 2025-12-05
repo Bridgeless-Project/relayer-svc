@@ -70,7 +70,15 @@ func (c *Client) withdrawNative(ctx context.Context, depositData *db.Deposit) (s
 	}
 
 	finalizer := func() error {
-		return errors.Wrap(c.finalize(ctx, tx.Hash()), "failed to finalize")
+		if err := c.finalize(ctx, tx.Hash()); err != nil {
+			if errors.Is(err, chain.ErrSkippedFinalization) {
+				return nil
+			}
+
+			return errors.Wrap(err, "failed to finalize")
+		}
+
+		return nil
 	}
 
 	err = core.DoWithRetry(ctx, finalizer)
@@ -129,11 +137,20 @@ func (c *Client) withdrawToken(ctx context.Context, depositData *db.Deposit) (st
 	}
 
 	finalizer := func() error {
-		return errors.Wrap(c.finalize(ctx, tx.Hash()), "failed to finalize")
+		if err := c.finalize(ctx, tx.Hash()); err != nil {
+			if errors.Is(err, chain.ErrSkippedFinalization) {
+				return nil
+			}
+
+			return errors.Wrap(err, "failed to finalize")
+		}
+
+		return nil
 	}
 
 	err = core.DoWithRetry(ctx, finalizer)
 	if err != nil {
+
 		return hash, block, errors.Wrap(err, "failed to perform finalization")
 	}
 
