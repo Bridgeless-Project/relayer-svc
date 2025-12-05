@@ -8,7 +8,8 @@ import (
 )
 
 var (
-	ErrChainNotSupported = errors.New("chain not supported")
+	ErrChainNotSupported   = errors.New("chain not supported")
+	ErrSkippedFinalization = errors.New("skipped finalization")
 )
 
 type Client interface {

@@ -3,9 +3,12 @@ package evm
 import (
 	"context"
 	"math/big"
+	"strings"
 	"time"
 
 	"github.com/Bridgeless-Project/relayer-svc/internal/core"
+	"github.com/Bridgeless-Project/relayer-svc/internal/core/chain"
+
 	"github.com/Bridgeless-Project/relayer-svc/internal/db"
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/common"
@@ -192,6 +195,10 @@ func (c *Client) finalize(ctx context.Context, txHash common.Hash) error {
 				},
 			)
 			if err != nil {
+				if strings.Contains(err.Error(), notAvailableBlockReceipts) {
+					return errors.Wrap(chain.ErrSkippedFinalization, "failed to finalize")
+				}
+
 				return errors.Wrap(err, "failed to get block receipts")
 			}
 

@@ -24,6 +24,12 @@ func executeWithdrawal(ctx context.Context, chainClient chain.Client, deposit *d
 	deposit.WithdrawalCoreBlock = abci.Response.LastBlockHeight
 
 	if err != nil {
+		if errors.Is(err, chain.ErrSkippedFinalization) {
+			logger.WithError(err).Warn("skipped finalization")
+			logger.Infof("Processed deposit %s withdrawal hash %s", deposit.String(), txHash)
+			return nil
+		}
+
 		return errors.Wrap(err, "failed to execute withdrawal")
 	}
 
