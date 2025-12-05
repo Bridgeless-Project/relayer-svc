@@ -10,9 +10,10 @@ import (
 )
 
 const (
-	configFlag      = "config"
-	catchUpFlag     = "catch-up"
-	startHeightFlag = "start-height"
+	configFlag        = "config"
+	catchUpFlag       = "catch-up"
+	startHeightFlag   = "start-height"
+	blockDistanceFlag = "block-distance"
 )
 
 func RegisterConfigFlag(cmd *cobra.Command) {
@@ -24,7 +25,11 @@ func RegisterCatchUpFlag(cmd *cobra.Command) {
 }
 
 func RegisterStartHeightFlag(cmd *cobra.Command) {
-	cmd.PersistentFlags().Int64P(startHeightFlag, "s", 0, "Start height to fetch blocks")
+	cmd.PersistentFlags().Uint64P(startHeightFlag, "s", 0, "Start height to fetch blocks")
+}
+
+func RegisterBlockDistanceFlag(cmd *cobra.Command) {
+	cmd.PersistentFlags().Uint64P(blockDistanceFlag, "d", 0, "Block distance between current block and core block")
 }
 
 func ConfigFromFlags(cmd *cobra.Command) (config.Config, error) {
@@ -52,4 +57,8 @@ func CatchUpFromFlags(cmd *cobra.Command) (bool, error) {
 
 func StartHeightFromFlags(cmd *cobra.Command) (uint64, error) {
 	return strconv.ParseUint(cmd.Flags().Lookup(startHeightFlag).Value.String(), 10, 64)
+}
+
+func BlockDistanceFromFlags(cmd *cobra.Command) (uint64, error) {
+	return strconv.ParseUint(cmd.Flags().Lookup(blockDistanceFlag).Value.String(), 10, 64)
 }

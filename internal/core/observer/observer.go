@@ -27,8 +27,9 @@ type Observer struct {
 	depositsDb db.DepositsQ
 	blockDb    db.BlocksQ
 
-	broadcaster *broadcaster.Broadcaster
-	blockDelay  time.Duration
+	broadcaster   *broadcaster.Broadcaster
+	blockDelay    time.Duration
+	blockDistance uint64
 }
 
 func New(client *http.HTTP, blocksDb db.BlocksQ, depositsDb db.DepositsQ, brcst *broadcaster.Broadcaster, logger *logan.Entry) *Observer {
@@ -54,6 +55,11 @@ func (o *Observer) WithPollingInterval(pollingInterval time.Duration) *Observer 
 
 func (o *Observer) WithBlockDelay(delay time.Duration) *Observer {
 	o.blockDelay = delay
+	return o
+}
+
+func (o *Observer) WithBlockDistance(distance uint64) *Observer {
+	o.blockDistance = distance
 	return o
 }
 
@@ -108,6 +114,11 @@ func (o *Observer) fetchDeposits(ctx context.Context, startHeight uint64) error 
 			if err != nil {
 				o.logger.WithError(err).Error("failed to get current height")
 				continue
+			}
+
+			missingBlocks := o.blockDistance - (currentHeight - startHeight)
+			if missingBlocks > 0 {
+				time.Sleep(time.Duration(missingBlocks) * o.blockDelay)
 			}
 
 			if startHeight > currentHeight {

@@ -24,6 +24,7 @@ func init() {
 	utils.RegisterCatchUpFlag(Cmd)
 	utils.RegisterConfigFlag(Cmd)
 	utils.RegisterStartHeightFlag(Cmd)
+	utils.RegisterBlockDistanceFlag(Cmd)
 }
 
 var Cmd = &cobra.Command{
@@ -45,16 +46,21 @@ var Cmd = &cobra.Command{
 			return errors.Wrap(err, "failed to start height")
 		}
 
+		blockDistance, err := utils.BlockDistanceFromFlags(cmd)
+		if err != nil {
+			return errors.Wrap(err, "failed to get block distance")
+		}
+
 		ctx, cancel := signal.NotifyContext(context.Background(), syscall.SIGTERM, syscall.SIGINT)
 		defer cancel()
 
-		err = runService(ctx, cfg, catchUp, startHeight)
+		err = runService(ctx, cfg, catchUp, startHeight, blockDistance)
 
 		return errors.Wrap(err, "failed to run relayer service")
 	},
 }
 
-func runService(ctx context.Context, cfg config.Config, catchUp bool, startHeight uint64) error {
+func runService(ctx context.Context, cfg config.Config, catchUp bool, startHeight, blockDistance uint64) error {
 	wg := new(sync.WaitGroup)
 	eg, ctx := errgroup.WithContext(ctx)
 	logger := cfg.Log()
@@ -107,6 +113,7 @@ func runService(ctx context.Context, cfg config.Config, catchUp bool, startHeigh
 			WithClientsRepo(clientsRepo).
 			WithPollingInterval(cfg.ObserverPollingInterval()).
 			WithBlockDelay(cfg.BlockDelay()).
+			WithBlockDistance(blockDistance).
 			Run(ctx, startHeight, catchUp), "error while running observer")
 	})
 
