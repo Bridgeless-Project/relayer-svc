@@ -70,12 +70,6 @@ func (b *Broadcaster) Broadcast(deposit db.Deposit) error {
 	err := b.checkExistence(context.Background(), deposit)
 	if err != nil {
 		if errors.Is(err, internalTypes.ErrAlreadyExists) {
-			// Store duplicate deposit identifier to cache to avoid spamming db with get queries
-			_, ok := b.cache.Load(deposit.TxHash)
-			if !ok {
-				b.cache.Store(deposit.String(), nil)
-			}
-
 			return errors.Wrap(err, "deposit already exists")
 		}
 
@@ -89,11 +83,15 @@ func (b *Broadcaster) Broadcast(deposit db.Deposit) error {
 			err.Error(), deposit.String())
 	}
 
-	b.cache.Store(deposit.String(), nil)
-
 	chainClient, err := b.clientsRepo.Client(deposit.WithdrawalChainId)
 	if err != nil {
 		return errors.Wrapf(internalTypes.ErrFailedToBroadcast, "failed to get the withdrawal chain client, error: %s", err.Error())
+	}
+
+	// Store duplicate deposit identifier to cache to avoid spamming db with get queries
+	_, ok := b.cache.Load(deposit.TxHash)
+	if !ok {
+		b.cache.Store(deposit.String(), nil)
 	}
 
 	go func() {
