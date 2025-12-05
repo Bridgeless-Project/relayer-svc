@@ -14,6 +14,7 @@ const (
 	catchUpFlag       = "catch-up"
 	startHeightFlag   = "start-height"
 	blockDistanceFlag = "block-distance"
+	observerFlag      = "observer"
 )
 
 func RegisterConfigFlag(cmd *cobra.Command) {
@@ -30,6 +31,10 @@ func RegisterStartHeightFlag(cmd *cobra.Command) {
 
 func RegisterBlockDistanceFlag(cmd *cobra.Command) {
 	cmd.PersistentFlags().Uint64P(blockDistanceFlag, "d", 0, "Block distance between current block and core block")
+}
+
+func RegisterObserverFlag(cmd *cobra.Command) {
+	cmd.PersistentFlags().BoolP(observerFlag, "o", false, "Observer address")
 }
 
 func ConfigFromFlags(cmd *cobra.Command) (config.Config, error) {
@@ -61,4 +66,13 @@ func StartHeightFromFlags(cmd *cobra.Command) (uint64, error) {
 
 func BlockDistanceFromFlags(cmd *cobra.Command) (uint64, error) {
 	return strconv.ParseUint(cmd.Flags().Lookup(blockDistanceFlag).Value.String(), 10, 64)
+}
+
+func ObserverFromFlags(cmd *cobra.Command) (bool, error) {
+	observer, err := cmd.Flags().GetBool(observerFlag)
+	if err != nil {
+		return false, errors.Wrap(err, "failed to get observer flag")
+	}
+
+	return observer, nil
 }

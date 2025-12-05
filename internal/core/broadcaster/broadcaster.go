@@ -141,14 +141,23 @@ func (b *Broadcaster) CatchUp(deposit db.Deposit) error {
 	}
 
 	go func() {
-		b.workersMap[deposit.WithdrawalChainId] <- containers.NewCatchUpContainer(
+		defer b.wg.Done()
+		select {
+		case <-b.ctx.Done():
+			b.logger.Warnf("stopped broadcastig of deposit %s", deposit.String())
+			return
+
+		case b.workersMap[deposit.WithdrawalChainId] <- containers.NewCatchUpContainer(
 			chainClient,
 			deposit,
 			b.dbConn,
 			b.coreConnector,
 			b.tendermintClient,
 			b.logger,
-		)
+		):
+			return
+		}
+
 	}()
 
 	return nil

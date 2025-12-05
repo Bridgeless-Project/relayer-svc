@@ -11,6 +11,7 @@ import (
 	"github.com/Bridgeless-Project/relayer-svc/internal/config"
 	"github.com/Bridgeless-Project/relayer-svc/internal/core"
 	withdrawalBroadcaster "github.com/Bridgeless-Project/relayer-svc/internal/core/broadcaster"
+	catch_upper "github.com/Bridgeless-Project/relayer-svc/internal/core/catch-upper"
 	"github.com/Bridgeless-Project/relayer-svc/internal/core/chain/repository"
 	coreConnector "github.com/Bridgeless-Project/relayer-svc/internal/core/connector"
 	coreObserver "github.com/Bridgeless-Project/relayer-svc/internal/core/observer"
@@ -25,6 +26,7 @@ func init() {
 	utils.RegisterConfigFlag(Cmd)
 	utils.RegisterStartHeightFlag(Cmd)
 	utils.RegisterBlockDistanceFlag(Cmd)
+	utils.RegisterObserverFlag(Cmd)
 }
 
 var Cmd = &cobra.Command{
@@ -51,16 +53,21 @@ var Cmd = &cobra.Command{
 			return errors.Wrap(err, "failed to get block distance")
 		}
 
+		observer, err := utils.ObserverFromFlags(cmd)
+		if err != nil {
+			return errors.Wrap(err, "failed to observer from flags")
+		}
+
 		ctx, cancel := signal.NotifyContext(context.Background(), syscall.SIGTERM, syscall.SIGINT)
 		defer cancel()
 
-		err = runService(ctx, cfg, catchUp, startHeight, blockDistance)
+		err = runService(ctx, cfg, catchUp, observer, startHeight, blockDistance)
 
 		return errors.Wrap(err, "failed to run relayer service")
 	},
 }
 
-func runService(ctx context.Context, cfg config.Config, catchUp bool, startHeight, blockDistance uint64) error {
+func runService(ctx context.Context, cfg config.Config, catchUp, observerNeeded bool, startHeight, blockDistance uint64) error {
 	wg := new(sync.WaitGroup)
 	eg, ctx := errgroup.WithContext(ctx)
 	logger := cfg.Log()
@@ -86,6 +93,8 @@ func runService(ctx context.Context, cfg config.Config, catchUp bool, startHeigh
 	apiServer := api.NewServer(cfg.ApiGrpcListener(), cfg.ApiHttpListener(), dtb, connector, broadcaster, clientsRepo,
 		logger.WithField("component", "api-server"))
 
+	catchUpper := catch_upper.NewCatchUpper(ctx, broadcaster, dtb, logger.WithField("component", "catch-upper"))
+
 	wg.Add(2)
 	eg.Go(func() error {
 		defer wg.Done()
@@ -96,7 +105,7 @@ func runService(ctx context.Context, cfg config.Config, catchUp bool, startHeigh
 		return errors.Wrap(apiServer.RunGRPC(ctx), "error while running API GRPC server")
 	})
 
-	wg.Add(2)
+	wg.Add(1)
 	eg.Go(func() error {
 		defer wg.Done()
 		broadcaster.
@@ -108,15 +117,27 @@ func runService(ctx context.Context, cfg config.Config, catchUp bool, startHeigh
 
 		return nil
 	})
-	eg.Go(func() error {
-		defer wg.Done()
-		return errors.Wrap(observer.
-			WithClientsRepo(clientsRepo).
-			WithPollingInterval(cfg.ObserverPollingInterval()).
-			WithBlockDelay(cfg.BlockDelay()).
-			WithBlockDistance(blockDistance).
-			Run(ctx, startHeight, catchUp), "error while running observer")
-	})
+
+	if observerNeeded {
+		wg.Add(1)
+		eg.Go(func() error {
+			defer wg.Done()
+			return errors.Wrap(observer.
+				WithClientsRepo(clientsRepo).
+				WithPollingInterval(cfg.ObserverPollingInterval()).
+				WithBlockDelay(cfg.BlockDelay()).
+				WithBlockDistance(blockDistance).
+				Run(ctx, startHeight), "error while running observer")
+		})
+	}
+
+	if catchUp {
+		wg.Add(1)
+		eg.Go(func() error {
+			defer wg.Done()
+			return errors.Wrap(catchUpper.Start(), "error while running observer")
+		})
+	}
 
 	err = eg.Wait()
 	wg.Wait()
