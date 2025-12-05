@@ -42,6 +42,8 @@ func (c *catchupContainer) ID() string {
 }
 
 func (c *catchupContainer) Run(ctx context.Context) (*db.Deposit, error) {
+	c.logger.Debug("catching up deposit")
+
 	switch c.deposit.WithdrawalStatus {
 	case internalTypes.WithdrawalStatus_WITHDRAWAL_STATUS_PROCESSING:
 		return c.ProcessWithdraw(ctx)
