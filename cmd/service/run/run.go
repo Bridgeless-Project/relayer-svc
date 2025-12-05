@@ -79,7 +79,7 @@ func runService(ctx context.Context, cfg config.Config, catchUp bool, startHeigh
 		return errors.Wrap(err, "failed to create connector")
 	}
 
-	broadcaster := withdrawalBroadcaster.New(connector, dtb, cfg.TendermintHttpClient(), logger.WithField("component", "broadcaster"))
+	broadcaster := withdrawalBroadcaster.New(ctx, connector, dtb, cfg.TendermintHttpClient(), logger.WithField("component", "broadcaster"))
 
 	observer := coreObserver.New(cfg.TendermintHttpClient(), blocksQ, dtb, broadcaster, logger.WithField("component", "observer"))
 
