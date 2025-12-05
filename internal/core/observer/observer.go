@@ -118,6 +118,7 @@ func (o *Observer) fetchDeposits(ctx context.Context, startHeight uint64) error 
 
 			missingBlocks := o.blockDistance - (currentHeight - startHeight)
 			if missingBlocks > 0 {
+				o.logger.Debugf("Waiting for %d blocks to continue...", missingBlocks)
 				time.Sleep(time.Duration(missingBlocks) * o.blockDelay)
 			}
 
