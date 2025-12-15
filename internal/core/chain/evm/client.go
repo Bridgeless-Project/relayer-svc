@@ -13,7 +13,6 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/pkg/errors"
 )
 
@@ -21,7 +20,7 @@ type Client struct {
 	chain          Chain
 	contractClient *contracts.Bridge
 	abi            *abi.ABI
-	walletAddress  common.Address
+	childs         []*ChildClient
 }
 
 // NewBridgeClient creates a new bridge Client for the given chain.
@@ -36,13 +35,10 @@ func NewBridgeClient(chain Chain) *Client {
 		panic(errors.Wrap(err, "failed to init bridge client"))
 	}
 
-	walletAddress := crypto.PubkeyToAddress(chain.OperatorPrivKey.PublicKey)
-
 	return &Client{
 		chain:          chain,
 		abi:            &bridgeAbi,
 		contractClient: contractClient,
-		walletAddress:  walletAddress,
 	}
 }
 
@@ -62,6 +58,21 @@ func (p *Client) AddressValid(addr string) bool {
 
 func (p *Client) TransactionHashValid(hash string) bool {
 	return core.DefaultTransactionHashPattern.MatchString(hash)
+}
+
+func (p *Client) ConfigureChildClients() chain.Client {
+	childs := make([]*ChildClient, p.chain.Workers)
+	for i := 0; i < p.chain.Workers; i++ {
+		childs[i] = NewChildClient(p)
+	}
+
+	for i, key := range p.chain.OperatorsPrivKeys {
+		idx := i % p.chain.Workers
+		childs[idx].AddSigner(key)
+	}
+
+	p.childs = childs
+	return p
 }
 
 func (c *Client) IsProcessed(ctx context.Context, depositData db.Deposit) (bool, error) {

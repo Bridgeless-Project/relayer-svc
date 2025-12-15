@@ -12,7 +12,7 @@ func NewClientsRepository(clients []chain.Client) chain.Repository {
 	clientsMap := make(map[string]chain.Client, len(clients))
 
 	for _, cl := range clients {
-		clientsMap[cl.ChainId()] = cl
+		clientsMap[cl.ChainId()] = cl.ConfigureChildClients()
 	}
 
 	return &clientsRepository{clients: clientsMap}

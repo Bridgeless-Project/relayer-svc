@@ -18,20 +18,20 @@ import (
 	"github.com/pkg/errors"
 )
 
-func (c *Client) Withdraw(ctx context.Context, depositData *db.Deposit) (string, int64, error) {
+func (c *Client) Withdraw(ctx context.Context, depositData *db.Deposit, signer *signerInfo) (string, int64, error) {
 	if depositData.WithdrawalToken == core.DefaultNativeTokenAddress {
-		return c.withdrawNative(ctx, depositData)
+		return c.withdrawNative(ctx, depositData, signer)
 	}
 
-	return c.withdrawToken(ctx, depositData)
+	return c.withdrawToken(ctx, depositData, signer)
 }
-func (c *Client) withdrawNative(ctx context.Context, depositData *db.Deposit) (string, int64, error) {
+func (c *Client) withdrawNative(ctx context.Context, depositData *db.Deposit, signer *signerInfo) (string, int64, error) {
 	data, err := c.getWithdrawalTxData(withdrawNative, depositData)
 	if err != nil {
 		return "", 0, errors.Wrap(err, "failed to get withdrawal tx data")
 	}
 
-	transactOpts, err := c.prepareTxOpts(ctx, data)
+	transactOpts, err := c.prepareTxOpts(ctx, data, signer)
 	if err != nil {
 		return "", 0, errors.Wrap(err, "failed to prepare transact opts")
 	}
@@ -89,13 +89,13 @@ func (c *Client) withdrawNative(ctx context.Context, depositData *db.Deposit) (s
 	return tx.Hash().Hex(), block, nil
 }
 
-func (c *Client) withdrawToken(ctx context.Context, depositData *db.Deposit) (string, int64, error) {
+func (c *Client) withdrawToken(ctx context.Context, depositData *db.Deposit, signer *signerInfo) (string, int64, error) {
 	data, err := c.getWithdrawalTxData(withdrawERC20, depositData)
 	if err != nil {
 		return "", 0, errors.Wrap(err, "failed to get withdrawal tx data")
 	}
 
-	transactOpts, err := c.prepareTxOpts(ctx, data)
+	transactOpts, err := c.prepareTxOpts(ctx, data, signer)
 	if err != nil {
 		return "", 0, errors.Wrap(err, "failed to prepare transact opts")
 	}

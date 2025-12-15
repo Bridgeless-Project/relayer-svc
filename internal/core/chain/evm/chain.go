@@ -15,13 +15,13 @@ import (
 )
 
 type Chain struct {
-	Id              string
-	Rpc             *ethclient.Client
-	BridgeAddress   common.Address
-	OperatorPrivKey *ecdsa.PrivateKey
-	Workers         int
-	WSRpc           *ethclient.Client
-	WSTimeout       int64
+	Id                string
+	Rpc               *ethclient.Client
+	BridgeAddress     common.Address
+	OperatorsPrivKeys []*ecdsa.PrivateKey
+	Workers           int
+	WSRpc             *ethclient.Client
+	WSTimeout         int64
 }
 
 func FromChain(c chain.Chain) Chain {
@@ -45,10 +45,10 @@ func FromChain(c chain.Chain) Chain {
 		panic(errors.Wrap(err, "failed to obtain bridge addresses"))
 	}
 
-	if err := figure.Out(&chain.OperatorPrivKey).
-		FromInterface(c.OperatorPrivateKey).
-		With(figure.EthereumHooks).Please(); err != nil {
-		panic(errors.Wrap(err, "failed to obtain operator private key"))
+	if err := figure.Out(&chain.OperatorsPrivKeys).
+		FromInterface(c.OperatorsPrivateKeys).
+		With(EVMHooks).Please(); err != nil {
+		panic(errors.Wrap(err, "failed to obtain operators private keys"))
 	}
 
 	if err := figure.Out(&chain.WSTimeout).
@@ -67,7 +67,7 @@ func FromChain(c chain.Chain) Chain {
 	return chain
 }
 
-func (c *Client) prepareTxOpts(ctx context.Context, data []byte) (*bind.TransactOpts, error) {
+func (c *Client) prepareTxOpts(ctx context.Context, data []byte, signer *signerInfo) (*bind.TransactOpts, error) {
 	gasPrice, err := c.chain.Rpc.SuggestGasPrice(ctx)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to fetch gas price")
@@ -78,11 +78,11 @@ func (c *Client) prepareTxOpts(ctx context.Context, data []byte) (*bind.Transact
 		return nil, errors.Wrap(err, "failed to fetch chain id")
 	}
 
-	tx, err := bind.NewKeyedTransactorWithChainID(c.chain.OperatorPrivKey, chainId)
+	tx, err := bind.NewKeyedTransactorWithChainID(signer.privateKey, chainId)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to generate transactor")
 	}
-	nonce, err := c.chain.Rpc.PendingNonceAt(ctx, c.walletAddress)
+	nonce, err := c.chain.Rpc.PendingNonceAt(ctx, signer.address)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to fetch operator account nonce")
 	}
@@ -92,7 +92,7 @@ func (c *Client) prepareTxOpts(ctx context.Context, data []byte) (*bind.Transact
 	tx.GasPrice = gasPrice
 
 	callMsg := ethereum.CallMsg{
-		From:     c.walletAddress,
+		From:     signer.address,
 		To:       &c.chain.BridgeAddress,
 		GasPrice: gasPrice,
 		Data:     data,
