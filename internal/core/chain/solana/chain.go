@@ -13,12 +13,12 @@ import (
 )
 
 type Chain struct {
-	Id             string
-	Rpc            *rpc.Client
-	WsRpc          *ws.Client
-	BridgeAddress  solana.PublicKey
-	OperatorWallet *solana.Wallet
-	Workers        int
+	Id               string
+	Rpc              *rpc.Client
+	WsRpc            *ws.Client
+	BridgeAddress    solana.PublicKey
+	OperatorsWallets []*solana.Wallet
+	Workers          int
 
 	Meta Meta
 }
@@ -50,15 +50,20 @@ var SolanaHooks = figure.Hooks{
 			return reflect.Value{}, errors.Errorf("unsupported conversion from %T", value)
 		}
 	},
-	"*solana.Wallet": func(value interface{}) (reflect.Value, error) {
+	"[]*solana.Wallet": func(value interface{}) (reflect.Value, error) {
 		switch v := value.(type) {
-		case string:
-			wallet, err := solana.WalletFromPrivateKeyBase58(v)
-			if err != nil {
-				return reflect.Value{}, err
+		case []string:
+			wallets := make([]*solana.Wallet, len(v))
+			for i, str := range v {
+				wallet, err := solana.WalletFromPrivateKeyBase58(str)
+				if err != nil {
+					return reflect.Value{}, err
+				}
+
+				wallets[i] = wallet
 			}
 
-			return reflect.ValueOf(wallet), nil
+			return reflect.ValueOf(wallets), nil
 		default:
 			return reflect.Value{}, errors.Errorf("unsupported conversion from %T", value)
 		}
@@ -87,8 +92,8 @@ func FromChain(c chain.Chain) Chain {
 		With(SolanaHooks).Please(); err != nil {
 		panic(errors.Wrap(err, "failed to obtain bridge addresses"))
 	}
-	if err := figure.Out(&chain.OperatorWallet).
-		FromInterface(c.OperatorPrivateKey).
+	if err := figure.Out(&chain.OperatorsWallets).
+		FromInterface(c.OperatorsPrivateKeys).
 		With(SolanaHooks).Please(); err != nil {
 		panic(errors.Wrap(err, "failed to obtain operator wallet"))
 	}

@@ -9,7 +9,7 @@ import (
 	"github.com/pkg/errors"
 )
 
-func (c *Client) withdrawWrapped(ctx context.Context, depositData *db.Deposit) (string, int64, error) {
+func (c *Client) withdrawWrapped(ctx context.Context, depositData *db.Deposit, signer *solana.Wallet) (string, int64, error) {
 	withdrawalCtx, err := c.getWithdrawalContext(depositData)
 	if err != nil {
 		return "", 0, errors.Wrap(err, "failed to get withdrawal context")
@@ -33,7 +33,7 @@ func (c *Client) withdrawWrapped(ctx context.Context, depositData *db.Deposit) (
 		withdrawalCtx.Receiver,
 		withdrawalCtx.Authority,
 		withdrawalCtx.WithdrawalPDA,
-		c.chain.OperatorWallet.PublicKey(),
+		signer.PublicKey(),
 		solana.SystemProgramID,
 		solana.Token2022ProgramID,
 	)
@@ -43,7 +43,7 @@ func (c *Client) withdrawWrapped(ctx context.Context, depositData *db.Deposit) (
 		return "", 0, errors.Wrap(err, "failed to get latest block number")
 	}
 
-	txHash, err := c.SendTx(ctx, withdrawInstruction.Build())
+	txHash, err := c.SendTx(ctx, withdrawInstruction.Build(), signer)
 	if err != nil {
 		if txHash != nil {
 			return txHash.String(),

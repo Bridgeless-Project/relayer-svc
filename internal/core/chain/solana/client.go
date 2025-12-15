@@ -14,7 +14,8 @@ import (
 )
 
 type Client struct {
-	chain Chain
+	chain  Chain
+	childs []*ChildClient
 }
 
 // NewBridgeClient creates a new bridge Client for the given chain.
@@ -40,6 +41,21 @@ func (p *Client) TransactionHashValid(hash string) bool {
 	return core.SolanaTransactionHashPattern.MatchString(hash)
 }
 
+func (c *Client) ConfigureChildClients() chain.Client {
+	childs := make([]*ChildClient, c.chain.Workers)
+	for i := 0; i < c.chain.Workers; i++ {
+		childs[i] = NewChildClient(c)
+	}
+
+	for i, key := range c.chain.OperatorsWallets {
+		idx := i % c.chain.Workers
+		childs[idx].AddSigner(key)
+	}
+
+	c.childs = childs
+	return c
+}
+
 func (c *Client) IsProcessed(ctx context.Context, depositData db.Deposit) (bool, error) {
 	withdrawalHash, err := c.getWithdrawalHash(depositData)
 	if err != nil {
@@ -63,7 +79,7 @@ func (c *Client) IsProcessed(ctx context.Context, depositData db.Deposit) (bool,
 	return true, nil
 }
 
-func (c *Client) SendTx(ctx context.Context, instruction solana.Instruction) (*solana.Signature, error) {
+func (c *Client) SendTx(ctx context.Context, instruction solana.Instruction, wallet *solana.Wallet) (*solana.Signature, error) {
 	recent, err := c.chain.Rpc.GetLatestBlockhash(context.TODO(), rpc.CommitmentFinalized)
 	if err != nil {
 		return nil, errors.Wrap(err, "unable to get latest blockhash")
@@ -73,7 +89,7 @@ func (c *Client) SendTx(ctx context.Context, instruction solana.Instruction) (*s
 			instruction,
 		},
 		recent.Value.Blockhash,
-		solana.TransactionPayer(c.chain.OperatorWallet.PublicKey()),
+		solana.TransactionPayer(wallet.PublicKey()),
 	)
 
 	if err != nil {
@@ -82,8 +98,8 @@ func (c *Client) SendTx(ctx context.Context, instruction solana.Instruction) (*s
 
 	sign, err := tx.Sign(
 		func(key solana.PublicKey) *solana.PrivateKey {
-			if c.chain.OperatorWallet.PublicKey().Equals(key) {
-				return &c.chain.OperatorWallet.PrivateKey
+			if wallet.PublicKey().Equals(key) {
+				return &wallet.PrivateKey
 			}
 			return nil
 		},

@@ -24,3 +24,6 @@ type tokenMetadata struct {
 	Uri    string
 	Nonce  uint64
 }
+
+type signerInfo struct {
+}
