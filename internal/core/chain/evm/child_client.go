@@ -21,6 +21,10 @@ func NewChildClient(parent *Client) *ChildClient {
 	}
 }
 
+func (c *ChildClient) IsProcessed(ctx context.Context, depositData db.Deposit) (bool, error) {
+	return c.parent.IsProcessed(ctx, depositData)
+}
+
 func (c *ChildClient) Withdraw(ctx context.Context, depositData *db.Deposit) (string, int64, error) {
 	if len(c.signers) == 0 {
 		return "", 0, errors.New("no signers available")
