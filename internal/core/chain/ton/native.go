@@ -7,10 +7,11 @@ import (
 	"github.com/Bridgeless-Project/relayer-svc/internal/db"
 	"github.com/pkg/errors"
 	"github.com/xssnick/tonutils-go/address"
+	"github.com/xssnick/tonutils-go/ton/wallet"
 	"github.com/xssnick/tonutils-go/tvm/cell"
 )
 
-func (c *Client) withdrawNative(ctx context.Context, depositData *db.Deposit) (string, int64, error) {
+func (c *Client) withdrawNative(ctx context.Context, depositData *db.Deposit, signer *wallet.Wallet) (string, int64, error) {
 	ctxt := c.Chain.Client.Client().StickyContext(ctx)
 	withdrawNativeCell, err := c.buildWithdrawNativeCell(depositData)
 	if err != nil {
@@ -22,7 +23,7 @@ func (c *Client) withdrawNative(ctx context.Context, depositData *db.Deposit) (s
 		return "", 0, errors.Wrap(err, "failed to get master chain info")
 	}
 
-	hash, err := c.withdraw(ctxt, withdrawNativeCell)
+	hash, err := c.withdraw(ctxt, withdrawNativeCell, signer)
 
 	return hash, int64(b.SeqNo), errors.Wrapf(err, "failed to withdraw native")
 }

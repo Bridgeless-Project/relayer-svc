@@ -7,10 +7,11 @@ import (
 	"github.com/Bridgeless-Project/relayer-svc/internal/db"
 	"github.com/pkg/errors"
 	"github.com/xssnick/tonutils-go/address"
+	"github.com/xssnick/tonutils-go/ton/wallet"
 	"github.com/xssnick/tonutils-go/tvm/cell"
 )
 
-func (c *Client) withdrawToken(ctx context.Context, depositData *db.Deposit) (string, int64, error) {
+func (c *Client) withdrawToken(ctx context.Context, depositData *db.Deposit, signer *wallet.Wallet) (string, int64, error) {
 	body, err := c.buildWithdrawJettonCell(ctx, depositData)
 	if err != nil {
 		return "", 0, errors.Wrap(err, "error building withdraw jetton cell")
@@ -21,7 +22,7 @@ func (c *Client) withdrawToken(ctx context.Context, depositData *db.Deposit) (st
 		return "", 0, errors.Wrap(err, "error getting master chain info")
 	}
 
-	txHash, err := c.withdraw(ctx, body)
+	txHash, err := c.withdraw(ctx, body, signer)
 
 	return txHash, int64(b.SeqNo), errors.Wrapf(err, "failed to withdraw jetton")
 }

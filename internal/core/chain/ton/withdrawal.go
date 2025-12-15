@@ -14,8 +14,8 @@ import (
 	"github.com/xssnick/tonutils-go/tvm/cell"
 )
 
-func (c *Client) withdraw(ctx context.Context, body *cell.Cell) (string, error) {
-	bytes, err := c.OperatorWallet.SendManyWaitTxHash(ctx, []*wallet.Message{
+func (c *Client) withdraw(ctx context.Context, body *cell.Cell, signer *wallet.Wallet) (string, error) {
+	bytes, err := signer.SendManyWaitTxHash(ctx, []*wallet.Message{
 		{
 			Mode: 1,
 			InternalMessage: &tlb.InternalMessage{
