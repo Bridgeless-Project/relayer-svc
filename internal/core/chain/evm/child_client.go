@@ -25,9 +25,9 @@ func (c ChildClient) IsProcessed(ctx context.Context, depositData db.Deposit) (b
 	return c.parent.IsProcessed(ctx, depositData)
 }
 
-func (c ChildClient) Withdraw(ctx context.Context, depositData *db.Deposit) (string, int64, error) {
+func (c ChildClient) Withdraw(ctx context.Context, depositData *db.Deposit) (string, string, int64, error) {
 	if len(c.signers) == 0 {
-		return "", 0, errors.New("no signers available")
+		return "", "", 0, errors.New("no signers available")
 	}
 	signer := c.signers[rand.Intn(len(c.signers))]
 

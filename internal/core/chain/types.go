@@ -24,7 +24,7 @@ type Client interface {
 }
 
 type ChildClient interface {
-	Withdraw(ctx context.Context, depositData *db.Deposit) (string, int64, error)
+	Withdraw(ctx context.Context, depositData *db.Deposit) (string, string, int64, error)
 	IsProcessed(ctx context.Context, depositData db.Deposit) (bool, error)
 }
 

@@ -107,12 +107,27 @@ func (c *Client) TransactionHashValid(hash string) bool {
 	return core.DefaultTransactionHashPattern.MatchString(hash)
 }
 
-func (c *Client) Withdraw(ctx context.Context, depositData *db.Deposit, signer *wallet.Wallet) (string, int64, error) {
+func (c *Client) Withdraw(ctx context.Context, depositData *db.Deposit, signer *wallet.Wallet) (string, string, int64, error) {
 	ctxt := c.Chain.Client.Client().StickyContext(ctx)
 
+	var (
+		txHash string
+		block  int64
+		err    error
+	)
 	if depositData.WithdrawalToken == core.DefaultNativeTokenAddress {
-		return c.withdrawNative(ctxt, depositData, signer)
+		txHash, block, err = c.withdrawNative(ctx, depositData, signer)
+		if err != nil {
+			return signer.WalletAddress().String(), txHash, block, errors.Wrap(err, "failed to withdraw native token")
+		}
+
+		return signer.WalletAddress().String(), txHash, block, nil
 	}
 
-	return c.withdrawToken(ctxt, depositData, signer)
+	txHash, block, err = c.withdrawToken(ctxt, depositData, signer)
+	if err != nil {
+		return signer.WalletAddress().String(), txHash, block, errors.Wrap(err, "failed to withdraw token")
+	}
+
+	return signer.WalletAddress().String(), txHash, block, nil
 }

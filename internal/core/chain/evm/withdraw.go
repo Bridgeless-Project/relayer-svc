@@ -18,13 +18,30 @@ import (
 	"github.com/pkg/errors"
 )
 
-func (c *Client) Withdraw(ctx context.Context, depositData *db.Deposit, signer *signerInfo) (string, int64, error) {
+func (c *Client) Withdraw(ctx context.Context, depositData *db.Deposit, signer *signerInfo) (string, string, int64, error) {
+	var (
+		txHash string
+		block  int64
+		err    error
+	)
+
 	if depositData.WithdrawalToken == core.DefaultNativeTokenAddress {
-		return c.withdrawNative(ctx, depositData, signer)
+		txHash, block, err = c.withdrawNative(ctx, depositData, signer)
+		if err != nil {
+			return signer.address.String(), txHash, block, errors.Wrap(err, "failed to withdraw Native")
+		}
+
+		return signer.address.String(), txHash, block, nil
 	}
 
-	return c.withdrawToken(ctx, depositData, signer)
+	txHash, block, err = c.withdrawToken(ctx, depositData, signer)
+	if err != nil {
+		return signer.address.String(), txHash, block, errors.Wrap(err, "failed to withdraw token")
+	}
+
+	return signer.address.String(), txHash, block, nil
 }
+
 func (c *Client) withdrawNative(ctx context.Context, depositData *db.Deposit, signer *signerInfo) (string, int64, error) {
 	data, err := c.getWithdrawalTxData(withdrawNative, depositData)
 	if err != nil {
