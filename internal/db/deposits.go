@@ -46,6 +46,7 @@ type Deposit struct {
 	WithdrawalTxHash     *string                `structs:"withdrawal_tx_hash" db:"withdrawal_tx_hash"`
 	WithdrawalChainId    string                 `structs:"withdrawal_chain_id" db:"withdrawal_chain_id"`
 	WithdrawalAmount     string                 `structs:"withdrawal_amount" db:"withdrawal_amount"`
+	MerkleProof          string                 `structs:"merkle_proof" db:"merkle_proof"`
 
 	TxData    string `structs:"tx_data" db:"tx_data"`
 	Signature string `structs:"signature" db:"signature"`
