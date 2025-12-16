@@ -61,6 +61,10 @@ func FromChain(c chain.Chain) Chain {
 		panic(errors.Wrap(err, "failed to obtain workers number"))
 	}
 
+	if tonChain.Workers > len(tonChain.OperatorsPrivateKeys) {
+		panic("number of workers is greater than number of operators private keys")
+	}
+
 	return tonChain
 }
 

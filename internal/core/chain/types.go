@@ -20,6 +20,7 @@ type Client interface {
 	TransactionHashValid(hash string) bool
 	IsProcessed(ctx context.Context, depositData db.Deposit) (bool, error)
 	ConfigureChildClients() Client
+	ChildClients() []ChildClient
 }
 
 type ChildClient interface {

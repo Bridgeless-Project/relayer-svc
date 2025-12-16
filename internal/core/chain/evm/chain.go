@@ -3,6 +3,7 @@ package evm
 import (
 	"context"
 	"crypto/ecdsa"
+	"fmt"
 	"math/big"
 
 	"github.com/Bridgeless-Project/relayer-svc/internal/core/chain"
@@ -64,10 +65,15 @@ func FromChain(c chain.Chain) Chain {
 		panic(errors.Wrap(err, "failed to obtain ws rpc address"))
 	}
 
+	if chain.Workers > len(chain.OperatorsPrivKeys) {
+		panic("number of workers is greater than number of operators private keys")
+	}
+
 	return chain
 }
 
 func (c *Client) prepareTxOpts(ctx context.Context, data []byte, signer *signerInfo) (*bind.TransactOpts, error) {
+	fmt.Printf("\n\n SIGNER: %s", signer.address.String())
 	gasPrice, err := c.chain.Rpc.SuggestGasPrice(ctx)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to fetch gas price")

@@ -113,5 +113,9 @@ func FromChain(c chain.Chain) Chain {
 
 	chain.WsRpc = wsRpc
 
+	if chain.Workers > len(chain.OperatorsWallets) {
+		panic("number of workers is greater than number of operators private keys")
+	}
+
 	return chain
 }

@@ -15,7 +15,7 @@ func (c *Client) withdrawSPL(ctx context.Context, depositData *db.Deposit, signe
 		return "", 0, errors.Wrap(err, "failed to get withdrawal context")
 	}
 
-	vault, err := c.getSPLVault(ctx, depositData)
+	vault, err := c.getSPLVault(ctx, depositData, signer)
 	if err != nil {
 		return "", 0, errors.Wrap(err, "failed to get withdrawal SPL vault")
 	}

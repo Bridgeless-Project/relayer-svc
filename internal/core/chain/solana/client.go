@@ -18,6 +18,15 @@ type Client struct {
 	childs []*ChildClient
 }
 
+func (c *Client) ChildClients() []chain.ChildClient {
+	childs := make([]chain.ChildClient, len(c.childs))
+	for i, child := range c.childs {
+		childs[i] = child
+	}
+
+	return childs
+}
+
 // NewBridgeClient creates a new bridge Client for the given chain.
 func NewBridgeClient(chain Chain) *Client {
 	contract.SetProgramID(chain.BridgeAddress)

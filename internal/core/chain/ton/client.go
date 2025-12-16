@@ -18,6 +18,15 @@ type Client struct {
 	childs []*ChildClient
 }
 
+func (c *Client) ChildClients() []chain.ChildClient {
+	childs := make([]chain.ChildClient, len(c.childs))
+	for i, child := range c.childs {
+		childs[i] = child
+	}
+
+	return childs
+}
+
 func (c *Client) ConfigureChildClients() chain.Client {
 	childs := make([]*ChildClient, c.Chain.Workers)
 	for i := 0; i < c.Chain.Workers; i++ {

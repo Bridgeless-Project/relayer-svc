@@ -10,7 +10,7 @@ import (
 	"gitlab.com/distributed_lab/logan/v3"
 )
 
-func executeWithdrawal(ctx context.Context, chainClient chain.Client, deposit *db.Deposit, tendermintClient *http.HTTP, logger *logan.Entry) error {
+func executeWithdrawal(ctx context.Context, chainClient chain.ChildClient, deposit *db.Deposit, tendermintClient *http.HTTP, logger *logan.Entry) error {
 	txHash, blockHeight, err := chainClient.Withdraw(ctx, deposit)
 
 	deposit.WithdrawalTxHash = &txHash

@@ -23,6 +23,15 @@ type Client struct {
 	childs         []*ChildClient
 }
 
+func (c *Client) ChildClients() []chain.ChildClient {
+	childsIface := make([]chain.ChildClient, len(c.childs))
+	for i, c := range c.childs {
+		childsIface[i] = c
+	}
+
+	return childsIface
+}
+
 // NewBridgeClient creates a new bridge Client for the given chain.
 func NewBridgeClient(chain Chain) *Client {
 	bridgeAbi, err := abi.JSON(strings.NewReader(contracts.BridgeMetaData.ABI))
@@ -72,6 +81,7 @@ func (p *Client) ConfigureChildClients() chain.Client {
 	}
 
 	p.childs = childs
+
 	return p
 }
 
