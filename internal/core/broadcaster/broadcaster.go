@@ -2,6 +2,7 @@ package broadcaster
 
 import (
 	"context"
+	"math/rand"
 	"sync"
 
 	"github.com/Bridgeless-Project/relayer-svc/internal/core/broadcaster/containers"
@@ -93,6 +94,9 @@ func (b *Broadcaster) Broadcast(deposit db.Deposit) error {
 		return errors.Wrapf(internalTypes.ErrFailedToBroadcast, "failed to get the withdrawal chain client, error: %s", err.Error())
 	}
 
+	client := chainClient.ChildClients()[rand.Intn(len(chainClient.ChildClients()))]
+	b.logger.Debug(chainClient.ChildClients())
+
 	// Store duplicate deposit identifier to cache to avoid spamming db with get queries
 	_, ok := b.cache.Load(deposit.TxHash)
 	if !ok {
@@ -108,7 +112,7 @@ func (b *Broadcaster) Broadcast(deposit db.Deposit) error {
 			return
 
 		case b.workersMap[deposit.WithdrawalChainId] <- containers.NewBroadcastContainer(
-			chainClient,
+			client,
 			deposit,
 			b.dbConn,
 			b.coreConnector,
@@ -140,6 +144,8 @@ func (b *Broadcaster) CatchUp(deposit db.Deposit) error {
 		return errors.Wrapf(err, "failed to get the withdrawal chain client: %s", deposit.String())
 	}
 
+	client := chainClient.ChildClients()[rand.Intn(len(chainClient.ChildClients()))]
+
 	go func() {
 		defer b.wg.Done()
 		select {
@@ -148,7 +154,7 @@ func (b *Broadcaster) CatchUp(deposit db.Deposit) error {
 			return
 
 		case b.workersMap[deposit.WithdrawalChainId] <- containers.NewCatchUpContainer(
-			chainClient,
+			client,
 			deposit,
 			b.dbConn,
 			b.coreConnector,

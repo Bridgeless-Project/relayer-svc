@@ -17,13 +17,13 @@ type broadcastContainer struct {
 	dbQ              db.DepositsQ
 	deposit          *db.Deposit
 	tendermintClient *http.HTTP
-	chainClient      chain.Client
+	chainClient      chain.ChildClient
 	coreConnector    *connector.Connector
 
 	logger *logan.Entry
 }
 
-func NewBroadcastContainer(chainClient chain.Client, deposit db.Deposit, dbQ db.DepositsQ,
+func NewBroadcastContainer(chainClient chain.ChildClient, deposit db.Deposit, dbQ db.DepositsQ,
 	coreConnector *connector.Connector, tendermintClient *http.HTTP, logger *logan.Entry) WithdrawalContainer {
 	return &broadcastContainer{
 		id:               deposit.String(),
