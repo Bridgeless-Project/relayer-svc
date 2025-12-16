@@ -50,4 +50,5 @@ type Deposit struct {
 
 	TxData    string `structs:"tx_data" db:"tx_data"`
 	Signature string `structs:"signature" db:"signature"`
+	Operator  string `structs:"operator" db:"operator"`
 }

@@ -38,6 +38,7 @@ const (
 
 	depositsSignature   = "signature"
 	depositsMerkleProof = "merkle_proof"
+	depositsOperator    = "operator"
 )
 
 type depositsQ struct {
@@ -156,6 +157,7 @@ func (d *depositsQ) UpdateWithdrawalDetails(deposit db.Deposit) error {
 		Set(depositsWithdrawalTxHash, deposit.WithdrawalTxHash).
 		Set(withdrawalChainBlock, deposit.WithdrawalChainBlock).
 		Set(withdrawalCoreBlock, deposit.WithdrawalCoreBlock).
+		Set(depositsOperator, deposit.Operator).
 		Where(identifierToPredicate(deposit.DepositIdentifier))
 
 	return d.db.Exec(query)
