@@ -61,6 +61,8 @@ func parseSubmittedDeposit(attributes []Attribute) (*db.Deposit, error) {
 			deposit.IsWrappedToken = isWrapped
 		case bridgeTypes.AttributeKeyCommissionAmount:
 			deposit.CommissionAmount = attribute.Value
+		case bridgeTypes.AttributeKeyMerkleProof:
+			deposit.MerkleProof = attribute.Value
 		default:
 			return nil, errors.Wrap(errors.New(fmt.Sprintf("unknown attribute key: %s", attribute.Key)), "failed to parse attribute")
 		}
