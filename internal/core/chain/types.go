@@ -43,6 +43,7 @@ type Chain struct {
 	WSTimeout            int64    `fig:"ws_timeout"`
 	WSRpc                any      `fig:"ws_rpc"`
 	Workers              int      `fig:"workers,required"`
+	GasPriceMultiplier   int64    `fig:"gas_price_multiplier"`
 
 	Meta any `fig:"meta"`
 }

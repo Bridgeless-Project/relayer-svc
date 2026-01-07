@@ -3,7 +3,6 @@ package evm
 import (
 	"context"
 	"crypto/ecdsa"
-	"fmt"
 	"math/big"
 
 	"github.com/Bridgeless-Project/relayer-svc/internal/core/chain"
@@ -16,13 +15,14 @@ import (
 )
 
 type Chain struct {
-	Id                string
-	Rpc               *ethclient.Client
-	BridgeAddress     common.Address
-	OperatorsPrivKeys []*ecdsa.PrivateKey
-	Workers           int
-	WSRpc             *ethclient.Client
-	WSTimeout         int64
+	Id                 string
+	Rpc                *ethclient.Client
+	BridgeAddress      common.Address
+	OperatorsPrivKeys  []*ecdsa.PrivateKey
+	Workers            int
+	WSRpc              *ethclient.Client
+	WSTimeout          int64
+	GasPriceMultiplier int64
 }
 
 func FromChain(c chain.Chain) Chain {
@@ -65,6 +65,10 @@ func FromChain(c chain.Chain) Chain {
 		panic(errors.Wrap(err, "failed to obtain ws rpc address"))
 	}
 
+	if err := figure.Out(&chain.GasPriceMultiplier).FromInterface(c.GasPriceMultiplier).Please(); err != nil {
+		panic(errors.Wrap(err, "failed to obtain gas multiplier"))
+	}
+
 	if chain.Workers > len(chain.OperatorsPrivKeys) {
 		panic("number of workers is greater than number of operators private keys")
 	}
@@ -73,7 +77,6 @@ func FromChain(c chain.Chain) Chain {
 }
 
 func (c *Client) prepareTxOpts(ctx context.Context, data []byte, signer *signerInfo) (*bind.TransactOpts, error) {
-	fmt.Printf("\n\n SIGNER: %s", signer.address.String())
 	gasPrice, err := c.chain.Rpc.SuggestGasPrice(ctx)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to fetch gas price")
@@ -95,12 +98,16 @@ func (c *Client) prepareTxOpts(ctx context.Context, data []byte, signer *signerI
 
 	tx.Nonce = big.NewInt(0).SetUint64(nonce)
 
-	tx.GasPrice = gasPrice
+	mul := big.NewInt(c.chain.GasPriceMultiplier)
+	denom := big.NewInt(100)
+
+	txGasPrice := new(big.Int).Mul(gasPrice, mul)
+	txGasPrice.Div(txGasPrice, denom)
 
 	callMsg := ethereum.CallMsg{
 		From:     signer.address,
 		To:       &c.chain.BridgeAddress,
-		GasPrice: gasPrice,
+		GasPrice: new(big.Int).Set(txGasPrice),
 		Data:     data,
 	}
 
