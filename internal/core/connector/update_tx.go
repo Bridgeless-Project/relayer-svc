@@ -15,7 +15,7 @@ func (c *Connector) UpdateTxInfo(ctx context.Context, deposits []*db.Deposit) er
 	for i, d := range deposits {
 		depositData, err := c.GetDeposit(ctx, d.DepositIdentifier)
 		if err != nil {
-			return errors.Wrap(err, "failed to get retrieve deposit data")
+			return errors.Wrap(err, "failed to retrieve deposit data")
 		}
 
 		// If withdrawal tx hash is already present on Core skip the deposit
