@@ -13,6 +13,16 @@ func (c *Connector) UpdateTxInfo(ctx context.Context, deposits []*db.Deposit) er
 	messages := make([]types.Msg, len(deposits))
 
 	for i, d := range deposits {
+		depositData, err := c.GetDeposit(ctx, d.DepositIdentifier)
+		if err != nil {
+			return errors.Wrap(err, "failed to get retrieve deposit data")
+		}
+
+		// If withdrawal tx hash is already present on Core skip the deposit
+		if depositData.WithdrawalTxHash != nil {
+			continue
+		}
+
 		msg := bridgeTypes.NewMsgUpdateTransaction(c.account.CosmosAddress(), toTransaction(*d))
 		messages[i] = msg
 	}
