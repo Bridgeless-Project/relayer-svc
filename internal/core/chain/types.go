@@ -19,8 +19,13 @@ type Client interface {
 
 	TransactionHashValid(hash string) bool
 	IsProcessed(ctx context.Context, depositData db.Deposit) (bool, error)
+	ConfigureChildClients() Client
+	ChildClients() []ChildClient
+}
 
-	Withdraw(ctx context.Context, depositData *db.Deposit) (string, int64, error)
+type ChildClient interface {
+	Withdraw(ctx context.Context, depositData *db.Deposit) (string, string, int64, error)
+	IsProcessed(ctx context.Context, depositData db.Deposit) (bool, error)
 }
 
 type Repository interface {
@@ -30,14 +35,15 @@ type Repository interface {
 }
 
 type Chain struct {
-	Id                 string `fig:"id,required"`
-	Type               Type   `fig:"type,required"`
-	Rpc                any    `fig:"rpc,required"`
-	BridgeAddresses    any    `fig:"bridge_address,required"`
-	OperatorPrivateKey string `fig:"operator_private_key,required"`
-	WSTimeout          int64  `fig:"ws_timeout"`
-	WSRpc              any    `fig:"ws_rpc"`
-	Workers            int    `fig:"workers,required"`
+	Id                   string   `fig:"id,required"`
+	Type                 Type     `fig:"type,required"`
+	Rpc                  any      `fig:"rpc,required"`
+	BridgeAddresses      any      `fig:"bridge_address,required"`
+	OperatorsPrivateKeys []string `fig:"operators_private_keys,required"`
+	WSTimeout            int64    `fig:"ws_timeout"`
+	WSRpc                any      `fig:"ws_rpc"`
+	Workers              int      `fig:"workers,required"`
+	GasPriceMultiplier   int64    `fig:"gas_price_multiplier"`
 
 	Meta any `fig:"meta"`
 }

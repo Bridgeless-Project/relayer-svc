@@ -36,7 +36,9 @@ const (
 	depositsIsWrappedToken   = "is_wrapped_token"
 	depositsCommissionAmount = "commission_amount"
 
-	depositsSignature = "signature"
+	depositsSignature   = "signature"
+	depositsMerkleProof = "merkle_proof"
+	depositsOperator    = "operator"
 )
 
 type depositsQ struct {
@@ -122,6 +124,7 @@ func (d *depositsQ) Insert(deposit db.Deposit) error {
 			depositsCommissionAmount:  deposit.CommissionAmount,
 			depositsReferralId:        deposit.ReferralId,
 			depositsTxData:            deposit.TxData,
+			depositsMerkleProof:       deposit.MerkleProof,
 		})
 
 	if err := d.db.Exec(stmt); err != nil {
@@ -154,6 +157,8 @@ func (d *depositsQ) UpdateWithdrawalDetails(deposit db.Deposit) error {
 		Set(depositsWithdrawalTxHash, deposit.WithdrawalTxHash).
 		Set(withdrawalChainBlock, deposit.WithdrawalChainBlock).
 		Set(withdrawalCoreBlock, deposit.WithdrawalCoreBlock).
+		Set(depositsWithdrawalStatus, deposit.WithdrawalStatus).
+		Set(depositsOperator, deposit.Operator).
 		Where(identifierToPredicate(deposit.DepositIdentifier))
 
 	return d.db.Exec(query)

@@ -25,7 +25,7 @@ type Chain struct {
 	BridgeContractAddress *address.Address
 	RPC                   RPC
 	Workers               int
-	OperatorPrivateKey    ed25519.PrivateKey `fig:"operator_private_key,required"`
+	OperatorsPrivateKeys  []ed25519.PrivateKey `fig:"operator_private_key,required"`
 }
 
 func FromChain(c chain.Chain) Chain {
@@ -51,14 +51,18 @@ func FromChain(c chain.Chain) Chain {
 		panic(errors.Wrap(err, "failed to obtain TON rpc"))
 	}
 
-	if err = figure.Out(&tonChain.OperatorPrivateKey).
-		FromInterface(c.OperatorPrivateKey).
+	if err = figure.Out(&tonChain.OperatorsPrivateKeys).
+		FromInterface(c.OperatorsPrivateKeys).
 		With(privateKeyHook).Please(); err != nil {
 		panic(errors.Wrap(err, "failed to obtain operator private key"))
 	}
 
 	if err = figure.Out(&tonChain.Workers).FromInterface(c.Workers).Please(); err != nil {
 		panic(errors.Wrap(err, "failed to obtain workers number"))
+	}
+
+	if tonChain.Workers > len(tonChain.OperatorsPrivateKeys) {
+		panic("number of workers is greater than number of operators private keys")
 	}
 
 	return tonChain
@@ -101,15 +105,21 @@ var rpcHook = figure.Hooks{
 }
 
 var privateKeyHook = figure.Hooks{
-	"ed25519.PrivateKey": func(value interface{}) (reflect.Value, error) {
+	"[]ed25519.PrivateKey": func(value interface{}) (reflect.Value, error) {
 		switch v := value.(type) {
-		case string:
-			bytes, err := hexutil.Decode(v)
-			if err != nil {
-				return reflect.Value{}, errors.Wrap(err, "failed to decode private key")
+		case []string:
+			keys := make([]ed25519.PrivateKey, len(v))
+
+			for i, s := range v {
+				bytes, err := hexutil.Decode(s)
+				if err != nil {
+					return reflect.Value{}, errors.Wrap(err, "failed to decode private key")
+				}
+
+				keys[i] = bytes
 			}
 
-			return reflect.ValueOf(ed25519.PrivateKey(bytes)), nil
+			return reflect.ValueOf(keys), nil
 		}
 		return reflect.Value{}, errors.Errorf("unsupported conversion from %T", value)
 	},

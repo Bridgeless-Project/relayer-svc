@@ -10,15 +10,16 @@ import (
 	"gitlab.com/distributed_lab/logan/v3"
 )
 
-func executeWithdrawal(ctx context.Context, chainClient chain.Client, deposit *db.Deposit, tendermintClient *http.HTTP, logger *logan.Entry) error {
-	txHash, blockHeight, err := chainClient.Withdraw(ctx, deposit)
+func executeWithdrawal(ctx context.Context, chainClient chain.ChildClient, deposit *db.Deposit, tendermintClient *http.HTTP, logger *logan.Entry) error {
+	operator, txHash, blockHeight, err := chainClient.Withdraw(ctx, deposit)
 
 	deposit.WithdrawalTxHash = &txHash
 	deposit.WithdrawalChainBlock = blockHeight
+	deposit.Operator = operator
 
 	abci, abciErr := tendermintClient.ABCIInfo(ctx)
 	if abciErr != nil {
-		return errors.Wrap(err, "error getting ABCI info")
+		return errors.Wrap(err, "error getting ABCI info to get withdrawal core block")
 	}
 
 	deposit.WithdrawalCoreBlock = abci.Response.LastBlockHeight

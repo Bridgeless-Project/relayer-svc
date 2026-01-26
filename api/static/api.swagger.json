@@ -183,6 +183,12 @@
         "signature": {
           "type": "string",
           "title": "used for EVM transfers"
+        },
+        "merkleProof": {
+          "type": "string"
+        },
+        "txData": {
+          "type": "string"
         }
       }
     },
@@ -202,6 +208,9 @@
         "withdrawalChainBlock": {
           "type": "string",
           "format": "int64"
+        },
+        "operator": {
+          "type": "string"
         }
       }
     },

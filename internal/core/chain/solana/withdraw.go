@@ -10,15 +10,31 @@ import (
 	"github.com/pkg/errors"
 )
 
-func (c *Client) Withdraw(ctx context.Context, depositData *db.Deposit) (string, int64, error) {
+func (c *Client) Withdraw(ctx context.Context, depositData *db.Deposit, signer *solana.Wallet) (string, string, int64, error) {
+	var (
+		txHash string
+		block  int64
+		err    error
+	)
+
 	if depositData.WithdrawalToken == core.DefaultNativeTokenAddress {
-		return c.withdrawNative(ctx, depositData)
+		txHash, block, err = c.withdrawNative(ctx, depositData, signer)
+		if err != nil {
+			return signer.PublicKey().String(), txHash, block, errors.Wrap(err, "failed to withdraw native")
+		}
+
+		return signer.PublicKey().String(), txHash, block, nil
 	}
 
-	return c.withdrawToken(ctx, depositData)
+	txHash, block, err = c.withdrawToken(ctx, depositData, signer)
+	if err != nil {
+		return signer.PublicKey().String(), txHash, block, errors.Wrap(err, "failed to withdraw token")
+	}
+
+	return signer.PublicKey().String(), txHash, block, nil
 }
 
-func (c *Client) withdrawNative(ctx context.Context, depositData *db.Deposit) (string, int64, error) {
+func (c *Client) withdrawNative(ctx context.Context, depositData *db.Deposit, signer *solana.Wallet) (string, int64, error) {
 	withdrawalCtx, err := c.getWithdrawalContext(depositData)
 	if err != nil {
 		return "", 0, errors.Wrap(err, "failed to get withdrawal context")
@@ -34,7 +50,7 @@ func (c *Client) withdrawNative(ctx context.Context, depositData *db.Deposit) (s
 		withdrawalCtx.Receiver,
 		withdrawalCtx.Authority,
 		withdrawalCtx.WithdrawalPDA,
-		c.chain.OperatorWallet.PublicKey(),
+		signer.PublicKey(),
 		solana.SystemProgramID)
 
 	blockNumber, err := c.getLatestBlockWithRetry(ctx)
@@ -42,7 +58,7 @@ func (c *Client) withdrawNative(ctx context.Context, depositData *db.Deposit) (s
 		return "", 0, errors.Wrap(err, "failed to get latest block number")
 	}
 
-	hash, err := c.SendTx(ctx, withdrawInstruction.Build())
+	hash, err := c.SendTx(ctx, withdrawInstruction.Build(), signer)
 	if hash == nil {
 		return "",
 			blockNumber,
@@ -54,7 +70,7 @@ func (c *Client) withdrawNative(ctx context.Context, depositData *db.Deposit) (s
 		errors.Wrap(err, "unable to send native withdrawal tx")
 }
 
-func (c *Client) withdrawToken(ctx context.Context, depositData *db.Deposit) (string, int64, error) {
+func (c *Client) withdrawToken(ctx context.Context, depositData *db.Deposit, signer *solana.Wallet) (string, int64, error) {
 	receiverPub, err := solana.PublicKeyFromBase58(depositData.Receiver)
 	if err != nil {
 		return "", 0, errors.Wrap(err, "failed to decode receiver public key")
@@ -65,11 +81,11 @@ func (c *Client) withdrawToken(ctx context.Context, depositData *db.Deposit) (st
 	}
 
 	if !depositData.IsWrappedToken {
-		txHash, blockHeight, err := c.withdrawSPL(ctx, depositData)
+		txHash, blockHeight, err := c.withdrawSPL(ctx, depositData, signer)
 		return txHash, blockHeight, errors.Wrap(err, "failed to withdraw SPL token")
 	}
 
-	txHash, blockHeight, err := c.withdrawWrapped(ctx, depositData)
+	txHash, blockHeight, err := c.withdrawWrapped(ctx, depositData, signer)
 	return txHash, blockHeight, errors.Wrap(err, "failed to withdraw wrapped token")
 
 }

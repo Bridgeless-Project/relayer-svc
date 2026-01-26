@@ -17,14 +17,14 @@ type catchupContainer struct {
 
 	dbQ              db.DepositsQ
 	deposit          *db.Deposit
-	chainClient      chain.Client
+	chainClient      chain.ChildClient
 	coreConnector    *connector.Connector
 	tendermintClient *http.HTTP
 
 	logger *logan.Entry
 }
 
-func NewCatchUpContainer(chainClient chain.Client, deposit db.Deposit, dbQ db.DepositsQ,
+func NewCatchUpContainer(chainClient chain.ChildClient, deposit db.Deposit, dbQ db.DepositsQ,
 	connector *connector.Connector, tendermintClient *http.HTTP, logger *logan.Entry) WithdrawalContainer {
 	return &catchupContainer{
 		id:               deposit.String(),
@@ -42,6 +42,8 @@ func (c *catchupContainer) ID() string {
 }
 
 func (c *catchupContainer) Run(ctx context.Context) (*db.Deposit, error) {
+	c.logger.Debug("catching up deposit")
+
 	switch c.deposit.WithdrawalStatus {
 	case internalTypes.WithdrawalStatus_WITHDRAWAL_STATUS_PROCESSING:
 		return c.ProcessWithdraw(ctx)

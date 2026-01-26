@@ -10,7 +10,7 @@ import (
 	"github.com/pkg/errors"
 )
 
-func (c *Client) getSPLVault(ctx context.Context, deposit *db.Deposit) (*solana.PublicKey, error) {
+func (c *Client) getSPLVault(ctx context.Context, deposit *db.Deposit, signer *solana.Wallet) (*solana.PublicKey, error) {
 	tokenAccount, err := solana.PublicKeyFromBase58(deposit.WithdrawalToken)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to retrieve withdrawal token account")
@@ -30,12 +30,12 @@ func (c *Client) getSPLVault(ctx context.Context, deposit *db.Deposit) (*solana.
 	}
 
 	vaultInst := contract.NewInitSplVaultInstruction(c.chain.Meta.BridgeId, tokenAccount, vault,
-		c.chain.OperatorWallet.PublicKey(), tokenInfo.Value.Owner, solana.SystemProgramID).Build()
+		signer.PublicKey(), tokenInfo.Value.Owner, solana.SystemProgramID).Build()
 
 	_, err = c.chain.Rpc.GetAccountInfo(ctx, vault)
 	if err != nil {
 		if errors.Is(err, rpc.ErrNotFound) {
-			_, err = c.SendTx(ctx, vaultInst)
+			_, err = c.SendTx(ctx, vaultInst, signer)
 			if err != nil {
 				return nil, errors.Wrap(err, "unable to init vault")
 			}

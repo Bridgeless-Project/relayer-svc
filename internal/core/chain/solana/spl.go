@@ -9,13 +9,13 @@ import (
 	"github.com/pkg/errors"
 )
 
-func (c *Client) withdrawSPL(ctx context.Context, depositData *db.Deposit) (string, int64, error) {
+func (c *Client) withdrawSPL(ctx context.Context, depositData *db.Deposit, signer *solana.Wallet) (string, int64, error) {
 	withdrawalCtx, err := c.getWithdrawalContext(depositData)
 	if err != nil {
 		return "", 0, errors.Wrap(err, "failed to get withdrawal context")
 	}
 
-	vault, err := c.getSPLVault(ctx, depositData)
+	vault, err := c.getSPLVault(ctx, depositData, signer)
 	if err != nil {
 		return "", 0, errors.Wrap(err, "failed to get withdrawal SPL vault")
 	}
@@ -37,7 +37,7 @@ func (c *Client) withdrawSPL(ctx context.Context, depositData *db.Deposit) (stri
 		withdrawalCtx.Receiver,
 		withdrawalCtx.Authority,
 		withdrawalCtx.WithdrawalPDA,
-		c.chain.OperatorWallet.PublicKey(),
+		signer.PublicKey(),
 		solana.SystemProgramID,
 		tokenInfo.Value.Owner,
 	)
@@ -47,7 +47,7 @@ func (c *Client) withdrawSPL(ctx context.Context, depositData *db.Deposit) (stri
 		return "", 0, errors.Wrap(err, "failed to get latest block number")
 	}
 
-	txHash, err := c.SendTx(ctx, withdrawInstruction.Build())
+	txHash, err := c.SendTx(ctx, withdrawInstruction.Build(), signer)
 	if err != nil {
 
 		if txHash != nil {

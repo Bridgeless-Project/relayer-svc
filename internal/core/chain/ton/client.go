@@ -7,16 +7,44 @@ import (
 	"github.com/Bridgeless-Project/relayer-svc/internal/core"
 	"github.com/Bridgeless-Project/relayer-svc/internal/core/chain"
 	"github.com/Bridgeless-Project/relayer-svc/internal/db"
+	"github.com/pkg/errors"
 	"github.com/xssnick/tonutils-go/liteclient"
 	"github.com/xssnick/tonutils-go/ton"
 	"github.com/xssnick/tonutils-go/ton/wallet"
-
-	"github.com/pkg/errors"
 )
 
 type Client struct {
-	Chain          Chain
-	OperatorWallet *wallet.Wallet
+	Chain  Chain
+	childs []*ChildClient
+}
+
+func (c *Client) ChildClients() []chain.ChildClient {
+	childs := make([]chain.ChildClient, len(c.childs))
+	for i, child := range c.childs {
+		childs[i] = child
+	}
+
+	return childs
+}
+
+func (c *Client) ConfigureChildClients() chain.Client {
+	childs := make([]*ChildClient, c.Chain.Workers)
+	for i := 0; i < c.Chain.Workers; i++ {
+		childs[i] = NewChildClient(c)
+	}
+
+	for i, key := range c.Chain.OperatorsPrivateKeys {
+		idx := i % c.Chain.Workers
+		wallet, err := wallet.FromPrivateKey(c.Chain.Client, key, wallet.V4R2)
+		if err != nil {
+			panic(errors.Wrap(err, "failed to create wallet"))
+		}
+
+		childs[idx].AddSigner(wallet)
+	}
+
+	c.childs = childs
+	return c
 }
 
 func (c *Client) IsProcessed(ctx context.Context, depositData db.Deposit) (bool, error) {
@@ -55,16 +83,11 @@ func NewBridgeClient(chain Chain) *Client {
 	api := ton.NewAPIClient(liteClt, ton.ProofCheckPolicyFast).WithRetry()
 	api.SetTrustedBlockFromConfig(globalConfig)
 	api.WithTimeout(chain.RPC.Timeout * time.Second)
-	operatorWallet, err := wallet.FromPrivateKey(api, chain.OperatorPrivateKey, wallet.V4R2)
-	if err != nil {
-		panic(errors.Wrap(err, "failed to connect to operator"))
-	}
 
 	chain.Client = api
 
 	return &Client{
-		Chain:          chain,
-		OperatorWallet: operatorWallet,
+		Chain: chain,
 	}
 }
 
@@ -84,12 +107,27 @@ func (c *Client) TransactionHashValid(hash string) bool {
 	return core.DefaultTransactionHashPattern.MatchString(hash)
 }
 
-func (c *Client) Withdraw(ctx context.Context, depositData *db.Deposit) (string, int64, error) {
+func (c *Client) Withdraw(ctx context.Context, depositData *db.Deposit, signer *wallet.Wallet) (string, string, int64, error) {
 	ctxt := c.Chain.Client.Client().StickyContext(ctx)
 
+	var (
+		txHash string
+		block  int64
+		err    error
+	)
 	if depositData.WithdrawalToken == core.DefaultNativeTokenAddress {
-		return c.withdrawNative(ctxt, depositData)
+		txHash, block, err = c.withdrawNative(ctx, depositData, signer)
+		if err != nil {
+			return signer.WalletAddress().String(), txHash, block, errors.Wrap(err, "failed to withdraw native token")
+		}
+
+		return signer.WalletAddress().String(), txHash, block, nil
 	}
 
-	return c.withdrawToken(ctxt, depositData)
+	txHash, block, err = c.withdrawToken(ctxt, depositData, signer)
+	if err != nil {
+		return signer.WalletAddress().String(), txHash, block, errors.Wrap(err, "failed to withdraw token")
+	}
+
+	return signer.WalletAddress().String(), txHash, block, nil
 }

@@ -25,6 +25,7 @@ message WithdrawalIdentifier {
   string chain_id = 2;
   optional int64 withdrawal_core_block = 3;
   optional int64 withdrawal_chain_block = 4;
+  string operator = 5;
 }
 
 message TransferData {
@@ -43,5 +44,7 @@ message TransferData {
 
   // used for EVM transfers
   optional string signature = 10;
+  string merkle_proof = 11;
+  string tx_data = 12;
 }
 
