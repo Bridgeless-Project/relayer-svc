@@ -1,0 +1,73 @@
+package chain
+
+import (
+	"context"
+
+	"github.com/Bridgeless-Project/relayer-svc/internal/db"
+	"github.com/pkg/errors"
+)
+
+var (
+	ErrChainNotSupported   = errors.New("chain not supported")
+	ErrSkippedFinalization = errors.New("skipped finalization")
+)
+
+type Client interface {
+	Type() Type
+	ChainId() string
+	WorkersCount() int
+
+	TransactionHashValid(hash string) bool
+	IsProcessed(ctx context.Context, depositData db.Deposit) (bool, error)
+	ConfigureChildClients() Client
+	ChildClients() []ChildClient
+}
+
+type ChildClient interface {
+	Withdraw(ctx context.Context, depositData *db.Deposit) (string, string, int64, error)
+	IsProcessed(ctx context.Context, depositData db.Deposit) (bool, error)
+}
+
+type Repository interface {
+	Client(chainId string) (Client, error)
+	SupportsChain(chainId string) bool
+	Clients() map[string]Client
+}
+
+type Chain struct {
+	Id                   string   `fig:"id,required"`
+	Type                 Type     `fig:"type,required"`
+	Rpc                  any      `fig:"rpc,required"`
+	BridgeAddresses      any      `fig:"bridge_address,required"`
+	OperatorsPrivateKeys []string `fig:"operators_private_keys,required"`
+	WSTimeout            int64    `fig:"ws_timeout"`
+	WSRpc                any      `fig:"ws_rpc"`
+	Workers              int      `fig:"workers,required"`
+	GasPriceMultiplier   int64    `fig:"gas_price_multiplier"`
+
+	Meta any `fig:"meta"`
+}
+
+type Type string
+
+const (
+	TypeEVM    Type = "EVM"
+	TypeTON    Type = "TON"
+	TypeSolana Type = "SOL"
+	TypeOther  Type = "other"
+)
+
+var typesMap = map[Type]struct{}{
+	TypeEVM:    {},
+	TypeOther:  {},
+	TypeTON:    {},
+	TypeSolana: {},
+}
+
+func (c Type) Validate() error {
+	if _, ok := typesMap[c]; !ok {
+		return errors.New("invalid chain type")
+	}
+
+	return nil
+}
