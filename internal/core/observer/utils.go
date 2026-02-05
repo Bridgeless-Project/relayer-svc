@@ -9,6 +9,43 @@ import (
 	"github.com/pkg/errors"
 )
 
+func parseUpdatedEpochs(attributes []Attribute) (*db.Epoch, error) {
+	epoch := &db.Epoch{}
+
+	for _, attribute := range attributes {
+		switch attribute.Key {
+		case db.AttributeEpochId:
+			epochId, err := strconv.ParseUint(attribute.Value, 10, 32)
+			if err != nil {
+				return nil, errors.Wrap(err, "failed to parse epoch id")
+			}
+			epoch.Id = uint32(epochId)
+		case db.AttributeChainId:
+			epoch.ChainId = attribute.Value
+		case db.AttributeEpochSignature:
+			epoch.Signature = attribute.Value
+		case db.AttributeEpochSigner:
+			epoch.Signer = attribute.Value
+		case db.AttributeEpochStartTime:
+			startTime, err := strconv.ParseUint(attribute.Value, 10, 64)
+			if err != nil {
+				return nil, errors.Wrap(err, "failed to parse start time")
+			}
+			epoch.StartTime = startTime
+		case db.AttributeEpochEndTime:
+			endTime, err := strconv.ParseUint(attribute.Value, 10, 64)
+			if err != nil {
+				return nil, errors.Wrap(err, "failed to parse end time")
+			}
+			epoch.EndTime = endTime
+		case db.AttributeEpochNonce:
+			epoch.Nonce = attribute.Value
+		}
+	}
+
+	return epoch, nil
+}
+
 func parseSubmittedDeposit(attributes []Attribute) (*db.Deposit, error) {
 	deposit := &db.Deposit{}
 

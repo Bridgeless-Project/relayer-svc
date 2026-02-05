@@ -13,7 +13,7 @@ import (
 	"github.com/pkg/errors"
 	abciTypes "github.com/tendermint/tendermint/abci/types"
 	"github.com/tendermint/tendermint/rpc/client/http"
-	"github.com/tendermint/tendermint/rpc/core/types"
+	coretypes "github.com/tendermint/tendermint/rpc/core/types"
 	"gitlab.com/distributed_lab/logan/v3"
 )
 
@@ -64,14 +64,14 @@ func (o *Observer) WithBlockDistance(distance uint64) *Observer {
 
 func (o *Observer) Run(ctx context.Context, startHeight uint64) error {
 	// Fetch deposits from Bridgeless core
-	if err := o.fetchDeposits(ctx, startHeight); err != nil {
-		return errors.Wrap(err, "failed to fetch deposits from the core")
+	if err := o.fetchEvents(ctx, startHeight); err != nil {
+		return errors.Wrap(err, "failed to fetch events from the core")
 	}
 
 	return nil
 }
 
-func (o *Observer) fetchDeposits(ctx context.Context, startHeight uint64) error {
+func (o *Observer) fetchEvents(ctx context.Context, startHeight uint64) error {
 	ticker := time.NewTicker(o.pollingInterval)
 	defer ticker.Stop()
 
@@ -90,7 +90,7 @@ func (o *Observer) fetchDeposits(ctx context.Context, startHeight uint64) error 
 	for {
 		select {
 		case <-ctx.Done():
-			o.logger.Debug("fetching deposits stopped")
+			o.logger.Debug("fetching events stopped")
 			return nil
 
 		case <-ticker.C:
@@ -115,7 +115,7 @@ func (o *Observer) fetchDeposits(ctx context.Context, startHeight uint64) error 
 				continue
 			}
 
-			deposits, err := o.fetchSubmitDepositEvents(ctx, int64(startHeight))
+			events, err := o.fetchBlockEvents(ctx, int64(startHeight))
 			if err != nil {
 				o.logger.WithError(err).
 					WithField("blockNumber", startHeight).
@@ -124,11 +124,11 @@ func (o *Observer) fetchDeposits(ctx context.Context, startHeight uint64) error 
 				continue
 			}
 
-			if len(deposits) != 0 {
+			if len(events.Deposits) != 0 {
 				time.Sleep(o.blockDelay)
 			}
 
-			for _, deposit := range deposits {
+			for _, deposit := range events.Deposits {
 				if err = o.broadcastDeposit(*deposit); err != nil {
 					if errors.Is(err, skippedDeposit) {
 						continue
@@ -140,9 +140,79 @@ func (o *Observer) fetchDeposits(ctx context.Context, startHeight uint64) error 
 				}
 			}
 
+			o.logger.Infof("Fetched %d epochs. Epoch chain ids:", len(events.Epochs))
+			for _, epoch := range events.Epochs {
+				o.logger.Infof("Epoch %d %s: %s %s", epoch.Id, epoch.Nonce, epoch.ChainId, epoch.Signer)
+			}
+
 			startHeight++
 		}
 	}
+}
+
+func (o *Observer) fetchBlockEvents(ctx context.Context, height int64)  (*BlockEvents, error) {
+	var blockResult *coretypes.ResultBlockResults
+	getBlockResult := func() error {
+		var err error
+		blockResult, err = o.client.BlockResults(ctx, &height)
+		if err != nil {
+			return errors.Wrap(err, "failed to get block results")
+		}
+		return nil
+	}
+
+	if err := core.DoWithRetry(ctx, getBlockResult); err != nil {
+		return nil, errors.Wrap(err, "failed to get block results")
+	}
+
+	deposits, err := o.parseDepositsFromTxResults(blockResult.TxsResults)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to parse deposits from tx results")
+	}
+
+	epochs, err := o.parseEpochsFromTxResults(blockResult.TxsResults)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to parse epochs from tx results")
+	}
+
+	return &BlockEvents{
+		Deposits: deposits,
+		Epochs:   epochs,
+	}, nil
+}
+
+func (o *Observer) parseEpochsFromTxResults(txs []*abciTypes.ResponseDeliverTx) ([]*db.Epoch, error) {
+	var epochs []*db.Epoch
+
+	for _, tx := range txs {
+		var msgs []MsgEvent
+
+		if tx.Log == "" || !json.Valid([]byte(tx.Log)) {
+			o.logger.Warnf("skipping invalid tx log: %s", tx.Log)
+			continue
+		}
+
+		o.logger.Debug("got log: " + tx.Log)
+		if err := json.Unmarshal([]byte(tx.Log), &msgs); err != nil {
+			return nil, errors.Wrap(err, fmt.Sprintf("Failed to unmarshal log: %v", tx.Log))
+		}
+		for _, msg := range msgs {
+			for _, event := range msg.Events {
+				if event.Type != eventEpochUpdated {
+					continue
+				}
+
+				epoch, err := parseUpdatedEpochs(event.Attributes)
+				if err != nil {
+					return nil, errors.Wrap(err, "failed to parse epoch")
+				}
+
+				epochs = append(epochs, epoch)
+			}
+		}
+	}
+
+	return epochs, nil
 }
 
 func (o *Observer) waitForBlockDistance(ctx context.Context, startHeight uint64) {
@@ -179,31 +249,6 @@ func (o *Observer) getCurrentHeight(ctx context.Context) (uint64, error) {
 	}
 
 	return uint64(info.Response.LastBlockHeight), nil
-}
-
-func (o *Observer) fetchSubmitDepositEvents(ctx context.Context, height int64) ([]*db.Deposit, error) {
-	var blockResult *coretypes.ResultBlockResults
-
-	getBlockResult := func() error {
-		var err error
-		blockResult, err = o.client.BlockResults(ctx, &height)
-		if err != nil {
-			return errors.Wrap(err, "failed to get block results")
-		}
-
-		return nil
-	}
-
-	if err := core.DoWithRetry(ctx, getBlockResult); err != nil {
-		return nil, errors.Wrap(err, "failed to get block results")
-	}
-
-	deposits, err := o.parseDepositsFromTxResults(blockResult.TxsResults)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to parse deposits from tx results")
-	}
-
-	return deposits, nil
 }
 
 func (o *Observer) isProcessed(deposit db.Deposit) (bool, error) {

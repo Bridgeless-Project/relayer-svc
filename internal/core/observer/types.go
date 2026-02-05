@@ -1,9 +1,13 @@
 package observer
 
-import "github.com/pkg/errors"
+import (
+	"github.com/Bridgeless-Project/relayer-svc/internal/db"
+	"github.com/pkg/errors"
+)
 
 const (
 	eventDepositSubmitted = "DEPOSIT_SUBMITTED"
+	eventEpochUpdated = "EPOCH_UPDATED"
 )
 
 var skippedDeposit = errors.New("skipped")
@@ -21,4 +25,9 @@ type Event struct {
 type MsgEvent struct {
 	MsgIndex int     `json:"msg_index"`
 	Events   []Event `json:"events"`
+}
+
+type BlockEvents struct {
+	Deposits []*db.Deposit
+	Epochs   []*db.Epoch
 }
