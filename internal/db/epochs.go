@@ -18,11 +18,12 @@ const (
 )
 
 type Epoch struct {
-	Id        uint32
-	ChainId   string
-	Signature string
-	Signer    string
-	StartTime uint64
-	EndTime   uint64
-	Nonce     string
+	Id            uint32
+	ChainId       string
+	Signature     string
+	Signer        string
+	StartTime     uint64
+	EndTime       uint64
+	Nonce         string
+	SignatureMode bool
 }

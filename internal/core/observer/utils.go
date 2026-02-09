@@ -40,6 +40,12 @@ func parseUpdatedEpochs(attributes []Attribute) (*db.Epoch, error) {
 			epoch.EndTime = endTime
 		case db.AttributeEpochNonce:
 			epoch.Nonce = attribute.Value
+		case db.AttributeEpochSignatureMode:
+			sigMode, err := strconv.ParseBool(attribute.Value)
+			if err != nil {
+				return nil, errors.Wrap(err, "failed to parse signature mode")
+			}
+			epoch.SignatureMode = sigMode
 		}
 	}
 
