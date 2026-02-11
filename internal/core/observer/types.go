@@ -7,7 +7,7 @@ import (
 
 const (
 	eventDepositSubmitted = "DEPOSIT_SUBMITTED"
-	eventEpochUpdated = "EPOCH_UPDATED"
+	eventEpochUpdated     = "EPOCH_UPDATED"
 )
 
 var skippedDeposit = errors.New("skipped")

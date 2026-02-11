@@ -7,41 +7,45 @@ import (
 	bridgeTypes "github.com/Bridgeless-Project/bridgeless-core/v12/x/bridge/types"
 	"github.com/Bridgeless-Project/relayer-svc/internal/db"
 	"github.com/pkg/errors"
+	abciTypes "github.com/tendermint/tendermint/abci/types"
 )
 
-func parseUpdatedEpochs(attributes []Attribute) (*db.Epoch, error) {
+func parseUpdatedEpochs(attributes []abciTypes.EventAttribute) (*db.Epoch, error) {
 	epoch := &db.Epoch{}
 
 	for _, attribute := range attributes {
-		switch attribute.Key {
+		key := string(attribute.Key)
+		value := string(attribute.Value)
+
+		switch key {
 		case db.AttributeEpochId:
-			epochId, err := strconv.ParseUint(attribute.Value, 10, 32)
+			epochId, err := strconv.ParseUint(value, 10, 32)
 			if err != nil {
 				return nil, errors.Wrap(err, "failed to parse epoch id")
 			}
 			epoch.Id = uint32(epochId)
 		case db.AttributeChainId:
-			epoch.ChainId = attribute.Value
+			epoch.ChainId = value
 		case db.AttributeEpochSignature:
-			epoch.Signature = attribute.Value
+			epoch.Signature = value
 		case db.AttributeEpochSigner:
-			epoch.Signer = attribute.Value
+			epoch.Signer = value
 		case db.AttributeEpochStartTime:
-			startTime, err := strconv.ParseUint(attribute.Value, 10, 64)
+			startTime, err := strconv.ParseUint(value, 10, 64)
 			if err != nil {
 				return nil, errors.Wrap(err, "failed to parse start time")
 			}
 			epoch.StartTime = startTime
 		case db.AttributeEpochEndTime:
-			endTime, err := strconv.ParseUint(attribute.Value, 10, 64)
+			endTime, err := strconv.ParseUint(value, 10, 64)
 			if err != nil {
 				return nil, errors.Wrap(err, "failed to parse end time")
 			}
 			epoch.EndTime = endTime
 		case db.AttributeEpochNonce:
-			epoch.Nonce = attribute.Value
+			epoch.Nonce = value
 		case db.AttributeEpochSignatureMode:
-			sigMode, err := strconv.ParseBool(attribute.Value)
+			sigMode, err := strconv.ParseBool(value)
 			if err != nil {
 				return nil, errors.Wrap(err, "failed to parse signature mode")
 			}

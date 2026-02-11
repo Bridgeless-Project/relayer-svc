@@ -103,7 +103,6 @@ func (o *Observer) fetchEvents(ctx context.Context, startHeight uint64) error {
 			o.waitForBlockDistance(ctx, startHeight)
 
 			if startHeight > currentHeight {
-				o.logger.Debug("Waiting for next block, currentHeight:", currentHeight)
 				continue
 			}
 
@@ -119,7 +118,7 @@ func (o *Observer) fetchEvents(ctx context.Context, startHeight uint64) error {
 			if err != nil {
 				o.logger.WithError(err).
 					WithField("blockNumber", startHeight).
-					Error("failed to fetch submit deposit events")
+					Error("failed to fetch block events")
 				startHeight++
 				continue
 			}
@@ -140,7 +139,7 @@ func (o *Observer) fetchEvents(ctx context.Context, startHeight uint64) error {
 				}
 			}
 
-			o.logger.Infof("Fetched %d epochs. Epoch chain ids:", len(events.Epochs))
+			o.logger.Infof("Fetched %d epochs", len(events.Epochs))
 			for _, epoch := range events.Epochs {
 				o.logger.Infof("Epoch %d %s: %s %s", epoch.Id, epoch.Nonce, epoch.ChainId, epoch.Signer)
 			}
@@ -150,7 +149,7 @@ func (o *Observer) fetchEvents(ctx context.Context, startHeight uint64) error {
 	}
 }
 
-func (o *Observer) fetchBlockEvents(ctx context.Context, height int64)  (*BlockEvents, error) {
+func (o *Observer) fetchBlockEvents(ctx context.Context, height int64) (*BlockEvents, error) {
 	var blockResult *coretypes.ResultBlockResults
 	getBlockResult := func() error {
 		var err error
@@ -170,9 +169,9 @@ func (o *Observer) fetchBlockEvents(ctx context.Context, height int64)  (*BlockE
 		return nil, errors.Wrap(err, "failed to parse deposits from tx results")
 	}
 
-	epochs, err := o.parseEpochsFromTxResults(blockResult.TxsResults)
+	epochs, err := o.parseEpochsFromBlockEvents(blockResult.BeginBlockEvents)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to parse epochs from tx results")
+		return nil, errors.Wrap(err, "failed to parse epochs from block events")
 	}
 
 	return &BlockEvents{
@@ -181,35 +180,19 @@ func (o *Observer) fetchBlockEvents(ctx context.Context, height int64)  (*BlockE
 	}, nil
 }
 
-func (o *Observer) parseEpochsFromTxResults(txs []*abciTypes.ResponseDeliverTx) ([]*db.Epoch, error) {
+func (o *Observer) parseEpochsFromBlockEvents(events []abciTypes.Event) ([]*db.Epoch, error) {
 	var epochs []*db.Epoch
 
-	for _, tx := range txs {
-		var msgs []MsgEvent
-
-		if tx.Log == "" || !json.Valid([]byte(tx.Log)) {
-			o.logger.Warnf("skipping invalid tx log: %s", tx.Log)
+	for _, event := range events {
+		if event.Type != eventEpochUpdated {
 			continue
 		}
 
-		o.logger.Debug("got log: " + tx.Log)
-		if err := json.Unmarshal([]byte(tx.Log), &msgs); err != nil {
-			return nil, errors.Wrap(err, fmt.Sprintf("Failed to unmarshal log: %v", tx.Log))
+		epoch, err := parseUpdatedEpochs(event.Attributes)
+		if err != nil {
+			return nil, errors.Wrap(err, "failed to parse epoch")
 		}
-		for _, msg := range msgs {
-			for _, event := range msg.Events {
-				if event.Type != eventEpochUpdated {
-					continue
-				}
-
-				epoch, err := parseUpdatedEpochs(event.Attributes)
-				if err != nil {
-					return nil, errors.Wrap(err, "failed to parse epoch")
-				}
-
-				epochs = append(epochs, epoch)
-			}
-		}
+		epochs = append(epochs, epoch)
 	}
 
 	return epochs, nil
