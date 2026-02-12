@@ -18,10 +18,11 @@ import (
 type Broadcaster struct {
 	ctx context.Context
 
-	coreConnector *connector.Connector
-	clientsRepo   chain.Repository
-	workersMap    map[string]chan containers.WithdrawalContainer
-	submitChan    chan *db.Deposit
+	coreConnector           *connector.Connector
+	clientsRepo             chain.Repository
+	withdrawalWorkersMap    map[string]chan containers.WithdrawalContainer
+	updateSignersWorkersMap map[string]chan containers.UpdateSignersContainers
+	submitChan              chan *db.Deposit
 
 	tendermintClient *http.HTTP
 
@@ -48,31 +49,78 @@ func New(ctx context.Context, coreConnector *connector.Connector, dbConn db.Depo
 }
 
 func (b *Broadcaster) Run(ctx context.Context) {
-	b.workersMap = make(map[string]chan containers.WithdrawalContainer)
+	b.withdrawalWorkersMap = make(map[string]chan containers.WithdrawalContainer)
+	b.updateSignersWorkersMap = make(map[string]chan containers.UpdateSignersContainers)
 
 	for chainID, client := range b.clientsRepo.Clients() {
 		handlerChan := make(chan containers.WithdrawalContainer, b.chainTxPoolSize)
 
 		for id := range client.WorkersCount() {
 			b.wg.Add(1)
-			go b.runNetworkWorker(ctx, chainID, handlerChan, id)
+			go b.runWithdrawalNetworkWorker(ctx, chainID, handlerChan, id)
 		}
 
-		b.workersMap[chainID] = handlerChan
+		b.withdrawalWorkersMap[chainID] = handlerChan
+	}
+
+	for chainID, client := range b.clientsRepo.Clients() {
+		handlerChan := make(chan containers.UpdateSignersContainers, b.chainTxPoolSize)
+
+		for id := range client.WorkersCount() {
+			b.wg.Add(1)
+			go b.runUpdateSignersNetworkWorker(ctx, chainID, handlerChan, id)
+		}
+
+		b.updateSignersWorkersMap[chainID] = handlerChan
 	}
 
 	b.wg.Add(1)
 	go b.runCoreSubmitter(ctx)
-
 	b.wg.Wait()
-	for _, ch := range b.workersMap {
+
+	for _, ch := range b.updateSignersWorkersMap {
+		close(ch)
+	}
+
+	for _, ch := range b.withdrawalWorkersMap {
 		close(ch)
 	}
 
 	close(b.submitChan)
 }
 
-func (b *Broadcaster) Broadcast(deposit db.Deposit) error {
+func (b *Broadcaster) BroadcastEpoch(epoch *db.Epoch) error {
+	chainClient, err := b.clientsRepo.Client(epoch.ChainId)
+	if err != nil {
+		return errors.Wrapf(internalTypes.ErrFailedToBroadcast, "failed to get the epoch chain client, error: %s", err.Error())
+	}
+
+	client := chainClient.ChildClients()[rand.Intn(len(chainClient.ChildClients()))]
+	b.logger.Debug(chainClient.ChildClients())
+
+	b.wg.Go(func() {
+		select {
+		case <-b.ctx.Done():
+			b.logger.Warnf("stopped broadcasting epoch %d", epoch.Id)
+			return
+
+		case b.updateSignersWorkersMap[epoch.ChainId] <- containers.NewUpdateSignersBroadcastContainer(
+			client,
+			epoch,
+			b.dbConn,
+			b.coreConnector,
+			b.tendermintClient,
+			b.logger,
+		):
+			return
+		}
+
+	})
+
+	return nil
+}
+
+func (b *Broadcaster) BroadcastDeposit(deposit db.Deposit) error {
 	err := b.checkExistence(context.Background(), deposit)
 	if err != nil {
 		if errors.Is(err, internalTypes.ErrAlreadyExists) {
@@ -111,7 +159,7 @@ func (b *Broadcaster) Broadcast(deposit db.Deposit) error {
 			b.logger.Warnf("stopped broadcastig of deposit %s", deposit.String())
 			return
 
-		case b.workersMap[deposit.WithdrawalChainId] <- containers.NewBroadcastContainer(
+		case b.withdrawalWorkersMap[deposit.WithdrawalChainId] <- containers.NewDepositBroadcastContainer(
 			client,
 			deposit,
 			b.dbConn,
@@ -153,7 +201,7 @@ func (b *Broadcaster) CatchUp(deposit db.Deposit) error {
 			b.logger.Warnf("stopped broadcastig of deposit %s", deposit.String())
 			return
 
-		case b.workersMap[deposit.WithdrawalChainId] <- containers.NewCatchUpContainer(
+		case b.withdrawalWorkersMap[deposit.WithdrawalChainId] <- containers.NewCatchUpContainer(
 			client,
 			deposit,
 			b.dbConn,

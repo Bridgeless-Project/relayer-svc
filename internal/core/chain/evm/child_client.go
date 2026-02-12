@@ -3,6 +3,7 @@ package evm
 import (
 	"context"
 	"crypto/ecdsa"
+	"log"
 	"math/rand"
 
 	"github.com/Bridgeless-Project/relayer-svc/internal/db"
@@ -39,4 +40,8 @@ func (c *ChildClient) AddSigner(key *ecdsa.PrivateKey) {
 		privateKey: key,
 		address:    crypto.PubkeyToAddress(key.PublicKey),
 	})
+}
+
+func (c ChildClient) UpdateSigners(ctx context.Context, epochData *db.Epoch) {
+	log.Default().Printf("EVM UPDATE SIGNERS: %d", epochData.Id)
 }

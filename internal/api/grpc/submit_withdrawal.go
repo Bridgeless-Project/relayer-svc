@@ -45,7 +45,7 @@ func (i Implementation) SubmitWithdrawal(ctx context.Context, identifier *intern
 		return nil, status.Error(codes.InvalidArgument, "deposit is already withdrawn")
 	}
 
-	err = broadcaster.Broadcast(*deposit)
+	err = broadcaster.BroadcastDeposit(*deposit)
 	if err != nil {
 		if errors.Is(err, internalTypes.ErrFailedToBroadcast) {
 			logger.WithError(err).Error("broadcasting failed")

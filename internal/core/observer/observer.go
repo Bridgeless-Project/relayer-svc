@@ -142,6 +142,15 @@ func (o *Observer) fetchEvents(ctx context.Context, startHeight uint64) error {
 			o.logger.Infof("Fetched %d epochs", len(events.Epochs))
 			for _, epoch := range events.Epochs {
 				o.logger.Infof("Epoch %d %s: %s %s", epoch.Id, epoch.Nonce, epoch.ChainId, epoch.Signer)
+				if err = o.broadcaster.BroadcastEpoch(epoch); err != nil {
+					if errors.Is(err, skippedDeposit) {
+						continue
+					}
+					o.logger.
+						WithField("blockNumber", startHeight).
+						Warnf("failed to broadcast epoch: %v", err)
+					continue
+				}
 			}
 
 			startHeight++
@@ -252,7 +261,7 @@ func (o *Observer) broadcastDeposit(deposit db.Deposit) error {
 		return skippedDeposit
 	}
 
-	err = o.broadcaster.Broadcast(deposit)
+	err = o.broadcaster.BroadcastDeposit(deposit)
 	if err != nil {
 		return errors.Wrap(err, "failed to broadcast deposit")
 	}

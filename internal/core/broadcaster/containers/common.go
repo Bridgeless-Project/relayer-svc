@@ -33,3 +33,8 @@ func executeWithdrawal(ctx context.Context, chainClient chain.ChildClient, depos
 
 	return nil
 }
+
+func executeUpdateSigners(ctx context.Context, chainClient chain.ChildClient, epoch *db.Epoch, tendermintClient *http.HTTP, logger *logan.Entry) error {
+	chainClient.UpdateSigners(ctx, epoch)
+	return nil
+}
