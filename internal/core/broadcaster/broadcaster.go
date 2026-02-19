@@ -53,25 +53,20 @@ func (b *Broadcaster) Run(ctx context.Context) {
 	b.updateSignersWorkersMap = make(map[string]chan containers.UpdateSignersContainers)
 
 	for chainID, client := range b.clientsRepo.Clients() {
-		handlerChan := make(chan containers.WithdrawalContainer, b.chainTxPoolSize)
+		withdrawalHandlerChan := make(chan containers.WithdrawalContainer, b.chainTxPoolSize)
+		updateSignersHandlerChan := make(chan containers.UpdateSignersContainers, b.chainTxPoolSize)
 
 		for id := range client.WorkersCount() {
-			b.wg.Add(1)
-			go b.runWithdrawalNetworkWorker(ctx, chainID, handlerChan, id)
+			b.wg.Go(func() {
+				b.runWithdrawalNetworkWorker(ctx, chainID, withdrawalHandlerChan, id)
+			})
+			b.wg.Go(func() {
+				b.runUpdateSignersNetworkWorker(ctx, chainID, updateSignersHandlerChan, id)
+			})
 		}
 
-		b.withdrawalWorkersMap[chainID] = handlerChan
-	}
-
-	for chainID, client := range b.clientsRepo.Clients() {
-		handlerChan := make(chan containers.UpdateSignersContainers, b.chainTxPoolSize)
-
-		for id := range client.WorkersCount() {
-			b.wg.Add(1)
-			go b.runUpdateSignersNetworkWorker(ctx, chainID, handlerChan, id)
-		}
-
-		b.updateSignersWorkersMap[chainID] = handlerChan
+		b.withdrawalWorkersMap[chainID] = withdrawalHandlerChan
+		b.updateSignersWorkersMap[chainID] = updateSignersHandlerChan
 	}
 
 	b.wg.Add(1)
@@ -143,7 +138,6 @@ func (b *Broadcaster) BroadcastDeposit(deposit db.Deposit) error {
 	}
 
 	client := chainClient.ChildClients()[rand.Intn(len(chainClient.ChildClients()))]
-	b.logger.Debug(chainClient.ChildClients())
 
 	// Store duplicate deposit identifier to cache to avoid spamming db with get queries
 	_, ok := b.cache.Load(deposit.TxHash)

@@ -34,7 +34,16 @@ func executeWithdrawal(ctx context.Context, chainClient chain.ChildClient, depos
 	return nil
 }
 
-func executeUpdateSigners(ctx context.Context, chainClient chain.ChildClient, epoch *db.Epoch, tendermintClient *http.HTTP, logger *logan.Entry) error {
+func executeUpdateSigners(ctx context.Context, chainClient chain.ChildClient, epoch *db.Epoch, _ *http.HTTP, logger *logan.Entry) error {
+	logger.Infof("Executing update signers")
+	logger.Infof("Epoch id: %d", epoch.Id)
+	logger.Infof("Epoch ChainId: %s", epoch.ChainId)
+	logger.Infof("Epoch Nonce: %s", epoch.Nonce)
+	logger.Infof("Epoch Signer: %s", epoch.Signer)
+	logger.Infof("Epoch Signature: %s", epoch.Signature)
+	logger.Infof("Epoch StartTime: %d", epoch.StartTime)
+	logger.Infof("Epoch EndTime: %d", epoch.EndTime)
+	logger.Infof("Epoch SignatureMode: %v", epoch.SignatureMode)
 	chainClient.UpdateSigners(ctx, epoch)
 	return nil
 }

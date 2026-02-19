@@ -38,6 +38,7 @@ func (c *ChildClient) AddSigner(signer *wallet.Wallet) {
 	c.signers = append(c.signers, signer)
 }
 
-func (c ChildClient) UpdateSigners(ctx context.Context, epochData *db.Epoch) {
+func (c ChildClient) UpdateSigners(ctx context.Context, epochData *db.Epoch) (string, int64, error) {
 	log.Default().Printf("TON UPDATE SIGNERS: %d", epochData.Id)
+	return "", 0, nil
 }

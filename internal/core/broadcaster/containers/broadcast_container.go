@@ -118,39 +118,4 @@ func (b *depositBroadcastContainer) Run(ctx context.Context) (*db.Deposit, error
 	return b.deposit, nil
 }
 
-type updateSignersBroadcastContainer struct {
-	id               uint32
-	dbQ              db.DepositsQ
-	epoch            *db.Epoch
-	tendermintClient *http.HTTP
-	chainClient      chain.ChildClient
-	coreConnector    *connector.Connector
 
-	logger *logan.Entry
-}
-
-func NewUpdateSignersBroadcastContainer(chainClient chain.ChildClient, epoch *db.Epoch, dbQ db.DepositsQ,
-	coreConnector *connector.Connector, tendermintClient *http.HTTP, logger *logan.Entry) UpdateSignersContainers {
-	return &updateSignersBroadcastContainer{
-		id:               epoch.Id,
-		chainClient:      chainClient,
-		epoch:            epoch,
-		tendermintClient: tendermintClient,
-		dbQ:              dbQ,
-		coreConnector:    coreConnector,
-		logger:           logger.WithField("broadcast_container", epoch.Id),
-	}
-}
-
-func (b *updateSignersBroadcastContainer) ID() uint32 {
-	return b.id
-}
-
-func (b *updateSignersBroadcastContainer) Run(ctx context.Context) (*db.Epoch, error) {
-	err := executeUpdateSigners(ctx, b.chainClient, b.epoch, b.tendermintClient, b.logger)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to process withdrawal")
-	}
-
-	return b.epoch, nil
-}
