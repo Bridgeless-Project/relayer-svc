@@ -23,8 +23,8 @@ func (c *Client) UpdateSigners(ctx context.Context, epochData *db.Epoch, signer 
 	}
 
 	signer_ := common.HexToAddress(epochData.Signer)
-	nonce_, ok := new(big.Int).SetString(epochData.Nonce, 10)
-	if !ok || nonce_ == nil {
+	nonce, ok := new(big.Int).SetString(epochData.Nonce, 10)
+	if !ok || nonce == nil {
 		return "", 0, errors.New("failed to parse nonce")
 	}
 
@@ -33,7 +33,7 @@ func (c *Client) UpdateSigners(ctx context.Context, epochData *db.Epoch, signer 
 		signer_,
 		new(big.Int).SetUint64(epochData.StartTime),
 		new(big.Int).SetUint64(epochData.EndTime),
-		nonce_,
+		nonce,
 		epochData.SignatureMode,
 		[][]byte{signatureBytes},
 	)
@@ -56,7 +56,7 @@ func (c *Client) UpdateSigners(ctx context.Context, epochData *db.Epoch, signer 
 		signer_,
 		new(big.Int).SetUint64(epochData.StartTime),
 		new(big.Int).SetUint64(epochData.EndTime),
-		nonce_,
+		nonce,
 		epochData.SignatureMode,
 		[][]byte{signatureBytes},
 	)
@@ -72,10 +72,6 @@ func (c *Client) UpdateSigners(ctx context.Context, epochData *db.Epoch, signer 
 	if receipt.Status != receiptSuccess {
     return "", 0, fmt.Errorf("transaction execution failed")
 	}
-
-	if receipt.GasUsed < 30000 {
-		return "", 0, fmt.Errorf("silent failure: gas used (%d) too low for state change", receipt.GasUsed)
-  }
 
 	return tx.Hash().Hex(), block, nil
 }

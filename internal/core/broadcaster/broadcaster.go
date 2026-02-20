@@ -26,7 +26,8 @@ type Broadcaster struct {
 
 	tendermintClient *http.HTTP
 
-	dbConn db.DepositsQ
+	depositsDbConn db.DepositsQ
+	epochsDbConn db.EpochsQ
 	logger *logan.Entry
 	cache  sync.Map
 
@@ -36,11 +37,12 @@ type Broadcaster struct {
 	submitBatchSize int64
 }
 
-func New(ctx context.Context, coreConnector *connector.Connector, dbConn db.DepositsQ, tendermintClient *http.HTTP, logger *logan.Entry) *Broadcaster {
+func New(ctx context.Context, coreConnector *connector.Connector, depositsDbConn db.DepositsQ, epochsDbConn db.EpochsQ, tendermintClient *http.HTTP, logger *logan.Entry) *Broadcaster {
 	return &Broadcaster{
 		ctx:              ctx,
 		coreConnector:    coreConnector,
-		dbConn:           dbConn,
+		depositsDbConn:   depositsDbConn,
+		epochsDbConn: 		epochsDbConn,
 		logger:           logger,
 		cache:            sync.Map{},
 		wg:               new(sync.WaitGroup),
@@ -85,13 +87,27 @@ func (b *Broadcaster) Run(ctx context.Context) {
 }
 
 func (b *Broadcaster) BroadcastEpoch(epoch *db.Epoch) error {
+	existing, err := b.epochsDbConn.Get(db.EpochIdentifier{Id: epoch.Id, ChainId: epoch.ChainId, Nonce: epoch.Nonce})
+	if err != nil {
+		return errors.Wrapf(internalTypes.ErrFailedToBroadcast, "failed to check epoch existence: %s", err.Error())
+	}
+	if existing != nil {
+		return errors.Wrapf(internalTypes.ErrAlreadyExists, "epoch %d already exists", epoch.Id)
+	}
+
+	epoch.Status = internalTypes.EpochStatus_EPOCH_STATUS_PENDING
+	err = b.epochsDbConn.Insert(*epoch)
+	if err != nil {
+		return errors.Wrapf(internalTypes.ErrFailedToBroadcast, "failed to insert epoch: %s", err.Error())
+	}
+
 	chainClient, err := b.clientsRepo.Client(epoch.ChainId)
 	if err != nil {
 		return errors.Wrapf(internalTypes.ErrFailedToBroadcast, "failed to get the epoch chain client, error: %s", err.Error())
 	}
 
 	client := chainClient.ChildClients()[rand.Intn(len(chainClient.ChildClients()))]
-	b.logger.Debug(chainClient.ChildClients())
+	b.logger.Debug(client)
 
 	b.wg.Go(func() {
 		select {
@@ -102,7 +118,7 @@ func (b *Broadcaster) BroadcastEpoch(epoch *db.Epoch) error {
 		case b.updateSignersWorkersMap[epoch.ChainId] <- containers.NewUpdateSignersBroadcastContainer(
 			client,
 			epoch,
-			b.dbConn,
+			b.epochsDbConn,
 			b.coreConnector,
 			b.tendermintClient,
 			b.logger,
@@ -126,7 +142,7 @@ func (b *Broadcaster) BroadcastDeposit(deposit db.Deposit) error {
 	}
 
 	deposit.WithdrawalStatus = internalTypes.WithdrawalStatus_WITHDRAWAL_STATUS_PENDING
-	err = b.dbConn.Insert(deposit)
+	err = b.depositsDbConn.Insert(deposit)
 	if err != nil {
 		return errors.Wrapf(internalTypes.ErrFailedToBroadcast, "%s: error storing deposit %s",
 			err.Error(), deposit.String())
@@ -156,7 +172,7 @@ func (b *Broadcaster) BroadcastDeposit(deposit db.Deposit) error {
 		case b.withdrawalWorkersMap[deposit.WithdrawalChainId] <- containers.NewDepositBroadcastContainer(
 			client,
 			deposit,
-			b.dbConn,
+			b.depositsDbConn,
 			b.coreConnector,
 			b.tendermintClient,
 			b.logger,
@@ -175,7 +191,7 @@ func (b *Broadcaster) CatchUp(deposit db.Deposit) error {
 		return internalTypes.ErrAlreadyExists
 	}
 
-	err := b.dbConn.UpdateStatus(deposit.DepositIdentifier, internalTypes.WithdrawalStatus_WITHDRAWAL_STATUS_PENDING)
+	err := b.depositsDbConn.UpdateStatus(deposit.DepositIdentifier, internalTypes.WithdrawalStatus_WITHDRAWAL_STATUS_PENDING)
 	if err != nil {
 		return errors.Wrapf(err, "failed to update status to pending: %s", deposit.String())
 	}
@@ -195,10 +211,10 @@ func (b *Broadcaster) CatchUp(deposit db.Deposit) error {
 			b.logger.Warnf("stopped broadcastig of deposit %s", deposit.String())
 			return
 
-		case b.withdrawalWorkersMap[deposit.WithdrawalChainId] <- containers.NewCatchUpContainer(
+		case b.withdrawalWorkersMap[deposit.WithdrawalChainId] <- containers.NewDepositCatchUpContainer(
 			client,
 			deposit,
-			b.dbConn,
+			b.depositsDbConn,
 			b.coreConnector,
 			b.tendermintClient,
 			b.logger,
@@ -233,7 +249,7 @@ func (b *Broadcaster) checkExistence(ctx context.Context, deposit db.Deposit) er
 		return errors.Wrapf(internalTypes.ErrAlreadyExists, "deposit %s already processed on-chain", deposit.String())
 	}
 
-	depositData, err := b.dbConn.Get(deposit.DepositIdentifier)
+	depositData, err := b.depositsDbConn.Get(deposit.DepositIdentifier)
 	if err != nil {
 		return errors.Wrap(err, "failed to retrieve deposit data")
 	}
@@ -264,4 +280,32 @@ func (b *Broadcaster) WithSubmitTxPoolSize(txPoolSize int64) *Broadcaster {
 func (b *Broadcaster) WithSubmitBatchSize(batchSize int64) *Broadcaster {
 	b.submitBatchSize = batchSize
 	return b
+}
+
+func (b *Broadcaster) CatchUpEpoch(epoch db.Epoch) error {
+	chainClient, err := b.clientsRepo.Client(epoch.ChainId)
+	if err != nil {
+		return errors.Wrapf(err, "failed to get chain client for epoch %d", epoch.Id)
+	}
+
+	client := chainClient.ChildClients()[rand.Intn(len(chainClient.ChildClients()))]
+
+	b.wg.Go(func() {
+		select {
+		case <-b.ctx.Done():
+			b.logger.Warnf("stopped catching up epoch %d", epoch.Id)
+			return
+		case b.updateSignersWorkersMap[epoch.ChainId] <- containers.NewUpdateSignersCatchUpContainer(
+			client,
+			epoch,
+			b.epochsDbConn,
+			b.coreConnector,
+			b.tendermintClient,
+			b.logger,
+		):
+			return
+		}
+	})
+
+	return nil
 }

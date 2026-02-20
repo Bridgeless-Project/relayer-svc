@@ -74,6 +74,7 @@ func runService(ctx context.Context, cfg config.Config, catchUp, observerNeeded 
 	clients := cfg.Clients()
 	clientsRepo := repository.NewClientsRepository(clients)
 	dtb := pg.NewDepositsQ(cfg.DB())
+	etb := pg.NewEpochsQ(cfg.DB())
 	blocksQ := pg.NewBlocksQ(cfg.DB())
 
 	core.Logger = logger.WithField("component", "retrier")
@@ -86,14 +87,14 @@ func runService(ctx context.Context, cfg config.Config, catchUp, observerNeeded 
 		return errors.Wrap(err, "failed to create connector")
 	}
 
-	broadcaster := withdrawalBroadcaster.New(ctx, connector, dtb, cfg.TendermintHttpClient(), logger.WithField("component", "broadcaster"))
+	broadcaster := withdrawalBroadcaster.New(ctx, connector, dtb, etb, cfg.TendermintHttpClient(), logger.WithField("component", "broadcaster"))
 
 	observer := coreObserver.New(cfg.TendermintHttpClient(), blocksQ, dtb, broadcaster, logger.WithField("component", "observer"))
 
 	apiServer := api.NewServer(cfg.ApiGrpcListener(), cfg.ApiHttpListener(), dtb, connector, broadcaster, clientsRepo,
 		logger.WithField("component", "api-server"))
 
-	catchUpper := catch_upper.NewCatchUpper(ctx, broadcaster, dtb, logger.WithField("component", "catch-upper"))
+	catchUpper := catch_upper.NewCatchUpper(ctx, broadcaster, dtb, etb, logger.WithField("component", "catch-upper"))
 
 	wg.Add(2)
 	eg.Go(func() error {

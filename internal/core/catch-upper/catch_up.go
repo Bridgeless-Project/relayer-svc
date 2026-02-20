@@ -15,15 +15,17 @@ type CatchUpper struct {
 	broadcaster *broadcaster.Broadcaster
 
 	depositsDb db.DepositsQ
+	epochsDb   db.EpochsQ
 
 	logger *logan.Entry
 }
 
-func NewCatchUpper(ctx context.Context, broadcaster *broadcaster.Broadcaster, db db.DepositsQ, log *logan.Entry) *CatchUpper {
+func NewCatchUpper(ctx context.Context, broadcaster *broadcaster.Broadcaster, depositsDb db.DepositsQ, epochsDb db.EpochsQ, log *logan.Entry) *CatchUpper {
 	return &CatchUpper{
 		ctx:         ctx,
 		broadcaster: broadcaster,
-		depositsDb:  db,
+		depositsDb:  depositsDb,
+		epochsDb:    epochsDb,
 		logger:      log,
 	}
 }
@@ -42,6 +44,14 @@ func (с *CatchUpper) Start() error {
 		return errors.Wrap(err, "catchup with status submitting failed")
 	}
 
+	if err := с.catchupEpochsWithStatus(internalTypes.EpochStatus_EPOCH_STATUS_PENDING); err != nil {
+		return errors.Wrap(err, "catchup epochs with status pending failed")
+	}
+
+	if err := с.catchupEpochsWithStatus(internalTypes.EpochStatus_EPOCH_STATUS_FAILED); err != nil {
+		return errors.Wrap(err, "catchup epochs with status failed failed")
+	}
+
 	return nil
 }
 
@@ -55,6 +65,23 @@ func (c *CatchUpper) catchupWithStatus(status internalTypes.WithdrawalStatus) er
 		err = c.broadcaster.CatchUp(deposit)
 		if err != nil {
 			c.logger.Errorf("failed to broadcast deposit to catchup deposit: %v", err)
+			continue
+		}
+	}
+
+	return nil
+}
+
+func (c *CatchUpper) catchupEpochsWithStatus(status internalTypes.EpochStatus) error {
+	epochs, err := c.epochsDb.GetWithStatus(status)
+	if err != nil {
+		return errors.Wrap(err, "failed to get unprocessed epochs")
+	}
+
+	for _, epoch := range epochs {
+		err = c.broadcaster.CatchUpEpoch(epoch)
+		if err != nil {
+			c.logger.Errorf("failed to catchup epoch: %v", err)
 			continue
 		}
 	}
