@@ -75,9 +75,9 @@ func (inst *DepositWrapped) SetAddress(address string) *DepositWrapped {
 	return inst
 }
 
-// SetReferralId sets the "referral_id" parameter.
-func (inst *DepositWrapped) SetReferralId(referral_id uint16) *DepositWrapped {
-	inst.ReferralId = &referral_id
+// SetReferralId sets the "_referral_id" parameter.
+func (inst *DepositWrapped) SetReferralId(_referral_id uint16) *DepositWrapped {
+	inst.ReferralId = &_referral_id
 	return inst
 }
 
@@ -261,13 +261,13 @@ func (inst *DepositWrapped) EncodeToTree(parent ag_treeout.Branches) {
 				ParentFunc(func(instructionBranch ag_treeout.Branches) {
 					// Parameters of the instruction:
 					instructionBranch.Child("Params[len=7]").ParentFunc(func(paramsBranch ag_treeout.Branches) {
-						paramsBranch.Child(ag_format.Param("   BridgeId", *inst.BridgeId))
-						paramsBranch.Child(ag_format.Param("  MintNonce", *inst.MintNonce))
-						paramsBranch.Child(ag_format.Param("     Symbol", *inst.Symbol))
-						paramsBranch.Child(ag_format.Param("     Amount", *inst.Amount))
-						paramsBranch.Child(ag_format.Param("    ChainId", *inst.ChainId))
-						paramsBranch.Child(ag_format.Param("    Address", *inst.Address))
-						paramsBranch.Child(ag_format.Param(" ReferralId", *inst.ReferralId))
+						paramsBranch.Child(ag_format.Param("    BridgeId", *inst.BridgeId))
+						paramsBranch.Child(ag_format.Param("   MintNonce", *inst.MintNonce))
+						paramsBranch.Child(ag_format.Param("      Symbol", *inst.Symbol))
+						paramsBranch.Child(ag_format.Param("      Amount", *inst.Amount))
+						paramsBranch.Child(ag_format.Param("     ChainId", *inst.ChainId))
+						paramsBranch.Child(ag_format.Param("     Address", *inst.Address))
+						paramsBranch.Child(ag_format.Param("  ReferralId", *inst.ReferralId))
 					})
 					// Accounts of the instruction:
 					instructionBranch.Child("Accounts[len=4]").ParentFunc(func(accountsBranch ag_treeout.Branches) {
@@ -367,7 +367,7 @@ func NewDepositWrappedInstruction(
 	amount uint64,
 	chain_id string,
 	address string,
-	referral_id uint16,
+	_referral_id uint16,
 	// Accounts:
 	mint ag_solanago.PublicKey,
 	sender ag_solanago.PublicKey,
@@ -381,7 +381,7 @@ func NewDepositWrappedInstruction(
 		SetAmount(amount).
 		SetChainId(chain_id).
 		SetAddress(address).
-		SetReferralId(referral_id).
+		SetReferralId(_referral_id).
 		SetMintAccount(mint).
 		SetSenderAccount(sender).
 		SetSignerAccount(signer).

@@ -17,7 +17,7 @@ import (
 	ag_treeout "github.com/gagliardetto/treeout"
 )
 
-var ProgramID ag_solanago.PublicKey = ag_solanago.MustPublicKeyFromBase58("Gy6byuRoxeTkvRq4dVatppi4jyuupKPpUVq6YwH6cHY8")
+var ProgramID ag_solanago.PublicKey = ag_solanago.MustPublicKeyFromBase58("y7mF4J4p7dfxZLqJSU2dAMFMtftcn8iBYZLJXhhsR8e")
 
 func SetProgramID(pubkey ag_solanago.PublicKey) {
 	ProgramID = pubkey
@@ -40,6 +40,7 @@ var (
 	Instruction_InitSplVault    = ag_binary.TypeID([8]byte{119, 252, 157, 7, 107, 181, 216, 143})
 	Instruction_InitWrappedMint = ag_binary.TypeID([8]byte{130, 249, 176, 48, 101, 223, 71, 226})
 	Instruction_Initialize      = ag_binary.TypeID([8]byte{175, 175, 109, 31, 13, 152, 155, 237})
+	Instruction_UpdateSigner    = ag_binary.TypeID([8]byte{185, 87, 194, 176, 97, 171, 41, 144})
 	Instruction_WithdrawNative  = ag_binary.TypeID([8]byte{113, 227, 26, 32, 53, 66, 90, 250})
 	Instruction_WithdrawSpl     = ag_binary.TypeID([8]byte{181, 154, 94, 86, 62, 115, 6, 186})
 	Instruction_WithdrawWrapped = ag_binary.TypeID([8]byte{65, 137, 94, 48, 86, 93, 152, 251})
@@ -63,6 +64,8 @@ func InstructionIDToName(id ag_binary.TypeID) string {
 		return "InitWrappedMint"
 	case Instruction_Initialize:
 		return "Initialize"
+	case Instruction_UpdateSigner:
+		return "UpdateSigner"
 	case Instruction_WithdrawNative:
 		return "WithdrawNative"
 	case Instruction_WithdrawSpl:
@@ -109,6 +112,9 @@ var InstructionImplDef = ag_binary.NewVariantDefinition(
 		},
 		{
 			Name: "initialize", Type: (*Initialize)(nil),
+		},
+		{
+			Name: "update_signer", Type: (*UpdateSigner)(nil),
 		},
 		{
 			Name: "withdraw_native", Type: (*WithdrawNative)(nil),
