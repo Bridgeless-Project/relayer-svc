@@ -47,7 +47,7 @@ func (c *Client) UpdateSigners(ctx context.Context, epochData *db.Epoch, signer 
 	authorityPda, _, err := solana.FindProgramAddress(
 		[][]byte{
 			[]byte("authority"),
-			[]byte("1"),
+			[]byte(c.chain.Meta.BridgeId),
 		},
 		programID,
 	)
@@ -56,7 +56,7 @@ func (c *Client) UpdateSigners(ctx context.Context, epochData *db.Epoch, signer 
 	}
 
 	instruction := contract.NewUpdateSignerInstruction(
-		"1",
+		c.chain.Meta.BridgeId,
 		reqType,
 		newSigner,
 		int64(epochData.StartTime),
