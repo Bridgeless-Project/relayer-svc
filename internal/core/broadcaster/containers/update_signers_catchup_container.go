@@ -24,8 +24,13 @@ type updateSignersCatchupContainer struct {
 	logger *logan.Entry
 }
 
-func NewUpdateSignersCatchUpContainer(chainClient chain.ChildClient, epoch db.Epoch, dbQ db.SignaturesQ,
-	connector *connector.Connector, tendermintClient *http.HTTP, logger *logan.Entry) UpdateSignersContainers {
+func NewUpdateSignersCatchUpContainer(
+		chainClient chain.ChildClient,
+		epoch db.Epoch, dbQ db.SignaturesQ,
+		connector *connector.Connector,
+		tendermintClient *http.HTTP,
+		logger *logan.Entry,
+	) UpdateSignersContainers {
 	return &updateSignersCatchupContainer{
 		id:               epoch.Id,
 		chainClient:      chainClient,

@@ -37,7 +37,11 @@ type Broadcaster struct {
 	submitBatchSize int64
 }
 
-func New(ctx context.Context, coreConnector *connector.Connector, depositsDbConn db.DepositsQ, epochsDbConn db.SignaturesQ, tendermintClient *http.HTTP, logger *logan.Entry) *Broadcaster {
+func New(
+		ctx context.Context, coreConnector *connector.Connector,
+		depositsDbConn db.DepositsQ, epochsDbConn db.SignaturesQ,
+		tendermintClient *http.HTTP, logger *logan.Entry,
+	) *Broadcaster {
 	return &Broadcaster{
 		ctx:              ctx,
 		coreConnector:    coreConnector,
@@ -71,8 +75,9 @@ func (b *Broadcaster) Run(ctx context.Context) {
 		b.updateSignersWorkersMap[chainID] = updateSignersHandlerChan
 	}
 
-	b.wg.Add(1)
-	go b.runCoreSubmitter(ctx)
+	b.wg.Go(func() {
+		b.runCoreSubmitter(ctx)
+	})
 	b.wg.Wait()
 
 	for _, ch := range b.updateSignersWorkersMap {
