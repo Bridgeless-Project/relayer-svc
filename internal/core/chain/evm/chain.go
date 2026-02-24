@@ -91,7 +91,7 @@ func (c *Client) prepareTxOpts(ctx context.Context, data []byte, signer *signerI
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to generate transactor")
 	}
-	nonce, err := c.chain.Rpc.PendingNonceAt(ctx, signer.address)
+	nonce, err := c.getNextNonce(ctx, signer.address)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to fetch operator account nonce")
 	}
@@ -118,4 +118,24 @@ func (c *Client) prepareTxOpts(ctx context.Context, data []byte, signer *signerI
 
 	tx.GasLimit = gasLimit
 	return tx, nil
+}
+
+func (c *Client) getNextNonce(ctx context.Context, addr common.Address) (uint64, error) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	currentNonce, exists := c.nonces[addr]
+	if exists {
+		c.nonces[addr] = currentNonce + 1
+		return currentNonce, nil
+	}
+
+	// TODO: consider moving fetching outside of mutex lock
+	fetchedNonce, err := c.chain.Rpc.PendingNonceAt(ctx, addr)
+	if err != nil {
+		return 0, err
+	}
+
+	c.nonces[addr] = fetchedNonce + 1
+	return fetchedNonce, nil
 }

@@ -4,6 +4,7 @@ import (
 	"context"
 	"math/big"
 	"strings"
+	"sync"
 
 	"github.com/Bridgeless-Project/relayer-svc/internal/core"
 	"github.com/Bridgeless-Project/relayer-svc/internal/core/chain"
@@ -21,6 +22,9 @@ type Client struct {
 	contractClient *contracts.Bridge
 	abi            *abi.ABI
 	childs         []*ChildClient
+
+	mu sync.Mutex
+	nonces map[common.Address]uint64
 }
 
 func (c *Client) ChildClients() []chain.ChildClient {
@@ -48,6 +52,7 @@ func NewBridgeClient(chain Chain) *Client {
 		chain:          chain,
 		abi:            &bridgeAbi,
 		contractClient: contractClient,
+		nonces: make(map[common.Address]uint64),
 	}
 }
 
