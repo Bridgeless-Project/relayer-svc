@@ -2,7 +2,6 @@ package solana
 
 import (
 	"context"
-	"log"
 	"math/rand"
 
 	"github.com/Bridgeless-Project/relayer-svc/internal/db"
@@ -39,6 +38,10 @@ func (c *ChildClient) AddSigner(signer *solana.Wallet) {
 }
 
 func (c ChildClient) UpdateSigners(ctx context.Context, epochData *db.Epoch) (string, int64, error) {
-	log.Default().Printf("SOLANA UPDATE SIGNERS: %d", epochData.Id)
-	return "", 0, nil
+	if len(c.signers) == 0 {
+		return "", 0, nil
+	}
+	signer := c.signers[rand.Intn(len(c.signers))]
+	tx, block, err := c.parent.UpdateSigners(ctx, epochData, signer)
+	return tx, block, err
 }
