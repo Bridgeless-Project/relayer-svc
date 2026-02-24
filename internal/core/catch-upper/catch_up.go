@@ -15,12 +15,12 @@ type CatchUpper struct {
 	broadcaster *broadcaster.Broadcaster
 
 	depositsDb db.DepositsQ
-	epochsDb   db.EpochsQ
+	epochsDb   db.SignaturesQ
 
 	logger *logan.Entry
 }
 
-func NewCatchUpper(ctx context.Context, broadcaster *broadcaster.Broadcaster, depositsDb db.DepositsQ, epochsDb db.EpochsQ, log *logan.Entry) *CatchUpper {
+func NewCatchUpper(ctx context.Context, broadcaster *broadcaster.Broadcaster, depositsDb db.DepositsQ, epochsDb db.SignaturesQ, log *logan.Entry) *CatchUpper {
 	return &CatchUpper{
 		ctx:         ctx,
 		broadcaster: broadcaster,

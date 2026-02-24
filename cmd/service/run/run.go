@@ -74,7 +74,7 @@ func runService(ctx context.Context, cfg config.Config, catchUp, observerNeeded 
 	clients := cfg.Clients()
 	clientsRepo := repository.NewClientsRepository(clients)
 	dtb := pg.NewDepositsQ(cfg.DB())
-	etb := pg.NewEpochsQ(cfg.DB())
+	etb := pg.NewSignaturesQ(cfg.DB())
 	blocksQ := pg.NewBlocksQ(cfg.DB())
 
 	core.Logger = logger.WithField("component", "retrier")

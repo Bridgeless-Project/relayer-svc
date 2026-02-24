@@ -31,19 +31,19 @@ type Epoch struct {
 	Status        types.EpochStatus `db:"status"`
 }
 
-type EpochIdentifier struct {
+type SignatureIdentifier struct {
 	Id 		  uint32
 	ChainId string
 	Nonce		string
 }
 
-type EpochsQ interface {
-	New() EpochsQ
+type SignaturesQ interface {
+	New() SignaturesQ
 	Insert(Epoch) (err error)
-	Get(identifier EpochIdentifier) (*Epoch, error)
+	Get(identifier SignatureIdentifier) (*Epoch, error)
 	GetWithStatus(status types.EpochStatus) ([]Epoch, error)
 
-	UpdateStatus(EpochIdentifier, types.EpochStatus) error
+	UpdateStatus(SignatureIdentifier, types.EpochStatus) error
 
 	Transaction(f func() error) error
 }

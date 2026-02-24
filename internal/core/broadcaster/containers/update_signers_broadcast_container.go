@@ -14,7 +14,7 @@ import (
 
 type updateSignersBroadcastContainer struct {
 	id               uint32
-	dbQ              db.EpochsQ
+	dbQ              db.SignaturesQ
 	epoch            *db.Epoch
 	tendermintClient *http.HTTP
 	chainClient      chain.ChildClient
@@ -23,7 +23,7 @@ type updateSignersBroadcastContainer struct {
 	logger *logan.Entry
 }
 
-func NewUpdateSignersBroadcastContainer(chainClient chain.ChildClient, epoch *db.Epoch, dbQ db.EpochsQ,
+func NewUpdateSignersBroadcastContainer(chainClient chain.ChildClient, epoch *db.Epoch, dbQ db.SignaturesQ,
 	coreConnector *connector.Connector, tendermintClient *http.HTTP, logger *logan.Entry) UpdateSignersContainers {
 	return &updateSignersBroadcastContainer{
 		id:               epoch.Id,
@@ -41,7 +41,7 @@ func (b *updateSignersBroadcastContainer) ID() uint32 {
 }
 
 func (b *updateSignersBroadcastContainer) Run(ctx context.Context) (*db.Epoch, error) {
-	id := db.EpochIdentifier{Id: b.epoch.Id, ChainId: b.epoch.ChainId, Nonce: b.epoch.Nonce}
+	id := db.SignatureIdentifier{Id: b.epoch.Id, ChainId: b.epoch.ChainId, Nonce: b.epoch.Nonce}
 
 	err := executeUpdateSigners(ctx, b.chainClient, b.epoch, b.tendermintClient, b.logger)
 	if err != nil {

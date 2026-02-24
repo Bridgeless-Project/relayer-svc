@@ -11,7 +11,7 @@ import (
 )
 
 const (
-	epochsTable         = "epochs"
+	signaturesTable     = "signatures"
 	epochsId            = "id"
 	epochsChainId       = "chain_id"
 	epochsSignature     = "signature"
@@ -23,25 +23,25 @@ const (
 	epochsStatus        = "status"
 )
 
-type epochsQ struct {
+type signaturesQ struct {
 	db       *pgdb.DB
 	selector squirrel.SelectBuilder
 }
 
-func NewEpochsQ(db *pgdb.DB) db.EpochsQ {
-	return &epochsQ{
+func NewSignaturesQ(db *pgdb.DB) db.SignaturesQ {
+	return &signaturesQ{
 		db:       db.Clone(),
-		selector: squirrel.Select("*").From(epochsTable),
+		selector: squirrel.Select("*").From(signaturesTable),
 	}
 }
 
-func (q *epochsQ) New() db.EpochsQ {
-	return NewEpochsQ(q.db.Clone())
+func (q *signaturesQ) New() db.SignaturesQ {
+	return NewSignaturesQ(q.db.Clone())
 }
 
-func (q *epochsQ) Insert(epoch db.Epoch) error {
+func (q *signaturesQ) Insert(epoch db.Epoch) error {
 	stmt := squirrel.
-		Insert(epochsTable).
+		Insert(signaturesTable).
 		SetMap(map[string]interface{}{
 			epochsId:            epoch.Id,
 			epochsChainId:       epoch.ChainId,
@@ -61,7 +61,7 @@ func (q *epochsQ) Insert(epoch db.Epoch) error {
 	return nil
 }
 
-func (q *epochsQ) Get(identifier db.EpochIdentifier) (*db.Epoch, error) {
+func (q *signaturesQ) Get(identifier db.SignatureIdentifier) (*db.Epoch, error) {
 	var epoch db.Epoch
 	err := q.db.Get(&epoch, q.selector.Where(epochIdentifierToPredicate(identifier)))
 	if errors.Is(err, sql.ErrNoRows) {
@@ -71,7 +71,7 @@ func (q *epochsQ) Get(identifier db.EpochIdentifier) (*db.Epoch, error) {
 	return &epoch, err
 }
 
-func (q *epochsQ) GetWithStatus(status types.EpochStatus) ([]db.Epoch, error) {
+func (q *signaturesQ) GetWithStatus(status types.EpochStatus) ([]db.Epoch, error) {
 	stmt := q.selector.Where(squirrel.Eq{
 		epochsStatus: status,
 	})
@@ -88,19 +88,19 @@ func (q *epochsQ) GetWithStatus(status types.EpochStatus) ([]db.Epoch, error) {
 	return epochs, nil
 }
 
-func (q *epochsQ) UpdateStatus(identifier db.EpochIdentifier, status types.EpochStatus) error {
-	query := squirrel.Update(epochsTable).
+func (q *signaturesQ) UpdateStatus(identifier db.SignatureIdentifier, status types.EpochStatus) error {
+	query := squirrel.Update(signaturesTable).
 		Set(epochsStatus, status).
 		Where(epochIdentifierToPredicate(identifier))
 
 	return q.db.Exec(query)
 }
 
-func (q *epochsQ) Transaction(f func() error) error {
+func (q *signaturesQ) Transaction(f func() error) error {
 	return q.db.Transaction(f)
 }
 
-func epochIdentifierToPredicate(identifier db.EpochIdentifier) squirrel.Eq {
+func epochIdentifierToPredicate(identifier db.SignatureIdentifier) squirrel.Eq {
 	return squirrel.Eq{
 		epochsId:      identifier.Id,
 		epochsChainId: identifier.ChainId,
