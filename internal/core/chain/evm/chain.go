@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/ecdsa"
 	"math/big"
+	"sync/atomic"
 
 	"github.com/Bridgeless-Project/relayer-svc/internal/core/chain"
 	"github.com/ethereum/go-ethereum"
@@ -121,21 +122,29 @@ func (c *Client) prepareTxOpts(ctx context.Context, data []byte, signer *signerI
 }
 
 func (c *Client) getNextNonce(ctx context.Context, addr common.Address) (uint64, error) {
-	c.mu.Lock()
-	defer c.mu.Unlock()
+	c.mu.RLock()
+	counter, exists := c.nonces[addr]
+	c.mu.RUnlock()
 
-	currentNonce, exists := c.nonces[addr]
 	if exists {
-		c.nonces[addr] = currentNonce + 1
-		return currentNonce, nil
+		return counter.Add(1) - 1, nil
 	}
 
-	// TODO: consider moving fetching outside of mutex lock
 	fetchedNonce, err := c.chain.Rpc.PendingNonceAt(ctx, addr)
 	if err != nil {
 		return 0, err
 	}
 
-	c.nonces[addr] = fetchedNonce + 1
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	if counter, exists = c.nonces[addr]; exists {
+		return counter.Add(1) - 1, nil
+	}
+
+	newCounter := &atomic.Uint64{}
+	newCounter.Store(fetchedNonce + 1)
+	c.nonces[addr] = newCounter
+
 	return fetchedNonce, nil
 }
