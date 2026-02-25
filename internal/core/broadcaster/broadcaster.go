@@ -27,7 +27,7 @@ type Broadcaster struct {
 	tendermintClient *http.HTTP
 
 	depositsDbConn db.DepositsQ
-	epochsDbConn db.EpochsQ
+	epochsDbConn db.SignaturesQ
 	logger *logan.Entry
 	cache  sync.Map
 
@@ -37,7 +37,11 @@ type Broadcaster struct {
 	submitBatchSize int64
 }
 
-func New(ctx context.Context, coreConnector *connector.Connector, depositsDbConn db.DepositsQ, epochsDbConn db.EpochsQ, tendermintClient *http.HTTP, logger *logan.Entry) *Broadcaster {
+func New(
+		ctx context.Context, coreConnector *connector.Connector,
+		depositsDbConn db.DepositsQ, epochsDbConn db.SignaturesQ,
+		tendermintClient *http.HTTP, logger *logan.Entry,
+	) *Broadcaster {
 	return &Broadcaster{
 		ctx:              ctx,
 		coreConnector:    coreConnector,
@@ -71,8 +75,9 @@ func (b *Broadcaster) Run(ctx context.Context) {
 		b.updateSignersWorkersMap[chainID] = updateSignersHandlerChan
 	}
 
-	b.wg.Add(1)
-	go b.runCoreSubmitter(ctx)
+	b.wg.Go(func() {
+		b.runCoreSubmitter(ctx)
+	})
 	b.wg.Wait()
 
 	for _, ch := range b.updateSignersWorkersMap {
@@ -87,7 +92,7 @@ func (b *Broadcaster) Run(ctx context.Context) {
 }
 
 func (b *Broadcaster) BroadcastEpoch(epoch *db.Epoch) error {
-	existing, err := b.epochsDbConn.Get(db.EpochIdentifier{Id: epoch.Id, ChainId: epoch.ChainId, Nonce: epoch.Nonce})
+	existing, err := b.epochsDbConn.Get(db.SignatureIdentifier{Id: epoch.Id, ChainId: epoch.ChainId, Nonce: epoch.Nonce})
 	if err != nil {
 		return errors.Wrapf(internalTypes.ErrFailedToBroadcast, "failed to check epoch existence: %s", err.Error())
 	}

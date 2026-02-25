@@ -45,6 +45,9 @@ func (c ChildClient) UpdateSigners(ctx context.Context, epochData *db.Epoch) (st
 	if len(c.signers) == 0 {
 		return "", 0, nil
 	}
-	signer := c.signers[rand.Intn(len(c.signers))]
-	return c.parent.UpdateSigners(ctx, epochData, signer)
+	return c.parent.UpdateSigners(
+		ctx,
+		epochData,
+		c.signers[rand.Intn(len(c.signers))],
+	)
 }

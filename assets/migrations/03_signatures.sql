@@ -1,6 +1,6 @@
 -- +migrate Up
 
-CREATE TABLE IF NOT EXISTS epochs (
+CREATE TABLE IF NOT EXISTS signatures (
   id bigint NOT NULL,
   chain_id text NOT NULL,
   nonce text NOT NULL,
@@ -16,5 +16,5 @@ CREATE TABLE IF NOT EXISTS epochs (
 
 -- +migrate Down
 
-DROP TABLE IF EXISTS epochs;
+DROP TABLE IF EXISTS signatures;
 

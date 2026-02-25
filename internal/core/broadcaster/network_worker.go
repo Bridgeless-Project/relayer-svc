@@ -7,7 +7,10 @@ import (
 	"gitlab.com/distributed_lab/logan/v3"
 )
 
-func (b *Broadcaster) runWithdrawalNetworkWorker(ctx context.Context, chainID string, ch <-chan containers.WithdrawalContainer, workerId int) {
+func (b *Broadcaster) runWithdrawalNetworkWorker(
+		ctx context.Context, chainID string,
+		ch <-chan containers.WithdrawalContainer, workerId int,
+	) {
 	defer b.wg.Done()
 	log := b.logger.WithField("chain_id", chainID).WithField("worker_id", workerId)
 	log.Debug("started broadcaster worker")
