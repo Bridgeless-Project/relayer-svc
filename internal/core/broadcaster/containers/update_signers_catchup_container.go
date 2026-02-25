@@ -47,7 +47,11 @@ func (c *updateSignersCatchupContainer) ID() uint32 {
 }
 
 func (c *updateSignersCatchupContainer) Run(ctx context.Context) (*db.Epoch, error) {
-	id := db.SignatureIdentifier{Id: c.epoch.Id, ChainId: c.epoch.ChainId, Nonce: c.epoch.Nonce}
+	id := db.SignatureIdentifier{
+		Id: c.epoch.Id,
+		ChainId: c.epoch.ChainId,
+		Nonce: c.epoch.Nonce,
+	}
 
 	err := executeUpdateSigners(ctx, c.chainClient, c.epoch, c.tendermintClient, c.logger)
 	if err != nil {
