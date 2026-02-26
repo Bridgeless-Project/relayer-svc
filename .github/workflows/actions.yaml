@@ -5,8 +5,6 @@ on:
       - "main"
       - "dev"
 
-
-
 env:
   CI_ACCESS_TOKEN: ${{ secrets.CI_ACCESS_TOKEN }}
   GITHUB_REPOSITORY: ghcr.io/bridgeless-project/relayer-svc
