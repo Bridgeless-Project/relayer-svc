@@ -47,7 +47,12 @@ func executeUpdateSigners(ctx context.Context, chainClient chain.ChildClient, ep
 		epoch.EndTime,
 		epoch.SignatureMode,
 	)
+
 	tx, block, err := chainClient.UpdateSigners(ctx, epoch)
+	if err != nil {
+		return errors.Wrap(err, "failed to execute update signers")	
+	}
+
 	logger.Debugf("Update signers tx: %s; block: %d", tx, block)
-	return err
+	return nil
 }
