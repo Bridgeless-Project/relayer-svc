@@ -2,6 +2,7 @@ package ton
 
 import (
 	"context"
+	"log"
 	"math/rand"
 
 	"github.com/Bridgeless-Project/relayer-svc/internal/db"
@@ -35,4 +36,9 @@ func (c ChildClient) Withdraw(ctx context.Context, depositData *db.Deposit) (str
 
 func (c *ChildClient) AddSigner(signer *wallet.Wallet) {
 	c.signers = append(c.signers, signer)
+}
+
+func (c ChildClient) UpdateSigners(ctx context.Context, epochData *db.Epoch) (string, int64, error) {
+	log.Default().Printf("TON UPDATE SIGNERS: %d", epochData.Id)
+	return "", 0, nil
 }

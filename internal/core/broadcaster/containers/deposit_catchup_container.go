@@ -12,7 +12,7 @@ import (
 	"gitlab.com/distributed_lab/logan/v3"
 )
 
-type catchupContainer struct {
+type depositCatchupContainer struct {
 	id string
 
 	dbQ              db.DepositsQ
@@ -24,9 +24,9 @@ type catchupContainer struct {
 	logger *logan.Entry
 }
 
-func NewCatchUpContainer(chainClient chain.ChildClient, deposit db.Deposit, dbQ db.DepositsQ,
+func NewDepositCatchUpContainer(chainClient chain.ChildClient, deposit db.Deposit, dbQ db.DepositsQ,
 	connector *connector.Connector, tendermintClient *http.HTTP, logger *logan.Entry) WithdrawalContainer {
-	return &catchupContainer{
+	return &depositCatchupContainer{
 		id:               deposit.String(),
 		chainClient:      chainClient,
 		deposit:          &deposit,
@@ -37,11 +37,11 @@ func NewCatchUpContainer(chainClient chain.ChildClient, deposit db.Deposit, dbQ 
 	}
 }
 
-func (c *catchupContainer) ID() string {
+func (c *depositCatchupContainer) ID() string {
 	return c.id
 }
 
-func (c *catchupContainer) Run(ctx context.Context) (*db.Deposit, error) {
+func (c *depositCatchupContainer) Run(ctx context.Context) (*db.Deposit, error) {
 	c.logger.Debug("catching up deposit")
 
 	switch c.deposit.WithdrawalStatus {
@@ -72,7 +72,7 @@ func (c *catchupContainer) Run(ctx context.Context) (*db.Deposit, error) {
 	return c.deposit, nil
 }
 
-func (c *catchupContainer) ProcessWithdraw(ctx context.Context) (*db.Deposit, error) {
+func (c *depositCatchupContainer) ProcessWithdraw(ctx context.Context) (*db.Deposit, error) {
 
 	c.deposit.WithdrawalStatus = internalTypes.WithdrawalStatus_WITHDRAWAL_STATUS_PROCESSING
 	if err := c.dbQ.UpdateStatus(c.deposit.DepositIdentifier, c.deposit.WithdrawalStatus); err != nil {
@@ -151,7 +151,7 @@ func (c *catchupContainer) ProcessWithdraw(ctx context.Context) (*db.Deposit, er
 
 }
 
-func (c *catchupContainer) isSubmitted(ctx context.Context) (bool, error) {
+func (c *depositCatchupContainer) isSubmitted(ctx context.Context) (bool, error) {
 	deposit, err := c.coreConnector.GetDeposit(ctx, c.deposit.DepositIdentifier)
 	if err != nil {
 		return false, errors.Wrap(err, "error getting deposit from core")

@@ -24,6 +24,7 @@ type Client interface {
 }
 
 type ChildClient interface {
+	UpdateSigners(ctx context.Context, epochData *db.Epoch) (string, int64, error)
 	Withdraw(ctx context.Context, depositData *db.Deposit) (string, string, int64, error)
 	IsProcessed(ctx context.Context, depositData db.Deposit) (bool, error)
 }

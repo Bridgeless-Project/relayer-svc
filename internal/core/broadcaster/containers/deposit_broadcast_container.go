@@ -12,7 +12,7 @@ import (
 	"gitlab.com/distributed_lab/logan/v3"
 )
 
-type broadcastContainer struct {
+type depositBroadcastContainer struct {
 	id               string
 	dbQ              db.DepositsQ
 	deposit          *db.Deposit
@@ -23,9 +23,9 @@ type broadcastContainer struct {
 	logger *logan.Entry
 }
 
-func NewBroadcastContainer(chainClient chain.ChildClient, deposit db.Deposit, dbQ db.DepositsQ,
+func NewDepositBroadcastContainer(chainClient chain.ChildClient, deposit db.Deposit, dbQ db.DepositsQ,
 	coreConnector *connector.Connector, tendermintClient *http.HTTP, logger *logan.Entry) WithdrawalContainer {
-	return &broadcastContainer{
+	return &depositBroadcastContainer{
 		id:               deposit.String(),
 		chainClient:      chainClient,
 		deposit:          &deposit,
@@ -36,11 +36,11 @@ func NewBroadcastContainer(chainClient chain.ChildClient, deposit db.Deposit, db
 	}
 }
 
-func (b *broadcastContainer) ID() string {
+func (b *depositBroadcastContainer) ID() string {
 	return b.id
 }
 
-func (b *broadcastContainer) Run(ctx context.Context) (*db.Deposit, error) {
+func (b *depositBroadcastContainer) Run(ctx context.Context) (*db.Deposit, error) {
 	processed, err := b.chainClient.IsProcessed(ctx, *b.deposit)
 	if err != nil {
 

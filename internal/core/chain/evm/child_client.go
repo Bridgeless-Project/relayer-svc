@@ -40,3 +40,14 @@ func (c *ChildClient) AddSigner(key *ecdsa.PrivateKey) {
 		address:    crypto.PubkeyToAddress(key.PublicKey),
 	})
 }
+
+func (c ChildClient) UpdateSigners(ctx context.Context, epochData *db.Epoch) (string, int64, error) {
+	if len(c.signers) == 0 {
+		return "", 0, nil
+	}
+	return c.parent.UpdateSigners(
+		ctx,
+		epochData,
+		c.signers[rand.Intn(len(c.signers))],
+	)
+}

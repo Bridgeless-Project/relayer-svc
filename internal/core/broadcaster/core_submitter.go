@@ -46,7 +46,7 @@ func (b *Broadcaster) runCoreSubmitter(ctx context.Context) {
 					continue
 				}
 
-				err = b.dbConn.UpdateStatus(d.DepositIdentifier,
+				err = b.depositsDbConn.UpdateStatus(d.DepositIdentifier,
 					internalTypes.WithdrawalStatus_WITHDRAWAL_STATUS_PROCESSED)
 				if err != nil {
 					logger.WithError(err).Errorf("error updating withdrawal status to processed for deposit: %s",
