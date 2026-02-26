@@ -117,5 +117,3 @@ func (b *depositBroadcastContainer) Run(ctx context.Context) (*db.Deposit, error
 
 	return b.deposit, nil
 }
-
-

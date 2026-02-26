@@ -16,13 +16,13 @@ const (
 	receiptSuccess = 1
 )
 
-func (c *Client) UpdateSigners(ctx context.Context, epochData *db.Epoch, signer *signerInfo) (string, int64, error) {
+func (c *Client) UpdateSigners(ctx context.Context, epochData *db.Epoch, txSigner *signerInfo) (string, int64, error) {
 	signatureBytes, err := hexutil.Decode(epochData.Signature)
 	if err != nil {
 		return "", 0, errors.Wrap(err, "failed to decode signature")
 	}
 
-	signer_ := common.HexToAddress(epochData.Signer)
+	signer := common.HexToAddress(epochData.Signer)
 	nonce, ok := new(big.Int).SetString(epochData.Nonce, 10)
 	if !ok || nonce == nil {
 		return "", 0, errors.New("failed to parse nonce")
@@ -30,7 +30,7 @@ func (c *Client) UpdateSigners(ctx context.Context, epochData *db.Epoch, signer 
 
 	data, err := c.abi.Pack(
 		"updateSigner",
-		signer_,
+		signer,
 		new(big.Int).SetUint64(epochData.StartTime),
 		new(big.Int).SetUint64(epochData.EndTime),
 		nonce,
@@ -41,7 +41,7 @@ func (c *Client) UpdateSigners(ctx context.Context, epochData *db.Epoch, signer 
 		return "", 0, errors.Wrap(err, "failed to prepare transact opts")
 	}
 
-	transactOpts, err := c.prepareTxOpts(ctx, data, signer)
+	transactOpts, err := c.prepareTxOpts(ctx, data, txSigner)
 	if err != nil {
 		return "", 0, errors.Wrap(err, "failed to prepare transact opts")
 	}
@@ -53,7 +53,7 @@ func (c *Client) UpdateSigners(ctx context.Context, epochData *db.Epoch, signer 
 
 	tx, err := c.contractClient.UpdateSigner(
 		transactOpts,
-		signer_,
+		signer,
 		new(big.Int).SetUint64(epochData.StartTime),
 		new(big.Int).SetUint64(epochData.EndTime),
 		nonce,

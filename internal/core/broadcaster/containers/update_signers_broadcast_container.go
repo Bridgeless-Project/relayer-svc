@@ -14,7 +14,7 @@ import (
 
 type updateSignersBroadcastContainer struct {
 	id               uint32
-	dbQ              db.EpochsQ
+	dbQ              db.SignaturesQ
 	epoch            *db.Epoch
 	tendermintClient *http.HTTP
 	chainClient      chain.ChildClient
@@ -23,8 +23,13 @@ type updateSignersBroadcastContainer struct {
 	logger *logan.Entry
 }
 
-func NewUpdateSignersBroadcastContainer(chainClient chain.ChildClient, epoch *db.Epoch, dbQ db.EpochsQ,
-	coreConnector *connector.Connector, tendermintClient *http.HTTP, logger *logan.Entry) UpdateSignersContainers {
+func NewUpdateSignersBroadcastContainer(
+		chainClient chain.ChildClient,
+		epoch *db.Epoch, dbQ db.SignaturesQ,
+		coreConnector *connector.Connector,
+		tendermintClient *http.HTTP,
+		logger *logan.Entry,
+	) UpdateSignersContainers {
 	return &updateSignersBroadcastContainer{
 		id:               epoch.Id,
 		chainClient:      chainClient,
@@ -41,18 +46,30 @@ func (b *updateSignersBroadcastContainer) ID() uint32 {
 }
 
 func (b *updateSignersBroadcastContainer) Run(ctx context.Context) (*db.Epoch, error) {
-	id := db.EpochIdentifier{Id: b.epoch.Id, ChainId: b.epoch.ChainId, Nonce: b.epoch.Nonce}
-
-	err := executeUpdateSigners(ctx, b.chainClient, b.epoch, b.tendermintClient, b.logger)
-	if err != nil {
-		updateErr := b.dbQ.UpdateStatus(id, internalTypes.EpochStatus_EPOCH_STATUS_FAILED)
-		if updateErr != nil {
-			b.logger.WithError(updateErr).Error("failed to update epoch status to failed")
-		}
-		return nil, errors.Wrap(err, "failed to process update signers")
+	id := db.SignatureIdentifier{
+		Id: b.epoch.Id,
+		ChainId: b.epoch.ChainId,
+		Nonce: b.epoch.Nonce,
 	}
 
-	err = b.dbQ.UpdateStatus(id, internalTypes.EpochStatus_EPOCH_STATUS_PROCESSED)
+	err := executeUpdateSigners(
+		ctx, b.chainClient, b.epoch,
+		b.tendermintClient, b.logger,
+	)
+	if err != nil {
+		err = errors.Wrap(err, "failed to process update signers")
+		updateErr := b.dbQ.UpdateStatus(
+			id, internalTypes.EpochStatus_EPOCH_STATUS_FAILED,
+		)
+		if updateErr != nil {
+			return nil, errors.Wrap(err, "failed to update epoch status to failed")
+		}
+		return nil, err
+	}
+
+	err = b.dbQ.UpdateStatus(
+		id, internalTypes.EpochStatus_EPOCH_STATUS_PROCESSED,
+	)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to update epoch status to processed")
 	}

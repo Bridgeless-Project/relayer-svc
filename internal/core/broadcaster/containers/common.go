@@ -35,15 +35,24 @@ func executeWithdrawal(ctx context.Context, chainClient chain.ChildClient, depos
 }
 
 func executeUpdateSigners(ctx context.Context, chainClient chain.ChildClient, epoch *db.Epoch, _ *http.HTTP, logger *logan.Entry) error {
-	logger.Infof("Executing update signers")
-	logger.Infof("Epoch id: %d", epoch.Id)
-	logger.Infof("Epoch ChainId: %s", epoch.ChainId)
-	logger.Infof("Epoch Nonce: %s", epoch.Nonce)
-	logger.Infof("Epoch Signer: %s", epoch.Signer)
-	logger.Infof("Epoch Signature: %s", epoch.Signature)
-	logger.Infof("Epoch StartTime: %d", epoch.StartTime)
-	logger.Infof("Epoch EndTime: %d", epoch.EndTime)
-	logger.Infof("Epoch SignatureMode: %v", epoch.SignatureMode)
-	chainClient.UpdateSigners(ctx, epoch)
+	logger.Debugf(
+		"Update signers | ID: %d, Chain: %s, Nonce: %s, " +
+		"Signer: %s, Sig: %s, Start: %d, End: %d, Mode: %v", 
+    epoch.Id,
+		epoch.ChainId,
+		epoch.Nonce,
+		epoch.Signer,
+		epoch.Signature,
+		epoch.StartTime,
+		epoch.EndTime,
+		epoch.SignatureMode,
+	)
+
+	tx, block, err := chainClient.UpdateSigners(ctx, epoch)
+	if err != nil {
+		return errors.Wrap(err, "failed to execute update signers")	
+	}
+
+	logger.Debugf("Update signers tx: %s; block: %d", tx, block)
 	return nil
 }
