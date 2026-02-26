@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/ecdsa"
 	"math/big"
+	"sync/atomic"
 
 	"github.com/Bridgeless-Project/relayer-svc/internal/core/chain"
 	"github.com/ethereum/go-ethereum"
@@ -91,7 +92,7 @@ func (c *Client) prepareTxOpts(ctx context.Context, data []byte, signer *signerI
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to generate transactor")
 	}
-	nonce, err := c.chain.Rpc.PendingNonceAt(ctx, signer.address)
+	nonce, err := c.getNextNonce(ctx, signer.address)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to fetch operator account nonce")
 	}
@@ -118,4 +119,32 @@ func (c *Client) prepareTxOpts(ctx context.Context, data []byte, signer *signerI
 
 	tx.GasLimit = gasLimit
 	return tx, nil
+}
+
+func (c *Client) getNextNonce(ctx context.Context, addr common.Address) (uint64, error) {
+	c.mu.RLock()
+	counter, exists := c.nonces[addr]
+	c.mu.RUnlock()
+
+	if exists {
+		return counter.Add(1) - 1, nil
+	}
+
+	fetchedNonce, err := c.chain.Rpc.PendingNonceAt(ctx, addr)
+	if err != nil {
+		return 0, err
+	}
+
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	if counter, exists = c.nonces[addr]; exists {
+		return counter.Add(1) - 1, nil
+	}
+
+	newCounter := &atomic.Uint64{}
+	newCounter.Store(fetchedNonce + 1)
+	c.nonces[addr] = newCounter
+
+	return fetchedNonce, nil
 }
