@@ -17,16 +17,16 @@ func (c *Client) UpdateSigners(ctx context.Context, epochData *db.Epoch, signer 
 		return "", 0, errors.Wrap(err, "invalid signature")
 	}
 
-	var sigArray [64]uint8
+	var sigArray [64]byte
 	copy(sigArray[:], sigBytes[:64])
-	recoveryId := uint8(sigBytes[64])
+	recoveryId := byte(sigBytes[64])
 
 	signerBytes, err := hexutil.Decode(epochData.Signer)
 	if err != nil || len(signerBytes) != 33 {
 		return "", 0, errors.Wrap(err, "invalid signer pubkey")
 	}
 
-	var newSigner [33]uint8
+	var newSigner [33]byte
 	copy(newSigner[:], signerBytes)
 
 	nonce, err := strconv.ParseUint(epochData.Nonce, 10, 64)
