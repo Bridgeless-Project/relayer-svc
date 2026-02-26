@@ -6,24 +6,14 @@ import (
 
 	"github.com/Bridgeless-Project/relayer-svc/internal/core/chain/solana/contract"
 	"github.com/Bridgeless-Project/relayer-svc/internal/db"
-	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/gagliardetto/solana-go"
 	"github.com/pkg/errors"
 )
 
 func (c *Client) UpdateSigners(ctx context.Context, epochData *db.Epoch, signer *solana.Wallet) (string, int64, error) {
-	sigBytes, err := hexutil.Decode(epochData.Signature)
-	if err != nil || len(sigBytes) != 65 {
-		return "", 0, errors.Wrap(err, "invalid signature")
-	}
-
-	var sigArray [64]byte
-	copy(sigArray[:], sigBytes[:64])
-	recoveryId := byte(sigBytes[64])
-
-	signerBytes, err := hexutil.Decode(epochData.Signer)
-	if err != nil || len(signerBytes) != 33 {
-		return "", 0, errors.Wrap(err, "invalid signer pubkey")
+	sigArray, recoveryId, signerBytes, err := parseSignatureAndSigner(epochData.Signature, epochData.Signer)
+	if err != nil {
+		return "", 0, err
 	}
 
 	var newSigner [33]byte
