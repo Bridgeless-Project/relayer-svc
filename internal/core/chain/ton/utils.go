@@ -2,7 +2,10 @@ package ton
 
 import (
 	"bytes"
+	"encoding/hex"
 	"fmt"
+	"math/big"
+	"strings"
 
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/crypto"
@@ -79,4 +82,19 @@ func txHashToBytes32(txHash string) []byte {
 		return crypto.Keccak256(([]byte)(txHash))
 	}
 	return hashBytes
+}
+
+func getPubkeyFromHex(pubkeyHex string) (*big.Int, *big.Int, error) {
+	cleanHex := strings.TrimPrefix(pubkeyHex, "0x")
+	pubKeyBytes, err := hex.DecodeString(cleanHex)
+	if err != nil {
+		return nil, nil, errors.Wrap(err, "invalid pubkey hex")
+	}
+
+	pubTON, err := crypto.UnmarshalPubkey(pubKeyBytes)
+	if err != nil {
+		return nil, nil, errors.Wrap(err, "failed to unmarshal uncompressed pubkey")
+	}
+
+	return pubTON.X, pubTON.Y, nil
 }

@@ -3,11 +3,9 @@ package ton
 import (
 	"context"
 	"encoding/hex"
-	"math/big"
 	"strings"
 
 	"github.com/Bridgeless-Project/relayer-svc/internal/db"
-	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/pkg/errors"
 	"github.com/xssnick/tonutils-go/tlb"
 	"github.com/xssnick/tonutils-go/ton/wallet"
@@ -40,14 +38,14 @@ func (c *Client) UpdateSigners(ctx context.Context, epochData *db.Epoch, signer 
     },
   })
   if err != nil {
-    return "", 0, errors.Wrap(err, "error sending withdrawal transaction")
+    return "", 0, errors.Wrap(err, "failed to send update signers transaction")
   }
 
   return hex.EncodeToString(txHashBytes), int64(b.SeqNo), nil
 }
 
 func (c *Client) buildUpdateSignerCell(epochData *db.Epoch) (*cell.Cell, error) {
-	x, y, err := getPubkey(epochData.Signer)
+	x, y, err := getPubkeyFromHex(epochData.Signer)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get pubkey")
 	}
@@ -74,19 +72,4 @@ func (c *Client) buildUpdateSignerCell(epochData *db.Epoch) (*cell.Cell, error) 
 		EndCell()
 
 	return body, nil
-}
-
-func getPubkey(pubkeyHex string) (*big.Int, *big.Int, error) {
-	cleanHex := strings.TrimPrefix(pubkeyHex, "0x")
-	pubKeyBytes, err := hex.DecodeString(cleanHex)
-	if err != nil {
-		return nil, nil, errors.Wrap(err, "invalid pubkey hex")
-	}
-
-	pubTON, err := crypto.UnmarshalPubkey(pubKeyBytes)
-	if err != nil {
-		return nil, nil, errors.Wrap(err, "failed to unmarshal uncompressed pubkey")
-	}
-
-	return pubTON.X, pubTON.Y, nil
 }
