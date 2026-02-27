@@ -5,6 +5,7 @@ import (
 	"encoding/hex"
 	"strings"
 
+	"github.com/Bridgeless-Project/relayer-svc/internal/core/chain"
 	"github.com/Bridgeless-Project/relayer-svc/internal/db"
 	"github.com/pkg/errors"
 	"github.com/xssnick/tonutils-go/tlb"
@@ -51,7 +52,7 @@ func (c *Client) UpdateSigners(ctx context.Context, epochData *db.Epoch, signer 
 }
 
 func (c *Client) buildUpdateSignerCell(epochData *db.Epoch) (*cell.Cell, error) {
-	x, y, err := HexToCoordinates(epochData.Signer)
+	x, y, err := chain.HexToCoordinates(epochData.Signer)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get pubkey")
 	}

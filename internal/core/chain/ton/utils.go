@@ -2,10 +2,7 @@ package ton
 
 import (
 	"bytes"
-	"encoding/hex"
 	"fmt"
-	"math/big"
-	"strings"
 
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/crypto"
@@ -82,21 +79,4 @@ func txHashToBytes32(txHash string) []byte {
 		return crypto.Keccak256(([]byte)(txHash))
 	}
 	return hashBytes
-}
-
-func HexToCoordinates(pubkeyHex string) (*big.Int, *big.Int, error) {
-	cleanHex := strings.TrimPrefix(pubkeyHex, "0x")
-	pubKeyBytes, err := hex.DecodeString(cleanHex)
-	if err != nil {
-		return nil, nil, errors.Wrap(err, "failed to decode pubkey hex")
-	}
-
-	if len(pubKeyBytes) != 65 || pubKeyBytes[0] != 4 {
-		return nil, nil, errors.New("bad pubkey format")
-	}
-
-	x := new(big.Int).SetBytes(pubKeyBytes[1:33])
-	y := new(big.Int).SetBytes(pubKeyBytes[33:65])
-
-	return x, y, nil
 }
