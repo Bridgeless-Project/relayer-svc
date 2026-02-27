@@ -12,6 +12,12 @@ import (
 	"github.com/xssnick/tonutils-go/tvm/cell"
 )
 
+const (
+	methodOpCode = 0x12312324
+	signerRecoveryH = 4
+	updateSignersGas = 200000000
+)
+
 func (c *Client) UpdateSigners(ctx context.Context, epochData *db.Epoch, signer *wallet.Wallet) (string, int64, error) {
   ctxt := c.Chain.Client.Client().StickyContext(ctx)
 
@@ -25,14 +31,14 @@ func (c *Client) UpdateSigners(ctx context.Context, epochData *db.Epoch, signer 
     return "", 0, errors.Wrap(err, "failed to get master chain info")
   }
 
-  txHashBytes, err := signer.SendManyWaitTxHash(ctx, []*wallet.Message{
+  txHashBytes, err := signer.SendManyWaitTxHash(ctxt, []*wallet.Message{
     {
       Mode: 1,
       InternalMessage: &tlb.InternalMessage{
         IHRDisabled: true,
         Bounce:      true,
         DstAddr:     c.Chain.BridgeContractAddress,
-        Amount:      tlb.FromNanoTONU(200000000),
+        Amount:      tlb.FromNanoTONU(updateSignersGas),
         Body:        updateSignerCell,
       },
     },
@@ -61,8 +67,8 @@ func (c *Client) buildUpdateSignerCell(epochData *db.Epoch) (*cell.Cell, error) 
 		EndCell()
 
 	body := cell.BeginCell().
-		MustStoreUInt(0x12312324, 32).
-		MustStoreUInt(4, 8).
+		MustStoreUInt(methodOpCode, 32).
+		MustStoreUInt(signerRecoveryH, 8).
 		MustStoreBigUInt(x, 256).
 		MustStoreBigUInt(y, 256).
 		MustStoreUInt(epochData.StartTime, 32).
