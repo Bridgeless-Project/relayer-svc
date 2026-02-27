@@ -39,11 +39,15 @@ func (c *ChildClient) AddSigner(signer *wallet.Wallet) {
 
 func (c ChildClient) UpdateSigners(ctx context.Context, epochData *db.Epoch) (string, int64, error) {
 	if len(c.signers) == 0 {
-		return "", 0, nil
+		return "", 0, errors.New("no signers available")
 	}
-	return c.parent.UpdateSigners(
+	tx, block, err := c.parent.UpdateSigners(
 		ctx,
 		epochData,
 		c.signers[rand.Intn(len(c.signers))],
 	)
+	if err != nil {
+		return "", 0, errors.Wrap(err, "failed to call update signers method")
+	}
+	return tx, block, nil
 }
