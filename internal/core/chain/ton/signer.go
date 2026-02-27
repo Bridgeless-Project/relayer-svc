@@ -3,7 +3,6 @@ package ton
 import (
 	"context"
 	"encoding/hex"
-	"log"
 	"math/big"
 	"strings"
 
@@ -18,14 +17,10 @@ import (
 func (c *Client) UpdateSigners(ctx context.Context, epochData *db.Epoch, signer *wallet.Wallet) (string, int64, error) {
   ctxt := c.Chain.Client.Client().StickyContext(ctx)
 
-  log.Printf("UpdateSigners | target_addr=%s epoch_id=%d", c.Chain.BridgeContractAddress.String(), epochData.Id)
-
   updateSignerCell, err := c.buildUpdateSignerCell(epochData)
   if err != nil {
     return "", 0, errors.Wrap(err, "failed to build update signer cell")
   }
-
-  log.Printf("UpdateSigners | cell_hash=%x", updateSignerCell.Hash())
 
   b, err := c.Chain.Client.GetMasterchainInfo(ctxt)
   if err != nil {
@@ -48,7 +43,6 @@ func (c *Client) UpdateSigners(ctx context.Context, epochData *db.Epoch, signer 
     return "", 0, errors.Wrap(err, "error sending withdrawal transaction")
   }
 
-  log.Printf("UpdateSigners | tx_hash=%x seqno=%d", txHashBytes, b.SeqNo)
   return hex.EncodeToString(txHashBytes), int64(b.SeqNo), nil
 }
 
