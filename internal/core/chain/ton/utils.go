@@ -88,13 +88,15 @@ func getPubkeyFromHex(pubkeyHex string) (*big.Int, *big.Int, error) {
 	cleanHex := strings.TrimPrefix(pubkeyHex, "0x")
 	pubKeyBytes, err := hex.DecodeString(cleanHex)
 	if err != nil {
-		return nil, nil, errors.Wrap(err, "invalid pubkey hex")
+		return nil, nil, errors.Wrap(err, "failed to decode pubkey hex")
 	}
 
-	pubTON, err := crypto.UnmarshalPubkey(pubKeyBytes)
-	if err != nil {
-		return nil, nil, errors.Wrap(err, "failed to unmarshal uncompressed pubkey")
+	if len(pubKeyBytes) != 65 || pubKeyBytes[0] != 4 {
+		return nil, nil, errors.New("bad pubkey format")
 	}
 
-	return pubTON.X, pubTON.Y, nil
+	x := new(big.Int).SetBytes(pubKeyBytes[1:33])
+	y := new(big.Int).SetBytes(pubKeyBytes[33:65])
+
+	return x, y, nil
 }
