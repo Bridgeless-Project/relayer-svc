@@ -84,7 +84,7 @@ func txHashToBytes32(txHash string) []byte {
 	return hashBytes
 }
 
-func getPubkeyFromHex(pubkeyHex string) (*big.Int, *big.Int, error) {
+func HexToCoordinates(pubkeyHex string) (*big.Int, *big.Int, error) {
 	cleanHex := strings.TrimPrefix(pubkeyHex, "0x")
 	pubKeyBytes, err := hex.DecodeString(cleanHex)
 	if err != nil {

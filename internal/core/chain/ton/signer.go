@@ -13,8 +13,8 @@ import (
 )
 
 const (
-	methodOpCode = 0x12312324
-	signerRecoveryH = 4
+	updateSignerKeyBySignatureOpCode = 0x12312324
+	signerRecoveryH = 0x04
 	updateSignersGas = 200000000
 )
 
@@ -26,9 +26,9 @@ func (c *Client) UpdateSigners(ctx context.Context, epochData *db.Epoch, signer 
     return "", 0, errors.Wrap(err, "failed to build update signer cell")
   }
 
-  b, err := c.Chain.Client.GetMasterchainInfo(ctxt)
+  block, err := c.Chain.Client.CurrentMasterchainInfo(ctxt)
   if err != nil {
-    return "", 0, errors.Wrap(err, "failed to get master chain info")
+    return "", 0, errors.Wrap(err, "failed to get current master chain info")
   }
 
   txHashBytes, err := signer.SendManyWaitTxHash(ctxt, []*wallet.Message{
@@ -47,11 +47,11 @@ func (c *Client) UpdateSigners(ctx context.Context, epochData *db.Epoch, signer 
     return "", 0, errors.Wrap(err, "failed to send update signers transaction")
   }
 
-  return hex.EncodeToString(txHashBytes), int64(b.SeqNo), nil
+  return hex.EncodeToString(txHashBytes), int64(block.SeqNo), nil
 }
 
 func (c *Client) buildUpdateSignerCell(epochData *db.Epoch) (*cell.Cell, error) {
-	x, y, err := getPubkeyFromHex(epochData.Signer)
+	x, y, err := HexToCoordinates(epochData.Signer)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get pubkey")
 	}
@@ -67,7 +67,7 @@ func (c *Client) buildUpdateSignerCell(epochData *db.Epoch) (*cell.Cell, error) 
 		EndCell()
 
 	body := cell.BeginCell().
-		MustStoreUInt(methodOpCode, 32).
+		MustStoreUInt(updateSignerKeyBySignatureOpCode, 32).
 		MustStoreUInt(signerRecoveryH, 8).
 		MustStoreBigUInt(x, 256).
 		MustStoreBigUInt(y, 256).
