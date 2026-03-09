@@ -20,6 +20,7 @@ func (i Implementation) SubmitWithdrawal(ctx context.Context, identifier *intern
 		connector   = apiCtx.Connector(ctx)
 		broadcaster = apiCtx.Broadcaster(ctx)
 		logger      = apiCtx.Logger(ctx)
+		cfg         = apiCtx.Config(ctx)
 	)
 
 	err := common.ValidateIdentifier(identifier)
@@ -45,8 +46,8 @@ func (i Implementation) SubmitWithdrawal(ctx context.Context, identifier *intern
 		return nil, status.Error(codes.InvalidArgument, "deposit is already withdrawn")
 	}
 
-	err = broadcaster.Broadcast(*deposit)
-	if err != nil {
+	attempts, timeout := cfg.RecoveryParams()
+	if err = broadcaster.WithRecoveryAttempts(attempts).WithRecoveryTimeout(timeout).Broadcast(*deposit); err != nil {
 		if errors.Is(err, internalTypes.ErrFailedToBroadcast) {
 			logger.WithError(err).Error("broadcasting failed")
 

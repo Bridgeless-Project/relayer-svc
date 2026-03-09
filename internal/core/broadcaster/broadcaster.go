@@ -34,6 +34,9 @@ type Broadcaster struct {
 
 	chainTxPoolSize int64
 	submitBatchSize int64
+
+	recoveryAttempts uint
+	recoveryTimeout  time.Duration
 }
 
 func New(ctx context.Context, coreConnector *connector.Connector, dbConn db.DepositsQ, tendermintClient *http.HTTP, logger *logan.Entry) *Broadcaster {
@@ -46,6 +49,16 @@ func New(ctx context.Context, coreConnector *connector.Connector, dbConn db.Depo
 		wg:               new(sync.WaitGroup),
 		tendermintClient: tendermintClient,
 	}
+}
+
+func (b *Broadcaster) WithRecoveryAttempts(attempts uint) *Broadcaster {
+	b.recoveryAttempts = attempts
+	return b
+}
+
+func (b *Broadcaster) WithRecoveryTimeout(timeout time.Duration) *Broadcaster {
+	b.recoveryTimeout = timeout
+	return b
 }
 
 func (b *Broadcaster) Run(ctx context.Context) {
@@ -74,7 +87,7 @@ func (b *Broadcaster) Run(ctx context.Context) {
 }
 
 func (b *Broadcaster) Broadcast(deposit db.Deposit) error {
-	err := b.checkExistence(context.Background(), deposit)
+	err := b.checkExistence(context.Background(), &deposit)
 	if err != nil {
 		if errors.Is(err, internalTypes.ErrAlreadyExists) {
 			return errors.Wrap(err, "deposit already exists")
@@ -84,8 +97,6 @@ func (b *Broadcaster) Broadcast(deposit db.Deposit) error {
 	}
 
 	deposit.WithdrawalStatus = internalTypes.WithdrawalStatus_WITHDRAWAL_STATUS_PENDING
-	deposit.RecoveryAttempts++
-
 	err = b.dbConn.Insert(deposit)
 	if err != nil {
 		return errors.Wrapf(internalTypes.ErrFailedToBroadcast, "%s: error storing deposit %s",
@@ -173,7 +184,7 @@ func (b *Broadcaster) CatchUp(deposit db.Deposit) error {
 }
 
 // checkExistence checks whether deposit persists in cache,database or chain
-func (b *Broadcaster) checkExistence(ctx context.Context, deposit db.Deposit) error {
+func (b *Broadcaster) checkExistence(ctx context.Context, deposit *db.Deposit) error {
 	_, exists := b.cache.Load(deposit.String())
 	if exists {
 		return errors.Wrapf(internalTypes.ErrAlreadyExists, "deposit %s already registered in service", deposit.String())
@@ -184,7 +195,7 @@ func (b *Broadcaster) checkExistence(ctx context.Context, deposit db.Deposit) er
 		return errors.Wrap(err, "failed to get the withdrawal chain client")
 	}
 
-	exists, err = client.IsProcessed(ctx, deposit)
+	exists, err = client.IsProcessed(ctx, *deposit)
 	if err != nil {
 		return errors.Wrap(err, "failed to check if deposit is processed on-chain")
 	}
@@ -200,16 +211,19 @@ func (b *Broadcaster) checkExistence(ctx context.Context, deposit db.Deposit) er
 	}
 
 	// retry logic
-	if depositData != nil && depositData.RecoveryAttempts >= 5 {
+	if depositData != nil && depositData.RecoveryAttempts >= int(b.recoveryAttempts) {
 		return errors.Wrapf(internalTypes.ErrAlreadyExists, "deposit %s already saved", deposit.String())
 	}
-	if depositData != nil {
-		b.logger.Debugf("Start process the recovery flow: id %s, attempts %d", deposit.DepositIdentifier, deposit.RecoveryAttempts)
-	}
-
-	if depositData.RecoveryTimestamp.Unix() >= time.Now().Add(time.Minute).Unix() {
+	if depositData.RecoveryTimestamp.Unix() <= time.Now().Add(b.recoveryTimeout).Unix() {
 		return errors.Wrapf(internalTypes.ErrAlreadyExists, "rate limit")
 	}
+
+	if depositData == nil {
+		return nil
+	}
+
+	deposit.RecoveryAttempts++
+	b.logger.Debugf("Start process the recovery flow: id %s, attempts %d", deposit.DepositIdentifier, deposit.RecoveryAttempts)
 
 	return nil
 }

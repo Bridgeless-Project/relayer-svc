@@ -60,6 +60,10 @@ func ToStatusResponse(d *database.Deposit) *apiTypes.CheckWithdrawalResponse {
 		WithdrawalCoreBlock:  &d.WithdrawalCoreBlock,
 		Operator:             d.Operator,
 	}
+	result.Recovery = &types.Recovery{
+		Attempts:  int32(d.RecoveryAttempts),
+		Timestamp: d.RecoveryTimestamp.Unix(),
+	}
 
 	return result
 }

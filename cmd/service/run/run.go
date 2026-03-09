@@ -90,7 +90,7 @@ func runService(ctx context.Context, cfg config.Config, catchUp, observerNeeded 
 
 	observer := coreObserver.New(cfg.TendermintHttpClient(), blocksQ, dtb, broadcaster, logger.WithField("component", "observer"))
 
-	apiServer := api.NewServer(cfg.ApiGrpcListener(), cfg.ApiHttpListener(), dtb, connector, broadcaster, clientsRepo,
+	apiServer := api.NewServer(cfg.ApiGrpcListener(), cfg.ApiHttpListener(), cfg, dtb, connector, broadcaster, clientsRepo,
 		logger.WithField("component", "api-server"))
 
 	catchUpper := catch_upper.NewCatchUpper(ctx, broadcaster, dtb, logger.WithField("component", "catch-upper"))
