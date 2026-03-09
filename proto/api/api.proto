@@ -20,6 +20,7 @@ message CheckWithdrawalResponse {
   deposit.TransferData transfer_data = 2;
   deposit.WithdrawalStatus withdrawal_status = 3;
   deposit.WithdrawalIdentifier withdrawal_identifier = 4;
+  deposit.Recovery recovery = 5;
 }
 
 service API {

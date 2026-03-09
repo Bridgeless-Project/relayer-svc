@@ -19,7 +19,7 @@ type Chain struct {
 	BridgeAddress    solana.PublicKey
 	OperatorsWallets []*solana.Wallet
 	Workers          int
-	Timeout          int64
+	WSTimeout        int64
 
 	Meta Meta
 }
@@ -98,6 +98,10 @@ func FromChain(c chain.Chain) Chain {
 		With(SolanaHooks).Please(); err != nil {
 		panic(errors.Wrap(err, "failed to obtain operator wallet"))
 	}
+	if err := figure.Out(&chain.WSTimeout).FromInterface(c.WSTimeout).Please(); err != nil {
+		panic(errors.Wrap(err, "failed to obtain timeout"))
+	}
+
 	if err := figure.Out(&chain.Workers).FromInterface(c.Workers).Please(); err != nil {
 		panic(errors.Wrap(err, "failed to obtain workers number"))
 	}
