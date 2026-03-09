@@ -4,6 +4,7 @@ import (
 	"context"
 	"math/rand"
 	"sync"
+	"time"
 
 	"github.com/Bridgeless-Project/relayer-svc/internal/core/broadcaster/containers"
 	"github.com/Bridgeless-Project/relayer-svc/internal/core/chain"
@@ -83,6 +84,8 @@ func (b *Broadcaster) Broadcast(deposit db.Deposit) error {
 	}
 
 	deposit.WithdrawalStatus = internalTypes.WithdrawalStatus_WITHDRAWAL_STATUS_PENDING
+	deposit.RecoveryAttempts++
+
 	err = b.dbConn.Insert(deposit)
 	if err != nil {
 		return errors.Wrapf(internalTypes.ErrFailedToBroadcast, "%s: error storing deposit %s",
@@ -196,8 +199,16 @@ func (b *Broadcaster) checkExistence(ctx context.Context, deposit db.Deposit) er
 		return errors.Wrap(err, "failed to retrieve deposit data")
 	}
 
-	if depositData != nil {
+	// retry logic
+	if depositData != nil && depositData.RecoveryAttempts >= 5 {
 		return errors.Wrapf(internalTypes.ErrAlreadyExists, "deposit %s already saved", deposit.String())
+	}
+	if depositData != nil {
+		b.logger.Debugf("Start process the recovery flow: id %s, attempts %d", deposit.DepositIdentifier, deposit.RecoveryAttempts)
+	}
+
+	if depositData.RecoveryTimestamp.Unix() >= time.Now().Add(time.Minute).Unix() {
+		return errors.Wrapf(internalTypes.ErrAlreadyExists, "rate limit")
 	}
 
 	return nil

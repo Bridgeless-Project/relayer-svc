@@ -2,6 +2,7 @@ package solana
 
 import (
 	"context"
+	"time"
 
 	"github.com/Bridgeless-Project/relayer-svc/internal/core"
 	"github.com/Bridgeless-Project/relayer-svc/internal/core/chain"
@@ -118,7 +119,7 @@ func (c *Client) SendTx(ctx context.Context, instruction solana.Instruction, wal
 	}
 
 	// Send transaction, and wait for confirmation:
-	signTx, err := confirm.SendAndConfirmTransaction(ctx, c.chain.Rpc, c.chain.WsRpc, tx)
+	signTx, err := confirm.SendAndConfirmTransactionWithTimeout(ctx, c.chain.Rpc, c.chain.WsRpc, tx, time.Duration(c.chain.Timeout)*time.Second)
 	if err != nil {
 		return &sign[0], errors.Wrap(err, "unable to send transaction")
 	}

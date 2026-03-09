@@ -19,6 +19,7 @@ type Chain struct {
 	BridgeAddress    solana.PublicKey
 	OperatorsWallets []*solana.Wallet
 	Workers          int
+	Timeout          int64
 
 	Meta Meta
 }

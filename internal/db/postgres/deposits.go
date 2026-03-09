@@ -2,6 +2,7 @@ package pg
 
 import (
 	"database/sql"
+	"time"
 
 	"github.com/Bridgeless-Project/relayer-svc/internal/db"
 	"github.com/Bridgeless-Project/relayer-svc/internal/types"
@@ -39,11 +40,21 @@ const (
 	depositsSignature   = "signature"
 	depositsMerkleProof = "merkle_proof"
 	depositsOperator    = "operator"
+
+	depositRecoveryAttempts  = "recovery_attempts"
+	depositRecoveryTimestamp = "recovery_timestamp"
 )
 
 type depositsQ struct {
 	db       *pgdb.DB
 	selector squirrel.SelectBuilder
+}
+
+func NewDepositsQ(db *pgdb.DB) db.DepositsQ {
+	return &depositsQ{
+		db:       db.Clone(),
+		selector: squirrel.Select("*").From(depositsTable),
+	}
 }
 
 func (d *depositsQ) UpdateWithdrawalCoreBlock(identifier db.DepositIdentifier, i int64) error {
@@ -125,6 +136,9 @@ func (d *depositsQ) Insert(deposit db.Deposit) error {
 			depositsReferralId:        deposit.ReferralId,
 			depositsTxData:            deposit.TxData,
 			depositsMerkleProof:       deposit.MerkleProof,
+
+			depositRecoveryAttempts:  deposit.RecoveryAttempts,
+			depositRecoveryTimestamp: deposit.RecoveryTimestamp,
 		})
 
 	if err := d.db.Exec(stmt); err != nil {
@@ -190,11 +204,13 @@ func (d *depositsQ) UpdateWithdrawalTx(identifier db.DepositIdentifier, hash str
 	return d.db.Exec(query)
 }
 
-func NewDepositsQ(db *pgdb.DB) db.DepositsQ {
-	return &depositsQ{
-		db:       db.Clone(),
-		selector: squirrel.Select("*").From(depositsTable),
-	}
+func (d *depositsQ) UpdateRecoveryDetails(identifier db.DepositIdentifier, attempts int, timestamp time.Time) error {
+	query := squirrel.Update(depositsTable).
+		Set(depositRecoveryAttempts, attempts).
+		Set(depositRecoveryTimestamp, timestamp).
+		Where(identifierToPredicate(identifier))
+
+	return d.db.Exec(query)
 }
 
 func (d *depositsQ) Transaction(f func() error) error {
