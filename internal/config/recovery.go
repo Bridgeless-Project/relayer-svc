@@ -10,7 +10,7 @@ import (
 )
 
 const (
-	recoveryKey = "retry"
+	recoveryKey = "recovery"
 )
 
 type recovery struct {
