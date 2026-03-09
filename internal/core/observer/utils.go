@@ -63,6 +63,7 @@ func parseSubmittedDeposit(attributes []Attribute) (*db.Deposit, error) {
 			deposit.CommissionAmount = attribute.Value
 		case bridgeTypes.AttributeKeyMerkleProof:
 			deposit.MerkleProof = attribute.Value
+		case bridgeTypes.AttributeEpochId:
 		default:
 			return nil, errors.Wrap(errors.New(fmt.Sprintf("unknown attribute key: %s", attribute.Key)), "failed to parse attribute")
 		}
