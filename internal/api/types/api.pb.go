@@ -76,6 +76,7 @@ type CheckWithdrawalResponse struct {
 	TransferData         *types.TransferData         `protobuf:"bytes,2,opt,name=transfer_data,json=transferData,proto3" json:"transfer_data,omitempty"`
 	WithdrawalStatus     types.WithdrawalStatus      `protobuf:"varint,3,opt,name=withdrawal_status,json=withdrawalStatus,proto3,enum=deposit.WithdrawalStatus" json:"withdrawal_status,omitempty"`
 	WithdrawalIdentifier *types.WithdrawalIdentifier `protobuf:"bytes,4,opt,name=withdrawal_identifier,json=withdrawalIdentifier,proto3" json:"withdrawal_identifier,omitempty"`
+	Recovery             *types.Recovery             `protobuf:"bytes,5,opt,name=recovery,proto3" json:"recovery,omitempty"`
 	unknownFields        protoimpl.UnknownFields
 	sizeCache            protoimpl.SizeCache
 }
@@ -138,18 +139,26 @@ func (x *CheckWithdrawalResponse) GetWithdrawalIdentifier() *types.WithdrawalIde
 	return nil
 }
 
+func (x *CheckWithdrawalResponse) GetRecovery() *types.Recovery {
+	if x != nil {
+		return x.Recovery
+	}
+	return nil
+}
+
 var File_api_proto protoreflect.FileDescriptor
 
 const file_api_proto_rawDesc = "" +
 	"\n" +
 	"\tapi.proto\x12\x03api\x1a\x1cgoogle/api/annotations.proto\x1a\x1bgoogle/protobuf/empty.proto\x1a\x19google/protobuf/any.proto\x1a\rdeposit.proto\x1a.protoc-gen-openapiv2/options/annotations.proto\"5\n" +
 	"\x0eSubmitResponse\x12#\n" +
-	"\rwithdrawal_id\x18\x01 \x01(\tR\fwithdrawalId\"\xbc\x02\n" +
+	"\rwithdrawal_id\x18\x01 \x01(\tR\fwithdrawalId\"\xeb\x02\n" +
 	"\x17CheckWithdrawalResponse\x12I\n" +
 	"\x12deposit_identifier\x18\x01 \x01(\v2\x1a.deposit.DepositIdentifierR\x11depositIdentifier\x12:\n" +
 	"\rtransfer_data\x18\x02 \x01(\v2\x15.deposit.TransferDataR\ftransferData\x12F\n" +
 	"\x11withdrawal_status\x18\x03 \x01(\x0e2\x19.deposit.WithdrawalStatusR\x10withdrawalStatus\x12R\n" +
-	"\x15withdrawal_identifier\x18\x04 \x01(\v2\x1d.deposit.WithdrawalIdentifierR\x14withdrawalIdentifier2\xae\x02\n" +
+	"\x15withdrawal_identifier\x18\x04 \x01(\v2\x1d.deposit.WithdrawalIdentifierR\x14withdrawalIdentifier\x12-\n" +
+	"\brecovery\x18\x05 \x01(\v2\x11.deposit.RecoveryR\brecovery2\xae\x02\n" +
 	"\x03API\x12Z\n" +
 	"\x10SubmitWithdrawal\x12\x1a.deposit.DepositIdentifier\x1a\x16.google.protobuf.Empty\"\x12\x82\xd3\xe4\x93\x02\f:\x01*\"\a/submit\x12{\n" +
 	"\x0fCheckWithdrawal\x12\x1a.deposit.DepositIdentifier\x1a\x1c.api.CheckWithdrawalResponse\".\x82\xd3\xe4\x93\x02(\x12&/check/{chain_id}/{tx_hash}/{tx_nonce}\x12N\n" +
@@ -175,24 +184,26 @@ var file_api_proto_goTypes = []any{
 	(*types.TransferData)(nil),         // 3: deposit.TransferData
 	(types.WithdrawalStatus)(0),        // 4: deposit.WithdrawalStatus
 	(*types.WithdrawalIdentifier)(nil), // 5: deposit.WithdrawalIdentifier
-	(*emptypb.Empty)(nil),              // 6: google.protobuf.Empty
+	(*types.Recovery)(nil),             // 6: deposit.Recovery
+	(*emptypb.Empty)(nil),              // 7: google.protobuf.Empty
 }
 var file_api_proto_depIdxs = []int32{
 	2, // 0: api.CheckWithdrawalResponse.deposit_identifier:type_name -> deposit.DepositIdentifier
 	3, // 1: api.CheckWithdrawalResponse.transfer_data:type_name -> deposit.TransferData
 	4, // 2: api.CheckWithdrawalResponse.withdrawal_status:type_name -> deposit.WithdrawalStatus
 	5, // 3: api.CheckWithdrawalResponse.withdrawal_identifier:type_name -> deposit.WithdrawalIdentifier
-	2, // 4: api.API.SubmitWithdrawal:input_type -> deposit.DepositIdentifier
-	2, // 5: api.API.CheckWithdrawal:input_type -> deposit.DepositIdentifier
-	6, // 6: api.API.CheckHealth:input_type -> google.protobuf.Empty
-	6, // 7: api.API.SubmitWithdrawal:output_type -> google.protobuf.Empty
-	1, // 8: api.API.CheckWithdrawal:output_type -> api.CheckWithdrawalResponse
-	6, // 9: api.API.CheckHealth:output_type -> google.protobuf.Empty
-	7, // [7:10] is the sub-list for method output_type
-	4, // [4:7] is the sub-list for method input_type
-	4, // [4:4] is the sub-list for extension type_name
-	4, // [4:4] is the sub-list for extension extendee
-	0, // [0:4] is the sub-list for field type_name
+	6, // 4: api.CheckWithdrawalResponse.recovery:type_name -> deposit.Recovery
+	2, // 5: api.API.SubmitWithdrawal:input_type -> deposit.DepositIdentifier
+	2, // 6: api.API.CheckWithdrawal:input_type -> deposit.DepositIdentifier
+	7, // 7: api.API.CheckHealth:input_type -> google.protobuf.Empty
+	7, // 8: api.API.SubmitWithdrawal:output_type -> google.protobuf.Empty
+	1, // 9: api.API.CheckWithdrawal:output_type -> api.CheckWithdrawalResponse
+	7, // 10: api.API.CheckHealth:output_type -> google.protobuf.Empty
+	8, // [8:11] is the sub-list for method output_type
+	5, // [5:8] is the sub-list for method input_type
+	5, // [5:5] is the sub-list for extension type_name
+	5, // [5:5] is the sub-list for extension extendee
+	0, // [0:5] is the sub-list for field type_name
 }
 
 func init() { file_api_proto_init() }

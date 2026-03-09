@@ -131,6 +131,9 @@
         },
         "withdrawalIdentifier": {
           "$ref": "#/definitions/depositWithdrawalIdentifier"
+        },
+        "recovery": {
+          "$ref": "#/definitions/depositRecovery"
         }
       }
     },
@@ -146,6 +149,19 @@
         },
         "chainId": {
           "type": "string"
+        }
+      }
+    },
+    "depositRecovery": {
+      "type": "object",
+      "properties": {
+        "attempts": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "timestamp": {
+          "type": "string",
+          "format": "int64"
         }
       }
     },
