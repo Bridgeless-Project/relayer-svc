@@ -2,6 +2,7 @@ package pg
 
 import (
 	"database/sql"
+	"strings"
 	"time"
 
 	"github.com/Bridgeless-Project/relayer-svc/internal/db"
@@ -142,12 +143,28 @@ func (d *depositsQ) Insert(deposit db.Deposit) error {
 		})
 
 	if err := d.db.Exec(stmt); err != nil {
-		return err
+		if !strings.Contains(err.Error(), "duplicate key value violates unique constraint") {
+			return err
+		}
+
+		err = d.UpdateRecoveryData(deposit.DepositIdentifier, deposit.RecoveryAttempts, deposit.RecoveryTimestamp)
+		if err != nil {
+			return err
+		}
+
 	}
 
 	return nil
 }
 
+func (d *depositsQ) UpdateRecoveryData(identifier db.DepositIdentifier, attempts int, timestamp time.Time) error {
+	query := squirrel.Update(depositsTable).
+		Set(depositRecoveryAttempts, attempts).
+		Set(depositRecoveryTimestamp, timestamp).
+		Set(depositsWithdrawalStatus, types.WithdrawalStatus_WITHDRAWAL_STATUS_PENDING).
+		Where(identifierToPredicate(identifier))
+	return d.db.Exec(query)
+}
 func (d *depositsQ) Get(identifier db.DepositIdentifier) (*db.Deposit, error) {
 	var deposit db.Deposit
 	err := d.db.Get(&deposit, d.selector.Where(identifierToPredicate(identifier)))

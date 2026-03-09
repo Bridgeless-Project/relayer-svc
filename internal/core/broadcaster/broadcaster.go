@@ -97,6 +97,10 @@ func (b *Broadcaster) Broadcast(deposit db.Deposit) error {
 	}
 
 	deposit.WithdrawalStatus = internalTypes.WithdrawalStatus_WITHDRAWAL_STATUS_PENDING
+
+	if deposit.RecoveryTimestamp.Unix() < 0 {
+		deposit.RecoveryTimestamp = time.Now()
+	}
 	err = b.dbConn.Insert(deposit)
 	if err != nil {
 		return errors.Wrapf(internalTypes.ErrFailedToBroadcast, "%s: error storing deposit %s",
@@ -210,19 +214,26 @@ func (b *Broadcaster) checkExistence(ctx context.Context, deposit *db.Deposit) e
 		return errors.Wrap(err, "failed to retrieve deposit data")
 	}
 
-	// retry logic
-	if depositData != nil && depositData.RecoveryAttempts >= int(b.recoveryAttempts) {
-		return errors.Wrapf(internalTypes.ErrAlreadyExists, "deposit %s already saved", deposit.String())
-	}
-	if depositData.RecoveryTimestamp.Unix() <= time.Now().Add(b.recoveryTimeout).Unix() {
-		return errors.Wrapf(internalTypes.ErrAlreadyExists, "rate limit")
-	}
-
 	if depositData == nil {
 		return nil
 	}
 
-	deposit.RecoveryAttempts++
+	// retry logic
+	if depositData.WithdrawalStatus != internalTypes.WithdrawalStatus_WITHDRAWAL_STATUS_FAILED {
+		return errors.Wrapf(internalTypes.ErrFailedToBroadcast, "deposit %s is still processing", deposit.String())
+	}
+
+	if depositData.RecoveryAttempts >= int(b.recoveryAttempts) {
+		return errors.Wrapf(internalTypes.ErrAlreadyExists, "deposit %s already saved: max", deposit.String())
+	}
+
+	if time.Now().Before(depositData.RecoveryTimestamp.Add(b.recoveryTimeout)) {
+		return errors.Wrapf(internalTypes.ErrAlreadyExists, "rate limit: try only after %s", depositData.RecoveryTimestamp.Add(b.recoveryTimeout).String())
+	}
+
+	deposit.RecoveryAttempts = depositData.RecoveryAttempts + 1
+	deposit.RecoveryTimestamp = time.Now()
+
 	b.logger.Debugf("Start process the recovery flow: id %s, attempts %d", deposit.DepositIdentifier, deposit.RecoveryAttempts)
 
 	return nil

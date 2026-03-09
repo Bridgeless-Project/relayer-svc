@@ -24,6 +24,7 @@ func (b *Broadcaster) runNetworkWorker(ctx context.Context, chainID string, ch <
 
 			deposit, err := container.Run(ctx)
 			if err != nil {
+				b.cache.Delete(deposit.String())
 				log.WithError(err).Errorf("error processing withdrawal, container ID: %s", container.ID())
 				continue
 			}
