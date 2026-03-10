@@ -1,0 +1,52 @@
+name: Build relayer-svc docker image
+on:
+  push:
+    tags:
+      - '[0-9]+.[0-9]+.[0-9]+'
+
+env:
+  CI_ACCESS_TOKEN: ${{ secrets.CI_ACCESS_TOKEN }}
+  GITHUB_REPOSITORY: ghcr.io/bridgeless-project/relayer-svc
+
+jobs:
+  converge-github:
+    name: Build To Github
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Log in to registry
+        run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u $ --password-stdin
+
+      - name: Build and Push Image
+        env:
+          IMAGE: ${{ env.GITHUB_REPOSITORY }}:${{ github.ref_name }}
+          CACHE_REPO: ${{ env.GITHUB_REPOSITORY }}/cache
+        run: |
+          buildah build \
+            -f build/Dockerfile \
+            --layers \
+            --cache-from $CACHE_REPO \
+            --cache-to $CACHE_REPO \
+            -t $IMAGE \
+            --build-arg CI_ACCESS_TOKEN=$CI_ACCESS_TOKEN \
+            .
+
+      - name: Push Image
+        env:
+          IMAGE: ${{ env.GITHUB_REPOSITORY }}:${{ github.ref_name }}
+        run: buildah push $IMAGE
+  deploy:
+    name: Deploy
+    needs: converge
+    runs-on: ubuntu-latest
+    steps:
+      - name: ConfigCreate
+        run: |
+          mkdir ~/.kube/
+          echo "${{ secrets.TESTNET_KUBECONFIG }}" | base64 -d > config
+          mv config ~/.kube/
+          kubectl set image deployment/relayer-svc docs=ghcr.io/bridgeless-project/relayer-svc:${{ github.ref_name }} -n relayer-svc     
