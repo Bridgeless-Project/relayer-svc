@@ -33,8 +33,9 @@ func (i Implementation) CheckWithdrawal(ctx context.Context, identifier *interna
 		return nil, status.Error(codes.NotFound, "withdrawal data not found")
 	}
 
-	_, timeout := cfg.RecoveryParams()
+	maxAttempts, timeout := cfg.RecoveryParams()
 	withdrawalData.RecoveryTimestamp.Add(timeout)
+	withdrawalData.RecoveryAttempts = int(maxAttempts) - withdrawalData.RecoveryAttempts
 
 	return common.ToStatusResponse(withdrawalData), nil
 }
