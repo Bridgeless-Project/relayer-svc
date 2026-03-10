@@ -78,6 +78,11 @@ func (d *depositsQ) FilterById(id string) db.DepositsQ {
 	return d
 }
 
+func (d *depositsQ) FilterByStatus(status types.WithdrawalStatus) db.DepositsQ {
+	d.selector = d.selector.Where(squirrel.Eq{depositsWithdrawalStatus: status})
+	return d
+}
+
 func (d *depositsQ) GetWithStatus(status types.WithdrawalStatus) ([]db.Deposit, error) {
 	stmt := d.selector.Where(squirrel.Eq{
 		depositsWithdrawalStatus: status,
