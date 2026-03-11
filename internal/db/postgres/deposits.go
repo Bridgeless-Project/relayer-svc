@@ -83,6 +83,11 @@ func (d *depositsQ) FilterByStatus(status types.WithdrawalStatus) db.DepositsQ {
 	return d
 }
 
+func (d *depositsQ) Page(pageParams pgdb.OffsetPageParams) db.DepositsQ {
+	d.selector = pageParams.ApplyTo(d.selector, "id")
+	return d
+}
+
 func (d *depositsQ) GetWithStatus(status types.WithdrawalStatus) ([]db.Deposit, error) {
 	stmt := d.selector.Where(squirrel.Eq{
 		depositsWithdrawalStatus: status,
