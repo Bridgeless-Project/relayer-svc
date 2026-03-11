@@ -64,6 +64,16 @@ func ToStatusResponse(d *database.Deposit) *apiTypes.CheckWithdrawalResponse {
 	return result
 }
 
+func ToWithdrawalByStatusResponse(withdrawals []database.Deposit) *apiTypes.GetWithdrawalsByStatusResponse {
+	mapped := make([]*apiTypes.CheckWithdrawalResponse, len(withdrawals))
+	for i := range withdrawals {
+		mapped[i] = ToStatusResponse(&withdrawals[i])
+	}
+	return &apiTypes.GetWithdrawalsByStatusResponse{
+		Withdrawal: mapped,
+	}
+}
+
 func ToDbIdentifier(identifier *types.DepositIdentifier) database.DepositIdentifier {
 	return database.DepositIdentifier{
 		TxHash:  identifier.TxHash,
