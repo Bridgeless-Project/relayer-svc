@@ -8,12 +8,10 @@ import (
 	"github.com/pkg/errors"
 )
 
-const hashlen = crypto.DigestLength
-
-func txHashToBytes32(txHash string) [hashlen]byte {
-	var res [hashlen]byte
+func txHashToBytes32(txHash string) [crypto.DigestLength]byte {
+	var res [crypto.DigestLength]byte
 	hashBytes, err := hexutil.Decode(txHash)
-	if err != nil || len(hashBytes) != hashlen {
+	if err != nil || len(hashBytes) != crypto.DigestLength {
 		bytes := crypto.Keccak256(([]byte)(txHash))
 		copy(res[:], bytes)
 		return res
@@ -24,12 +22,12 @@ func txHashToBytes32(txHash string) [hashlen]byte {
 }
 
 // returns empty slice to avoid panic in case merkle proof is non existent
-func merkleProofParsing(merkleProof string) ([][hashlen]byte, error) {
+func merkleProofParsing(merkleProof string) ([][crypto.DigestLength]byte, error) {
 	if merkleProof == "" {
-		return make([][hashlen]byte, 0), nil
+		return make([][crypto.DigestLength]byte, 0), nil
 	}
 
-	var proof [][hashlen]byte
+	var proof [][crypto.DigestLength]byte
 	var proofsAsString []string
 	if err := json.Unmarshal([]byte(merkleProof), &proofsAsString); err != nil {
 		return nil, errors.Wrap(err, "failed to unmarshal merkle proof JSON")
@@ -40,11 +38,11 @@ func merkleProofParsing(merkleProof string) ([][hashlen]byte, error) {
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to decode hex")
 		}
-		if len(proofBytes) != hashlen {
+		if len(proofBytes) != crypto.DigestLength {
 			return nil, errors.New("invalid hash length, expected exactly 32 bytes")
 		}
 
-		var element [hashlen]byte
+		var element [crypto.DigestLength]byte
 		copy(element[:], proofBytes)
 		proof = append(proof, element)
 	}

@@ -19,13 +19,81 @@ import (
 )
 
 func (c *Client) Withdraw(ctx context.Context, depositData *db.Deposit, signer *signerInfo) (string, string, int64, error) {
-	fn := c.getWithdrawFunc(depositData)
-	txHash, block, err := fn(ctx, depositData, signer)
+	txHash, block, err := c.getWithdrawFunc(depositData)(ctx, depositData, signer)
 	if err != nil {
 		return signer.address.String(), txHash, block, err
 	}
 
 	return signer.address.String(), txHash, block, nil
+}
+
+func (c *Client) withdrawNativeMerkelized(ctx context.Context, depositData *db.Deposit, signer *signerInfo) (string, int64, error) {
+	data, err := c.getWithdrawalTxData(withdrawNativeMerkelized, depositData)
+	if err != nil {
+		return "", 0, errors.Wrap(err, "failed to get withdrawal tx data")
+	}
+
+	receiverAddress := common.HexToAddress(depositData.Receiver)
+
+	transactOpts, err := c.prepareTxOpts(ctx, data, signer)
+	if err != nil {
+		return "", 0, errors.Wrap(err, "failed to prepare transact opts")
+	}
+
+	amount, ok := new(big.Int).SetString(depositData.WithdrawalAmount, 10)
+	if !ok {
+		return "", 0, errors.New("failed to parse withdrawal amount")
+	}
+
+	signatureBytes, err := hexutil.Decode(depositData.Signature)
+	if err != nil {
+		return "", 0, errors.Wrap(err, "failed to decode signature")
+	}
+
+	hash, err := c.getWithdrawalTxHash(transactOpts, data)
+	if err != nil {
+		return "", 0, errors.Wrap(err, "failed to get withdrawal tx hash")
+	}
+
+	block, err := c.getBlockWithRetry(ctx)
+	if err != nil {
+		return "", 0, errors.Wrap(err, "failed to get block")
+	}
+	proof, err := merkleProofParsing(depositData.MerkleProof)
+	if err != nil {
+		return "", 0, errors.Wrap(err, "failed to parse MerkleProof")
+	}
+
+	tx, err := c.contractClient.WithdrawNativeMerkelized(
+		transactOpts,
+		amount,
+		receiverAddress,
+		txHashToBytes32(depositData.TxHash),
+		big.NewInt(depositData.TxNonce),
+		proof,
+		[][]byte{signatureBytes})
+	if err != nil {
+		return hash, block, errors.Wrap(err, "failed to withdraw merkelized native")
+	}
+
+	finalizer := func() error {
+		if err := c.finalize(ctx, tx.Hash()); err != nil {
+			if errors.Is(err, chain.ErrSkippedFinalization) {
+				return nil
+			}
+
+			return errors.Wrap(err, "failed to finalize")
+		}
+
+		return nil
+	}
+
+	err = core.DoWithRetry(ctx, finalizer)
+	if err != nil {
+		return hash, block, errors.Wrap(err, "failed to perform finalization")
+	}
+
+	return tx.Hash().Hex(), block, nil
 }
 
 func (c *Client) withdrawNative(ctx context.Context, depositData *db.Deposit, signer *signerInfo) (string, int64, error) {
@@ -153,7 +221,6 @@ func (c *Client) withdrawToken(ctx context.Context, depositData *db.Deposit, sig
 
 	err = core.DoWithRetry(ctx, finalizer)
 	if err != nil {
-
 		return hash, block, errors.Wrap(err, "failed to perform finalization")
 	}
 
@@ -227,7 +294,6 @@ func (c *Client) withdrawERC20Merkelized(ctx context.Context, depositData *db.De
 
 	err = core.DoWithRetry(ctx, finalizer)
 	if err != nil {
-
 		return hash, block, errors.Wrap(err, "failed to perform finalization")
 	}
 
@@ -235,74 +301,6 @@ func (c *Client) withdrawERC20Merkelized(ctx context.Context, depositData *db.De
 
 }
 
-func (c *Client) withdrawNativeMerkelized(ctx context.Context, depositData *db.Deposit, signer *signerInfo) (string, int64, error) {
-	data, err := c.getWithdrawalTxData(withdrawNativeMerkelized, depositData)
-	if err != nil {
-		return "", 0, errors.Wrap(err, "failed to get withdrawal tx data")
-	}
-
-	receiverAddress := common.HexToAddress(depositData.Receiver)
-
-	transactOpts, err := c.prepareTxOpts(ctx, data, signer)
-	if err != nil {
-		return "", 0, errors.Wrap(err, "failed to prepare transact opts")
-	}
-
-	amount, ok := new(big.Int).SetString(depositData.WithdrawalAmount, 10)
-	if !ok {
-		return "", 0, errors.New("failed to parse withdrawal amount")
-	}
-
-	signatureBytes, err := hexutil.Decode(depositData.Signature)
-	if err != nil {
-		return "", 0, errors.Wrap(err, "failed to decode signature")
-	}
-
-	hash, err := c.getWithdrawalTxHash(transactOpts, data)
-	if err != nil {
-		return "", 0, errors.Wrap(err, "failed to get withdrawal tx hash")
-	}
-
-	block, err := c.getBlockWithRetry(ctx)
-	if err != nil {
-		return "", 0, errors.Wrap(err, "failed to get block")
-	}
-	proof, err := merkleProofParsing(depositData.MerkleProof)
-	if err != nil {
-		return "", 0, errors.Wrap(err, "failed to parse MerkleProof")
-	}
-
-	tx, err := c.contractClient.WithdrawNativeMerkelized(
-		transactOpts,
-		amount,
-		receiverAddress,
-		txHashToBytes32(depositData.TxHash),
-		big.NewInt(depositData.TxNonce),
-		proof,
-		[][]byte{signatureBytes})
-	if err != nil {
-		return hash, block, errors.Wrap(err, "failed to withdraw merkelized native")
-	}
-
-	finalizer := func() error {
-		if err := c.finalize(ctx, tx.Hash()); err != nil {
-			if errors.Is(err, chain.ErrSkippedFinalization) {
-				return nil
-			}
-
-			return errors.Wrap(err, "failed to finalize")
-		}
-
-		return nil
-	}
-
-	err = core.DoWithRetry(ctx, finalizer)
-	if err != nil {
-		return hash, block, errors.Wrap(err, "failed to perform finalization")
-	}
-
-	return tx.Hash().Hex(), block, nil
-}
 func (c *Client) getWithdrawFunc(depositData *db.Deposit) func(ctx context.Context, depositData *db.Deposit, signer *signerInfo) (string, int64, error) {
 	isNative := depositData.WithdrawalToken == core.DefaultNativeTokenAddress
 	isMerkelized := depositData.MerkleProof != ""
@@ -394,6 +392,5 @@ func (c *Client) finalize(ctx context.Context, txHash common.Hash) error {
 				return errors.New("tx failed on network")
 			}
 		}
-
 	}
 }
