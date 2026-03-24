@@ -8,10 +8,12 @@ import (
 	"github.com/pkg/errors"
 )
 
+const hashlen = 32
+
 func txHashToBytes32(txHash string) [32]byte {
 	var res [32]byte
 	hashBytes, err := hexutil.Decode(txHash)
-	if err != nil || len(hashBytes) != 32 {
+	if err != nil || len(hashBytes) != hashlen {
 		bytes := crypto.Keccak256(([]byte)(txHash))
 		copy(res[:], bytes)
 		return res
@@ -21,7 +23,7 @@ func txHashToBytes32(txHash string) [32]byte {
 	return res
 }
 
-// returns empty slice  to avoid panic in case merkle proof is non existent
+// returns empty slice to avoid panic in case merkle proof is non existent
 func merkleProofParsing(merkleProof string) ([][32]byte, error) {
 	if merkleProof == "" {
 		return make([][32]byte, 0), nil
@@ -34,17 +36,18 @@ func merkleProofParsing(merkleProof string) ([][32]byte, error) {
 	}
 
 	for _, s := range proofsAsString {
-		bytes, err := hexutil.Decode(s)
+		proofBytes, err := hexutil.Decode(s)
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to decode hex")
 		}
-		if len(bytes) != 32 {
+		if len(proofBytes) != hashlen {
 			return nil, errors.New("invalid hash length, expected exactly 32 bytes")
 		}
 
-		var arr [32]byte
-		copy(arr[:], bytes)
-		proof = append(proof, arr)
+		var element [32]byte
+		copy(element[:], proofBytes)
+		proof = append(proof, element)
 	}
+
 	return proof, nil
 }
