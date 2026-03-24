@@ -43,6 +43,11 @@ func (c *Client) getWithdrawalTxData(method string, depositData *db.Deposit) ([]
 		return nil, errors.Wrap(err, "failed to decode signature")
 	}
 
+	proof, err := merkleProofParsing(depositData.MerkleProof)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to parse MerkleProof")
+	}
+
 	switch method {
 	case withdrawNative:
 		return c.abi.Pack(
@@ -64,6 +69,31 @@ func (c *Client) getWithdrawalTxData(method string, depositData *db.Deposit) ([]
 			txHashToBytes32(depositData.TxHash),
 			big.NewInt(depositData.TxNonce),
 			depositData.IsWrappedToken,
+			[][]byte{signatureBytes},
+		)
+
+	case withdrawERC20Merkelized:
+		common.HexToAddress(depositData.WithdrawalToken)
+		return c.abi.Pack(
+			withdrawERC20Merkelized,
+			common.HexToAddress(depositData.WithdrawalToken),
+			amount,
+			receiverAdress,
+			txHashToBytes32(depositData.TxHash),
+			big.NewInt(depositData.TxNonce),
+			depositData.IsWrappedToken,
+			proof,
+			[][]byte{signatureBytes},
+		)
+
+	case withdrawNativeMerkelized:
+		return c.abi.Pack(
+			withdrawNativeMerkelized,
+			amount,
+			receiverAdress,
+			txHashToBytes32(depositData.TxHash),
+			big.NewInt(depositData.TxNonce),
+			proof,
 			[][]byte{signatureBytes},
 		)
 
