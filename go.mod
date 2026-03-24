@@ -3,7 +3,7 @@ module github.com/Bridgeless-Project/relayer-svc
 go 1.25.1
 
 require (
-	github.com/Bridgeless-Project/bridgeless-core/v12 v12.1.28-rc1
+	github.com/Bridgeless-Project/bridgeless-core/v12 v12.1.29
 	github.com/Masterminds/squirrel v1.5.4
 	github.com/avast/retry-go v3.0.0+incompatible
 	github.com/cosmos/cosmos-sdk v0.53.4
@@ -133,6 +133,7 @@ require (
 	github.com/prometheus/common v0.42.0 // indirect
 	github.com/prometheus/procfs v0.9.0 // indirect
 	github.com/rcrowley/go-metrics v0.0.0-20201227073835-cf1acfcdf475 // indirect
+	github.com/regen-network/cosmos-proto v0.3.1 // indirect
 	github.com/rs/zerolog v1.34.0 // indirect
 	github.com/sagikazarmark/locafero v0.7.0 // indirect
 	github.com/sasha-s/go-deadlock v0.3.5 // indirect
