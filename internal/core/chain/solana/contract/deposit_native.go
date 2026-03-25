@@ -60,9 +60,9 @@ func (inst *DepositNative) SetAddress(address string) *DepositNative {
 	return inst
 }
 
-// SetReferralId sets the "referral_id" parameter.
-func (inst *DepositNative) SetReferralId(referral_id uint16) *DepositNative {
-	inst.ReferralId = &referral_id
+// SetReferralId sets the "_referral_id" parameter.
+func (inst *DepositNative) SetReferralId(_referral_id uint16) *DepositNative {
+	inst.ReferralId = &_referral_id
 	return inst
 }
 
@@ -208,11 +208,11 @@ func (inst *DepositNative) EncodeToTree(parent ag_treeout.Branches) {
 				ParentFunc(func(instructionBranch ag_treeout.Branches) {
 					// Parameters of the instruction:
 					instructionBranch.Child("Params[len=5]").ParentFunc(func(paramsBranch ag_treeout.Branches) {
-						paramsBranch.Child(ag_format.Param("   BridgeId", *inst.BridgeId))
-						paramsBranch.Child(ag_format.Param("     Amount", *inst.Amount))
-						paramsBranch.Child(ag_format.Param("    ChainId", *inst.ChainId))
-						paramsBranch.Child(ag_format.Param("    Address", *inst.Address))
-						paramsBranch.Child(ag_format.Param(" ReferralId", *inst.ReferralId))
+						paramsBranch.Child(ag_format.Param("    BridgeId", *inst.BridgeId))
+						paramsBranch.Child(ag_format.Param("      Amount", *inst.Amount))
+						paramsBranch.Child(ag_format.Param("     ChainId", *inst.ChainId))
+						paramsBranch.Child(ag_format.Param("     Address", *inst.Address))
+						paramsBranch.Child(ag_format.Param("  ReferralId", *inst.ReferralId))
 					})
 					// Accounts of the instruction:
 					instructionBranch.Child("Accounts[len=3]").ParentFunc(func(accountsBranch ag_treeout.Branches) {
@@ -289,7 +289,7 @@ func NewDepositNativeInstruction(
 	amount uint64,
 	chain_id string,
 	address string,
-	referral_id uint16,
+	_referral_id uint16,
 	// Accounts:
 	authority ag_solanago.PublicKey,
 	sender ag_solanago.PublicKey,
@@ -300,7 +300,7 @@ func NewDepositNativeInstruction(
 		SetAmount(amount).
 		SetChainId(chain_id).
 		SetAddress(address).
-		SetReferralId(referral_id).
+		SetReferralId(_referral_id).
 		SetAuthorityAccount(authority).
 		SetSenderAccount(sender).
 		SetSystemProgramAccount(systemProgram)
