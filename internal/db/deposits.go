@@ -2,6 +2,7 @@ package db
 
 import (
 	"fmt"
+	"gitlab.com/distributed_lab/kit/pgdb"
 
 	"github.com/Bridgeless-Project/relayer-svc/internal/types"
 )
@@ -11,6 +12,7 @@ type DepositsQ interface {
 	Insert(Deposit) (err error)
 	Get(identifier DepositIdentifier) (*Deposit, error)
 	GetWithStatus(status types.WithdrawalStatus) ([]Deposit, error)
+	Page(pageParams pgdb.OffsetPageParams) DepositsQ
 
 	UpdateStatus(DepositIdentifier, types.WithdrawalStatus) error
 	UpdateWithdrawalDetails(Deposit) error

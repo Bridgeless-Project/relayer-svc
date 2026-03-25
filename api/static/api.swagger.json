@@ -59,6 +59,60 @@
         ]
       }
     },
+    "/get": {
+      "get": {
+        "operationId": "API_GetWithdrawalsByStatus",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/apiGetWithdrawalsByStatusResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "withdrawalStatus",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "enum": [
+              "WITHDRAWAL_STATUS_UNSPECIFIED",
+              "WITHDRAWAL_STATUS_PENDING",
+              "WITHDRAWAL_STATUS_PROCESSING",
+              "WITHDRAWAL_STATUS_SUBMITTING_TO_CORE",
+              "WITHDRAWAL_STATUS_PROCESSED",
+              "WITHDRAWAL_STATUS_FAILED",
+              "WITHDRAWAL_STATUS_ALREADY_WITHDRAWN"
+            ],
+            "default": "WITHDRAWAL_STATUS_UNSPECIFIED"
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "format": "uint64"
+          },
+          {
+            "name": "number",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "format": "uint64"
+          }
+        ],
+        "tags": [
+          "API"
+        ]
+      }
+    },
     "/health": {
       "get": {
         "operationId": "API_CheckHealth",
@@ -131,6 +185,18 @@
         },
         "withdrawalIdentifier": {
           "$ref": "#/definitions/depositWithdrawalIdentifier"
+        }
+      }
+    },
+    "apiGetWithdrawalsByStatusResponse": {
+      "type": "object",
+      "properties": {
+        "withdrawal": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/apiCheckWithdrawalResponse"
+          }
         }
       }
     },
