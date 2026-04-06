@@ -27,9 +27,9 @@ type Broadcaster struct {
 	tendermintClient *http.HTTP
 
 	depositsDbConn db.DepositsQ
-	epochsDbConn db.SignaturesQ
-	logger *logan.Entry
-	cache  sync.Map
+	epochsDbConn   db.SignaturesQ
+	logger         *logan.Entry
+	cache          sync.Map
 
 	wg *sync.WaitGroup
 
@@ -38,15 +38,15 @@ type Broadcaster struct {
 }
 
 func New(
-		ctx context.Context, coreConnector *connector.Connector,
-		depositsDbConn db.DepositsQ, epochsDbConn db.SignaturesQ,
-		tendermintClient *http.HTTP, logger *logan.Entry,
-	) *Broadcaster {
+	ctx context.Context, coreConnector *connector.Connector,
+	depositsDbConn db.DepositsQ, epochsDbConn db.SignaturesQ,
+	tendermintClient *http.HTTP, logger *logan.Entry,
+) *Broadcaster {
 	return &Broadcaster{
 		ctx:              ctx,
 		coreConnector:    coreConnector,
 		depositsDbConn:   depositsDbConn,
-		epochsDbConn: 		epochsDbConn,
+		epochsDbConn:     epochsDbConn,
 		logger:           logger,
 		cache:            sync.Map{},
 		wg:               new(sync.WaitGroup),
@@ -208,7 +208,7 @@ func (b *Broadcaster) CatchUp(deposit db.Deposit) error {
 	}
 
 	client := chainClient.ChildClients()[rand.Intn(len(chainClient.ChildClients()))]
-
+	b.wg.Add(1)
 	go func() {
 		defer b.wg.Done()
 		select {

@@ -8,10 +8,9 @@ import (
 )
 
 func (b *Broadcaster) runWithdrawalNetworkWorker(
-		ctx context.Context, chainID string,
-		ch <-chan containers.WithdrawalContainer, workerId int,
-	) {
-	defer b.wg.Done()
+	ctx context.Context, chainID string,
+	ch <-chan containers.WithdrawalContainer, workerId int,
+) {
 	log := b.logger.WithField("chain_id", chainID).WithField("worker_id", workerId)
 	log.Debug("started broadcaster worker")
 
@@ -38,7 +37,6 @@ func (b *Broadcaster) runWithdrawalNetworkWorker(
 }
 
 func (b *Broadcaster) runUpdateSignersNetworkWorker(ctx context.Context, chainID string, ch <-chan containers.UpdateSignersContainers, workerId int) {
-	defer b.wg.Done()
 	log := b.logger.WithFields(logan.F{
 		"chain_id":    chainID,
 		"worker_id":   workerId,

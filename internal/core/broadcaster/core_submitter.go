@@ -9,7 +9,6 @@ import (
 )
 
 func (b *Broadcaster) runCoreSubmitter(ctx context.Context) {
-	defer b.wg.Done()
 	logger := b.logger.WithField("component", "core-submitter")
 
 	submitTxPool := make([]*db.Deposit, 0, b.submitBatchSize)
