@@ -3,7 +3,6 @@ package run
 import (
 	"context"
 	"os/signal"
-	"sync"
 	"syscall"
 
 	"github.com/Bridgeless-Project/relayer-svc/cmd/utils"
@@ -68,7 +67,6 @@ var Cmd = &cobra.Command{
 }
 
 func runService(ctx context.Context, cfg config.Config, catchUp, observerNeeded bool, startHeight, blockDistance uint64) error {
-	wg := new(sync.WaitGroup)
 	eg, ctx := errgroup.WithContext(ctx)
 	logger := cfg.Log()
 	clients := cfg.Clients()
@@ -96,19 +94,17 @@ func runService(ctx context.Context, cfg config.Config, catchUp, observerNeeded 
 
 	catchUpper := catch_upper.NewCatchUpper(ctx, broadcaster, dtb, etb, logger.WithField("component", "catch-upper"))
 
-	wg.Add(2)
+	//wg.Add(2)
 	eg.Go(func() error {
-		defer wg.Done()
 		return errors.Wrap(apiServer.RunHTTP(ctx), "error while running API HTTP gateway")
 	})
+
 	eg.Go(func() error {
-		defer wg.Done()
 		return errors.Wrap(apiServer.RunGRPC(ctx), "error while running API GRPC server")
 	})
 
-	wg.Add(1)
+	//wg.Add(1)
 	eg.Go(func() error {
-		defer wg.Done()
 		broadcaster.
 			WithClients(clientsRepo).
 			WithChainTxPoolSize(cfg.ChainTxPoolSize()).
@@ -120,9 +116,7 @@ func runService(ctx context.Context, cfg config.Config, catchUp, observerNeeded 
 	})
 
 	if observerNeeded {
-		wg.Add(1)
 		eg.Go(func() error {
-			defer wg.Done()
 			return errors.Wrap(observer.
 				WithClientsRepo(clientsRepo).
 				WithPollingInterval(cfg.ObserverPollingInterval()).
@@ -133,15 +127,10 @@ func runService(ctx context.Context, cfg config.Config, catchUp, observerNeeded 
 	}
 
 	if catchUp {
-		wg.Add(1)
 		eg.Go(func() error {
-			defer wg.Done()
 			return errors.Wrap(catchUpper.Start(), "error while running observer")
 		})
 	}
 
-	err = eg.Wait()
-	wg.Wait()
-
-	return err
+	return eg.Wait()
 }
