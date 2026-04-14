@@ -78,8 +78,8 @@ func (c *Client) buildUpdateSignerCell(epochData *db.Epoch) (*cell.Cell, error) 
 		MustStoreUInt(signerRecoveryH, 8).
 		MustStoreBigUInt(x, 256).
 		MustStoreBigUInt(y, 256).
-		MustStoreUInt(epochData.StartTime, 32).
-		MustStoreUInt(epochData.EndTime, 32).
+		MustStoreInt(int64(epochData.StartTime), 64).
+		MustStoreInt(int64(epochData.EndTime), 64).
 		MustStoreUInt(nonce, 64).
 		MustStoreBoolBit(epochData.SignatureMode).
 		MustStoreRef(signatureCell).
