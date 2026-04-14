@@ -3,6 +3,7 @@ package ton
 import (
 	"context"
 	"encoding/hex"
+	"strconv"
 	"strings"
 
 	"github.com/Bridgeless-Project/relayer-svc/internal/core/chain"
@@ -15,40 +16,40 @@ import (
 
 const (
 	updateSignerKeyBySignatureOpCode = 0x12312324
-	signerRecoveryH = 0x04
-	updateSignersGas = 200000000
+	signerRecoveryH                  = 0x04
+	updateSignersGas                 = 200000000
 )
 
 func (c *Client) UpdateSigners(ctx context.Context, epochData *db.Epoch, signer *wallet.Wallet) (string, int64, error) {
-  ctxt := c.Chain.Client.Client().StickyContext(ctx)
+	ctxt := c.Chain.Client.Client().StickyContext(ctx)
 
-  updateSignerCell, err := c.buildUpdateSignerCell(epochData)
-  if err != nil {
-    return "", 0, errors.Wrap(err, "failed to build update signer cell")
-  }
+	updateSignerCell, err := c.buildUpdateSignerCell(epochData)
+	if err != nil {
+		return "", 0, errors.Wrap(err, "failed to build update signer cell")
+	}
 
-  block, err := c.Chain.Client.CurrentMasterchainInfo(ctxt)
-  if err != nil {
-    return "", 0, errors.Wrap(err, "failed to get current master chain info")
-  }
+	block, err := c.Chain.Client.CurrentMasterchainInfo(ctxt)
+	if err != nil {
+		return "", 0, errors.Wrap(err, "failed to get current master chain info")
+	}
 
-  txHashBytes, err := signer.SendManyWaitTxHash(ctxt, []*wallet.Message{
-    {
-      Mode: 1,
-      InternalMessage: &tlb.InternalMessage{
-        IHRDisabled: true,
-        Bounce:      true,
-        DstAddr:     c.Chain.BridgeContractAddress,
-        Amount:      tlb.FromNanoTONU(updateSignersGas),
-        Body:        updateSignerCell,
-      },
-    },
-  })
-  if err != nil {
-    return "", 0, errors.Wrap(err, "failed to send update signers transaction")
-  }
+	txHashBytes, err := signer.SendManyWaitTxHash(ctxt, []*wallet.Message{
+		{
+			Mode: 1,
+			InternalMessage: &tlb.InternalMessage{
+				IHRDisabled: true,
+				Bounce:      true,
+				DstAddr:     c.Chain.BridgeContractAddress,
+				Amount:      tlb.FromNanoTONU(updateSignersGas),
+				Body:        updateSignerCell,
+			},
+		},
+	})
+	if err != nil {
+		return "", 0, errors.Wrap(err, "failed to send update signers transaction")
+	}
 
-  return hex.EncodeToString(txHashBytes), int64(block.SeqNo), nil
+	return hex.EncodeToString(txHashBytes), int64(block.SeqNo), nil
 }
 
 func (c *Client) buildUpdateSignerCell(epochData *db.Epoch) (*cell.Cell, error) {
@@ -67,6 +68,11 @@ func (c *Client) buildUpdateSignerCell(epochData *db.Epoch) (*cell.Cell, error) 
 		MustStoreSlice(signatureBytes, uint(len(signatureBytes)*8)).
 		EndCell()
 
+	nonce, err := strconv.ParseUint(epochData.Nonce, 10, 64)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to parse nonce")
+	}
+
 	body := cell.BeginCell().
 		MustStoreUInt(updateSignerKeyBySignatureOpCode, 32).
 		MustStoreUInt(signerRecoveryH, 8).
@@ -74,6 +80,7 @@ func (c *Client) buildUpdateSignerCell(epochData *db.Epoch) (*cell.Cell, error) 
 		MustStoreBigUInt(y, 256).
 		MustStoreUInt(epochData.StartTime, 32).
 		MustStoreUInt(epochData.EndTime, 32).
+		MustStoreUInt(nonce, 64).
 		MustStoreBoolBit(epochData.SignatureMode).
 		MustStoreRef(signatureCell).
 		EndCell()
