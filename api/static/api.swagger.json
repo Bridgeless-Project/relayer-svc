@@ -59,7 +59,7 @@
         ]
       }
     },
-    "/get": {
+    "/get/deposits/status/{withdrawalStatus}": {
       "get": {
         "operationId": "API_GetWithdrawalsByStatus",
         "responses": {
@@ -79,8 +79,8 @@
         "parameters": [
           {
             "name": "withdrawalStatus",
-            "in": "query",
-            "required": false,
+            "in": "path",
+            "required": true,
             "type": "string",
             "enum": [
               "WITHDRAWAL_STATUS_UNSPECIFIED",
@@ -90,8 +90,7 @@
               "WITHDRAWAL_STATUS_PROCESSED",
               "WITHDRAWAL_STATUS_FAILED",
               "WITHDRAWAL_STATUS_ALREADY_WITHDRAWN"
-            ],
-            "default": "WITHDRAWAL_STATUS_UNSPECIFIED"
+            ]
           },
           {
             "name": "page",
@@ -101,7 +100,7 @@
             "format": "uint64"
           },
           {
-            "name": "number",
+            "name": "limit",
             "in": "query",
             "required": false,
             "type": "string",
@@ -185,6 +184,9 @@
         },
         "withdrawalIdentifier": {
           "$ref": "#/definitions/depositWithdrawalIdentifier"
+        },
+        "recovery": {
+          "$ref": "#/definitions/depositRecovery"
         }
       }
     },
@@ -212,6 +214,19 @@
         },
         "chainId": {
           "type": "string"
+        }
+      }
+    },
+    "depositRecovery": {
+      "type": "object",
+      "properties": {
+        "attempts": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "timestamp": {
+          "type": "string",
+          "format": "int64"
         }
       }
     },

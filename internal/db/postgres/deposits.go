@@ -2,6 +2,8 @@ package pg
 
 import (
 	"database/sql"
+	"strings"
+	"time"
 
 	"github.com/Bridgeless-Project/relayer-svc/internal/db"
 	"github.com/Bridgeless-Project/relayer-svc/internal/types"
@@ -39,11 +41,21 @@ const (
 	depositsSignature   = "signature"
 	depositsMerkleProof = "merkle_proof"
 	depositsOperator    = "operator"
+
+	depositRecoveryAttempts  = "recovery_attempts"
+	depositRecoveryTimestamp = "recovery_timestamp"
 )
 
 type depositsQ struct {
 	db       *pgdb.DB
 	selector squirrel.SelectBuilder
+}
+
+func NewDepositsQ(db *pgdb.DB) db.DepositsQ {
+	return &depositsQ{
+		db:       db.Clone(),
+		selector: squirrel.Select("*").From(depositsTable),
+	}
 }
 
 func (d *depositsQ) UpdateWithdrawalCoreBlock(identifier db.DepositIdentifier, i int64) error {
@@ -135,15 +147,34 @@ func (d *depositsQ) Insert(deposit db.Deposit) error {
 			depositsReferralId:        deposit.ReferralId,
 			depositsTxData:            deposit.TxData,
 			depositsMerkleProof:       deposit.MerkleProof,
+
+			depositRecoveryAttempts:  deposit.RecoveryAttempts,
+			depositRecoveryTimestamp: deposit.RecoveryTimestamp,
 		})
 
 	if err := d.db.Exec(stmt); err != nil {
-		return err
+		if !strings.Contains(err.Error(), "duplicate key value violates unique constraint") {
+			return err
+		}
+
+		err = d.UpdateRecoveryData(deposit.DepositIdentifier, deposit.RecoveryAttempts, deposit.RecoveryTimestamp)
+		if err != nil {
+			return err
+		}
+
 	}
 
 	return nil
 }
 
+func (d *depositsQ) UpdateRecoveryData(identifier db.DepositIdentifier, attempts int, timestamp time.Time) error {
+	query := squirrel.Update(depositsTable).
+		Set(depositRecoveryAttempts, attempts).
+		Set(depositRecoveryTimestamp, timestamp).
+		Set(depositsWithdrawalStatus, types.WithdrawalStatus_WITHDRAWAL_STATUS_PENDING).
+		Where(identifierToPredicate(identifier))
+	return d.db.Exec(query)
+}
 func (d *depositsQ) Get(identifier db.DepositIdentifier) (*db.Deposit, error) {
 	var deposit db.Deposit
 	err := d.db.Get(&deposit, d.selector.Where(identifierToPredicate(identifier)))
@@ -200,11 +231,13 @@ func (d *depositsQ) UpdateWithdrawalTx(identifier db.DepositIdentifier, hash str
 	return d.db.Exec(query)
 }
 
-func NewDepositsQ(db *pgdb.DB) db.DepositsQ {
-	return &depositsQ{
-		db:       db.Clone(),
-		selector: squirrel.Select("*").From(depositsTable),
-	}
+func (d *depositsQ) UpdateRecoveryDetails(identifier db.DepositIdentifier, attempts int, timestamp time.Time) error {
+	query := squirrel.Update(depositsTable).
+		Set(depositRecoveryAttempts, attempts).
+		Set(depositRecoveryTimestamp, timestamp).
+		Where(identifierToPredicate(identifier))
+
+	return d.db.Exec(query)
 }
 
 func (d *depositsQ) Transaction(f func() error) error {

@@ -11,6 +11,7 @@ import (
 	srvgrpc "github.com/Bridgeless-Project/relayer-svc/internal/api/grpc"
 	"github.com/Bridgeless-Project/relayer-svc/internal/api/middlewares"
 	"github.com/Bridgeless-Project/relayer-svc/internal/api/types"
+	"github.com/Bridgeless-Project/relayer-svc/internal/config"
 	"github.com/Bridgeless-Project/relayer-svc/internal/core/broadcaster"
 	"github.com/Bridgeless-Project/relayer-svc/internal/core/chain"
 	"github.com/Bridgeless-Project/relayer-svc/internal/core/connector"
@@ -38,6 +39,7 @@ type Server struct {
 func NewServer(
 	grpc net.Listener,
 	http net.Listener,
+	cfg config.Config,
 	db db.DepositsQ,
 	connector *connector.Connector,
 	broadcaster *broadcaster.Broadcaster,
@@ -55,6 +57,7 @@ func NewServer(
 			ctx.ConnectorProvider(connector),
 			ctx.BroadcasterProvider(broadcaster),
 			ctx.ClientsProvider(clientsRepo),
+			ctx.ConfigProvider(cfg),
 		},
 	}
 }

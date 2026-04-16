@@ -351,6 +351,58 @@ func (x *TransferData) GetTxData() string {
 	return ""
 }
 
+type Recovery struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Attempts      int32                  `protobuf:"varint,1,opt,name=attempts,proto3" json:"attempts,omitempty"`
+	Timestamp     int64                  `protobuf:"varint,2,opt,name=timestamp,proto3" json:"timestamp,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *Recovery) Reset() {
+	*x = Recovery{}
+	mi := &file_deposit_proto_msgTypes[3]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *Recovery) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Recovery) ProtoMessage() {}
+
+func (x *Recovery) ProtoReflect() protoreflect.Message {
+	mi := &file_deposit_proto_msgTypes[3]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use Recovery.ProtoReflect.Descriptor instead.
+func (*Recovery) Descriptor() ([]byte, []int) {
+	return file_deposit_proto_rawDescGZIP(), []int{3}
+}
+
+func (x *Recovery) GetAttempts() int32 {
+	if x != nil {
+		return x.Attempts
+	}
+	return 0
+}
+
+func (x *Recovery) GetTimestamp() int64 {
+	if x != nil {
+		return x.Timestamp
+	}
+	return 0
+}
+
 var File_deposit_proto protoreflect.FileDescriptor
 
 const file_deposit_proto_rawDesc = "" +
@@ -386,7 +438,10 @@ const file_deposit_proto_rawDesc = "" +
 	"\atx_data\x18\f \x01(\tR\x06txDataB\t\n" +
 	"\a_senderB\f\n" +
 	"\n" +
-	"_signature*\x88\x02\n" +
+	"_signature\"D\n" +
+	"\bRecovery\x12\x1a\n" +
+	"\battempts\x18\x01 \x01(\x05R\battempts\x12\x1c\n" +
+	"\ttimestamp\x18\x02 \x01(\x03R\ttimestamp*\x88\x02\n" +
 	"\x10WithdrawalStatus\x12!\n" +
 	"\x1dWITHDRAWAL_STATUS_UNSPECIFIED\x10\x00\x12\x1d\n" +
 	"\x19WITHDRAWAL_STATUS_PENDING\x10\x01\x12 \n" +
@@ -409,12 +464,13 @@ func file_deposit_proto_rawDescGZIP() []byte {
 }
 
 var file_deposit_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
-var file_deposit_proto_msgTypes = make([]protoimpl.MessageInfo, 3)
+var file_deposit_proto_msgTypes = make([]protoimpl.MessageInfo, 4)
 var file_deposit_proto_goTypes = []any{
 	(WithdrawalStatus)(0),        // 0: deposit.WithdrawalStatus
 	(*DepositIdentifier)(nil),    // 1: deposit.DepositIdentifier
 	(*WithdrawalIdentifier)(nil), // 2: deposit.WithdrawalIdentifier
 	(*TransferData)(nil),         // 3: deposit.TransferData
+	(*Recovery)(nil),             // 4: deposit.Recovery
 }
 var file_deposit_proto_depIdxs = []int32{
 	0, // [0:0] is the sub-list for method output_type
@@ -437,7 +493,7 @@ func file_deposit_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_deposit_proto_rawDesc), len(file_deposit_proto_rawDesc)),
 			NumEnums:      1,
-			NumMessages:   3,
+			NumMessages:   4,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

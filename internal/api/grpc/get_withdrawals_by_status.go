@@ -2,6 +2,7 @@ package grpc
 
 import (
 	"context"
+
 	"github.com/Bridgeless-Project/relayer-svc/internal/api/common"
 	apiCtx "github.com/Bridgeless-Project/relayer-svc/internal/api/ctx"
 	"github.com/Bridgeless-Project/relayer-svc/internal/api/types"
@@ -25,7 +26,7 @@ func (i Implementation) GetWithdrawalsByStatus(ctx context.Context, request *typ
 	if _, isValid := internalTypes.WithdrawalStatus_name[statusInt]; !isValid {
 		return nil, status.Errorf(codes.InvalidArgument, "unsupported withdrawal status integer: %d", statusInt)
 	}
-	limit := request.GetNumber()
+	limit := request.GetLimit()
 	if limit == 0 {
 		limit = 10
 	}

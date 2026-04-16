@@ -135,16 +135,27 @@ func local_request_API_CheckWithdrawal_0(ctx context.Context, marshaler runtime.
 	return msg, metadata, err
 }
 
-var filter_API_GetWithdrawalsByStatus_0 = &utilities.DoubleArray{Encoding: map[string]int{}, Base: []int(nil), Check: []int(nil)}
+var filter_API_GetWithdrawalsByStatus_0 = &utilities.DoubleArray{Encoding: map[string]int{"withdrawal_status": 0}, Base: []int{1, 1, 0}, Check: []int{0, 1, 2}}
 
 func request_API_GetWithdrawalsByStatus_0(ctx context.Context, marshaler runtime.Marshaler, client APIClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
 	var (
 		protoReq GetWithdrawalsByStatusRequest
 		metadata runtime.ServerMetadata
+		e        int32
+		err      error
 	)
 	if req.Body != nil {
 		_, _ = io.Copy(io.Discard, req.Body)
 	}
+	val, ok := pathParams["withdrawal_status"]
+	if !ok {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "withdrawal_status")
+	}
+	e, err = runtime.Enum(val, types_0.WithdrawalStatus_value)
+	if err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "withdrawal_status", err)
+	}
+	protoReq.WithdrawalStatus = types_0.WithdrawalStatus(e)
 	if err := req.ParseForm(); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
@@ -159,7 +170,18 @@ func local_request_API_GetWithdrawalsByStatus_0(ctx context.Context, marshaler r
 	var (
 		protoReq GetWithdrawalsByStatusRequest
 		metadata runtime.ServerMetadata
+		e        int32
+		err      error
 	)
+	val, ok := pathParams["withdrawal_status"]
+	if !ok {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "withdrawal_status")
+	}
+	e, err = runtime.Enum(val, types_0.WithdrawalStatus_value)
+	if err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "withdrawal_status", err)
+	}
+	protoReq.WithdrawalStatus = types_0.WithdrawalStatus(e)
 	if err := req.ParseForm(); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
@@ -243,7 +265,7 @@ func RegisterAPIHandlerServer(ctx context.Context, mux *runtime.ServeMux, server
 		var stream runtime.ServerTransportStream
 		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		annotatedContext, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/api.API/GetWithdrawalsByStatus", runtime.WithHTTPPathPattern("/get"))
+		annotatedContext, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/api.API/GetWithdrawalsByStatus", runtime.WithHTTPPathPattern("/get/deposits/status/{withdrawal_status}"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -355,7 +377,7 @@ func RegisterAPIHandlerClient(ctx context.Context, mux *runtime.ServeMux, client
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		annotatedContext, err := runtime.AnnotateContext(ctx, mux, req, "/api.API/GetWithdrawalsByStatus", runtime.WithHTTPPathPattern("/get"))
+		annotatedContext, err := runtime.AnnotateContext(ctx, mux, req, "/api.API/GetWithdrawalsByStatus", runtime.WithHTTPPathPattern("/get/deposits/status/{withdrawal_status}"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -391,7 +413,7 @@ func RegisterAPIHandlerClient(ctx context.Context, mux *runtime.ServeMux, client
 var (
 	pattern_API_SubmitWithdrawal_0       = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0}, []string{"submit"}, ""))
 	pattern_API_CheckWithdrawal_0        = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 1, 0, 4, 1, 5, 1, 1, 0, 4, 1, 5, 2, 1, 0, 4, 1, 5, 3}, []string{"check", "chain_id", "tx_hash", "tx_nonce"}, ""))
-	pattern_API_GetWithdrawalsByStatus_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0}, []string{"get"}, ""))
+	pattern_API_GetWithdrawalsByStatus_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 1, 0, 4, 1, 5, 3}, []string{"get", "deposits", "status", "withdrawal_status"}, ""))
 	pattern_API_CheckHealth_0            = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0}, []string{"health"}, ""))
 )
 

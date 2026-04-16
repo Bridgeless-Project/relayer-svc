@@ -43,7 +43,6 @@ func (b *depositBroadcastContainer) ID() string {
 func (b *depositBroadcastContainer) Run(ctx context.Context) (*db.Deposit, error) {
 	processed, err := b.chainClient.IsProcessed(ctx, *b.deposit)
 	if err != nil {
-
 		b.deposit.WithdrawalStatus = internalTypes.WithdrawalStatus_WITHDRAWAL_STATUS_FAILED
 		updateErr := b.dbQ.UpdateStatus(b.deposit.DepositIdentifier, b.deposit.WithdrawalStatus)
 		if updateErr != nil {
