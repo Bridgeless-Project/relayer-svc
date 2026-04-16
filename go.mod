@@ -3,7 +3,7 @@ module github.com/Bridgeless-Project/relayer-svc
 go 1.25.1
 
 require (
-	github.com/Bridgeless-Project/bridgeless-core/v12 v12.1.30-rc2.1
+	github.com/Bridgeless-Project/bridgeless-core/v12 v12.1.30-rc3
 	github.com/Masterminds/squirrel v1.5.4
 	github.com/avast/retry-go v3.0.0+incompatible
 	github.com/cosmos/cosmos-sdk v0.53.4
@@ -184,7 +184,7 @@ require (
 
 replace (
 	github.com/agl/ed25519 => github.com/bnb-chain/edwards25519 v0.0.0-20200305024217-f36fc4b53d43
-	//github.com/chigopher/pathlib => github.com/chigopher/pathlib v1.1.0
+	github.com/chigopher/pathlib => github.com/chigopher/pathlib v1.1.0
 	// rosetta rebranding
 	github.com/coinbase/rosetta-sdk-go => github.com/coinbase/mesh-sdk-go v0.7.9
 	// bridge core sdk
