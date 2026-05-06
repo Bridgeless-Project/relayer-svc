@@ -14,3 +14,8 @@ type WithdrawalContainer interface {
 	Run(ctx context.Context) (*db.Deposit, error)
 	ID() string
 }
+
+type UpdateSignersContainers interface {
+	Run(ctx context.Context) (*db.Epoch, error)
+	ID() uint32
+}

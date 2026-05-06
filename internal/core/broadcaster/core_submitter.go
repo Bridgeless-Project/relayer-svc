@@ -9,7 +9,6 @@ import (
 )
 
 func (b *Broadcaster) runCoreSubmitter(ctx context.Context) {
-	defer b.wg.Done()
 	logger := b.logger.WithField("component", "core-submitter")
 
 	submitTxPool := make([]*db.Deposit, 0, b.submitBatchSize)
@@ -46,7 +45,7 @@ func (b *Broadcaster) runCoreSubmitter(ctx context.Context) {
 					continue
 				}
 
-				err = b.dbConn.UpdateStatus(d.DepositIdentifier,
+				err = b.depositsDbConn.UpdateStatus(d.DepositIdentifier,
 					internalTypes.WithdrawalStatus_WITHDRAWAL_STATUS_PROCESSED)
 				if err != nil {
 					logger.WithError(err).Errorf("error updating withdrawal status to processed for deposit: %s",

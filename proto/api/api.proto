@@ -20,6 +20,17 @@ message CheckWithdrawalResponse {
   deposit.TransferData transfer_data = 2;
   deposit.WithdrawalStatus withdrawal_status = 3;
   deposit.WithdrawalIdentifier withdrawal_identifier = 4;
+  deposit.Recovery recovery = 5;
+}
+
+message GetWithdrawalsByStatusRequest {
+  deposit.WithdrawalStatus withdrawal_status = 1;
+  uint64 page = 2;
+  uint64 limit = 3;
+}
+
+message GetWithdrawalsByStatusResponse {
+  repeated CheckWithdrawalResponse withdrawal = 1;
 }
 
 service API {
@@ -33,6 +44,12 @@ service API {
   rpc CheckWithdrawal(deposit.DepositIdentifier) returns (CheckWithdrawalResponse) {
     option (google.api.http) = {
       get: "/check/{chain_id}/{tx_hash}/{tx_nonce}"
+    };
+  }
+
+  rpc GetWithdrawalsByStatus(GetWithdrawalsByStatusRequest) returns (GetWithdrawalsByStatusResponse) {
+    option (google.api.http) = {
+      get: "/get/deposits/status/{withdrawal_status}"
     };
   }
 

@@ -21,6 +21,7 @@ type Config interface {
 	TendermintConnector
 	broadcaster.BroadcasterConfigurer
 	BlockDelaySetter
+	Recovery
 }
 
 type config struct {
@@ -36,6 +37,7 @@ type config struct {
 	TendermintConnector
 	broadcaster.BroadcasterConfigurer
 	BlockDelaySetter
+	Recovery
 }
 
 func New(getter kv.Getter) Config {
@@ -51,5 +53,6 @@ func New(getter kv.Getter) Config {
 		TendermintConnector:   NewTenderminter(getter),
 		BroadcasterConfigurer: broadcaster.NewBroadcasterConfigurer(getter),
 		BlockDelaySetter:      NewBlockDelaySetter(getter),
+		Recovery:              NewRecovery(getter),
 	}
 }

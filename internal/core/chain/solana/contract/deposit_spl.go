@@ -63,9 +63,9 @@ func (inst *DepositSpl) SetAddress(address string) *DepositSpl {
 	return inst
 }
 
-// SetReferralId sets the "referral_id" parameter.
-func (inst *DepositSpl) SetReferralId(referral_id uint16) *DepositSpl {
-	inst.ReferralId = &referral_id
+// SetReferralId sets the "_referral_id" parameter.
+func (inst *DepositSpl) SetReferralId(_referral_id uint16) *DepositSpl {
+	inst.ReferralId = &_referral_id
 	return inst
 }
 
@@ -240,11 +240,11 @@ func (inst *DepositSpl) EncodeToTree(parent ag_treeout.Branches) {
 				ParentFunc(func(instructionBranch ag_treeout.Branches) {
 					// Parameters of the instruction:
 					instructionBranch.Child("Params[len=5]").ParentFunc(func(paramsBranch ag_treeout.Branches) {
-						paramsBranch.Child(ag_format.Param("   BridgeId", *inst.BridgeId))
-						paramsBranch.Child(ag_format.Param("     Amount", *inst.Amount))
-						paramsBranch.Child(ag_format.Param("    ChainId", *inst.ChainId))
-						paramsBranch.Child(ag_format.Param("    Address", *inst.Address))
-						paramsBranch.Child(ag_format.Param(" ReferralId", *inst.ReferralId))
+						paramsBranch.Child(ag_format.Param("    BridgeId", *inst.BridgeId))
+						paramsBranch.Child(ag_format.Param("      Amount", *inst.Amount))
+						paramsBranch.Child(ag_format.Param("     ChainId", *inst.ChainId))
+						paramsBranch.Child(ag_format.Param("     Address", *inst.Address))
+						paramsBranch.Child(ag_format.Param("  ReferralId", *inst.ReferralId))
 					})
 					// Accounts of the instruction:
 					instructionBranch.Child("Accounts[len=5]").ParentFunc(func(accountsBranch ag_treeout.Branches) {
@@ -323,7 +323,7 @@ func NewDepositSplInstruction(
 	amount uint64,
 	chain_id string,
 	address string,
-	referral_id uint16,
+	_referral_id uint16,
 	// Accounts:
 	mint ag_solanago.PublicKey,
 	splVault ag_solanago.PublicKey,
@@ -336,7 +336,7 @@ func NewDepositSplInstruction(
 		SetAmount(amount).
 		SetChainId(chain_id).
 		SetAddress(address).
-		SetReferralId(referral_id).
+		SetReferralId(_referral_id).
 		SetMintAccount(mint).
 		SetSplVaultAccount(splVault).
 		SetSenderAccount(sender).

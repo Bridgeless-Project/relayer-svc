@@ -5,6 +5,7 @@ package contract
 import (
 	"bytes"
 	"fmt"
+
 	ag_binary "github.com/gagliardetto/binary"
 )
 

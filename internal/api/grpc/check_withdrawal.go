@@ -15,6 +15,7 @@ func (i Implementation) CheckWithdrawal(ctx context.Context, identifier *interna
 	var (
 		logger = apiCtx.Logger(ctx)
 		db     = apiCtx.DB(ctx)
+		cfg    = apiCtx.Config(ctx)
 	)
 
 	err := common.ValidateIdentifier(identifier)
@@ -31,6 +32,10 @@ func (i Implementation) CheckWithdrawal(ctx context.Context, identifier *interna
 	if withdrawalData == nil {
 		return nil, status.Error(codes.NotFound, "withdrawal data not found")
 	}
+
+	maxAttempts, timeout := cfg.RecoveryParams()
+	withdrawalData.RecoveryTimestamp.Add(timeout)
+	withdrawalData.RecoveryAttempts = int(maxAttempts) - withdrawalData.RecoveryAttempts
 
 	return common.ToStatusResponse(withdrawalData), nil
 }

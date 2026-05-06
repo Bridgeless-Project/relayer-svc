@@ -2,6 +2,8 @@ package db
 
 import (
 	"fmt"
+	"time"
+	"gitlab.com/distributed_lab/kit/pgdb"
 
 	"github.com/Bridgeless-Project/relayer-svc/internal/types"
 )
@@ -11,9 +13,12 @@ type DepositsQ interface {
 	Insert(Deposit) (err error)
 	Get(identifier DepositIdentifier) (*Deposit, error)
 	GetWithStatus(status types.WithdrawalStatus) ([]Deposit, error)
+	Page(pageParams pgdb.OffsetPageParams) DepositsQ
 
 	UpdateStatus(DepositIdentifier, types.WithdrawalStatus) error
 	UpdateWithdrawalDetails(Deposit) error
+
+	UpdateWithdrawalTx(identifier DepositIdentifier, hash string) error
 
 	Transaction(f func() error) error
 }
@@ -51,4 +56,8 @@ type Deposit struct {
 	TxData    string `structs:"tx_data" db:"tx_data"`
 	Signature string `structs:"signature" db:"signature"`
 	Operator  string `structs:"operator" db:"operator"`
+
+	// Fields for retry logic
+	RecoveryAttempts  int       `structs:"recovery_attempts" db:"recovery_attempts"`
+	RecoveryTimestamp time.Time `structs:"recovery_timestamp" db:"recovery_timestamp"`
 }

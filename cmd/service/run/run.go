@@ -3,7 +3,6 @@ package run
 import (
 	"context"
 	"os/signal"
-	"sync"
 	"syscall"
 
 	"github.com/Bridgeless-Project/relayer-svc/cmd/utils"
@@ -68,12 +67,12 @@ var Cmd = &cobra.Command{
 }
 
 func runService(ctx context.Context, cfg config.Config, catchUp, observerNeeded bool, startHeight, blockDistance uint64) error {
-	wg := new(sync.WaitGroup)
 	eg, ctx := errgroup.WithContext(ctx)
 	logger := cfg.Log()
 	clients := cfg.Clients()
 	clientsRepo := repository.NewClientsRepository(clients)
 	dtb := pg.NewDepositsQ(cfg.DB())
+	etb := pg.NewSignaturesQ(cfg.DB())
 	blocksQ := pg.NewBlocksQ(cfg.DB())
 
 	core.Logger = logger.WithField("component", "retrier")
@@ -86,28 +85,26 @@ func runService(ctx context.Context, cfg config.Config, catchUp, observerNeeded 
 		return errors.Wrap(err, "failed to create connector")
 	}
 
-	broadcaster := withdrawalBroadcaster.New(ctx, connector, dtb, cfg.TendermintHttpClient(), logger.WithField("component", "broadcaster"))
+	broadcaster := withdrawalBroadcaster.New(ctx, connector, dtb, etb, cfg.TendermintHttpClient(), logger.WithField("component", "broadcaster"))
 
 	observer := coreObserver.New(cfg.TendermintHttpClient(), blocksQ, dtb, broadcaster, logger.WithField("component", "observer"))
 
-	apiServer := api.NewServer(cfg.ApiGrpcListener(), cfg.ApiHttpListener(), dtb, connector, broadcaster, clientsRepo,
+	apiServer := api.NewServer(cfg.ApiGrpcListener(), cfg.ApiHttpListener(), cfg, dtb, connector, broadcaster, clientsRepo,
 		logger.WithField("component", "api-server"))
 
-	catchUpper := catch_upper.NewCatchUpper(ctx, broadcaster, dtb, logger.WithField("component", "catch-upper"))
+	catchUpper := catch_upper.NewCatchUpper(ctx, broadcaster, dtb, etb, logger.WithField("component", "catch-upper"))
 
-	wg.Add(2)
+	//wg.Add(2)
 	eg.Go(func() error {
-		defer wg.Done()
 		return errors.Wrap(apiServer.RunHTTP(ctx), "error while running API HTTP gateway")
 	})
+
 	eg.Go(func() error {
-		defer wg.Done()
 		return errors.Wrap(apiServer.RunGRPC(ctx), "error while running API GRPC server")
 	})
 
-	wg.Add(1)
+	//wg.Add(1)
 	eg.Go(func() error {
-		defer wg.Done()
 		broadcaster.
 			WithClients(clientsRepo).
 			WithChainTxPoolSize(cfg.ChainTxPoolSize()).
@@ -119,9 +116,7 @@ func runService(ctx context.Context, cfg config.Config, catchUp, observerNeeded 
 	})
 
 	if observerNeeded {
-		wg.Add(1)
 		eg.Go(func() error {
-			defer wg.Done()
 			return errors.Wrap(observer.
 				WithClientsRepo(clientsRepo).
 				WithPollingInterval(cfg.ObserverPollingInterval()).
@@ -132,15 +127,10 @@ func runService(ctx context.Context, cfg config.Config, catchUp, observerNeeded 
 	}
 
 	if catchUp {
-		wg.Add(1)
 		eg.Go(func() error {
-			defer wg.Done()
 			return errors.Wrap(catchUpper.Start(), "error while running observer")
 		})
 	}
 
-	err = eg.Wait()
-	wg.Wait()
-
-	return err
+	return eg.Wait()
 }

@@ -3,3 +3,5 @@
 vendor/
 signer-data
 /build/configs/*.local.*
+
+.DS_Store

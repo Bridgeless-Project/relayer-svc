@@ -3,6 +3,7 @@ package ctx
 import (
 	"context"
 
+	"github.com/Bridgeless-Project/relayer-svc/internal/config"
 	"github.com/Bridgeless-Project/relayer-svc/internal/core/broadcaster"
 	"github.com/Bridgeless-Project/relayer-svc/internal/core/chain"
 	"github.com/Bridgeless-Project/relayer-svc/internal/core/connector"
@@ -18,6 +19,7 @@ const (
 	clientsRepoKey ctxKey = iota
 	broadcasterKey ctxKey = iota
 	connectorKey   ctxKey = iota
+	configKey      ctxKey = iota
 )
 
 func DBProvider(q db.DepositsQ) func(context.Context) context.Context {
@@ -39,7 +41,6 @@ func LoggerProvider(l *logan.Entry) func(context.Context) context.Context {
 	}
 }
 func Logger(ctx context.Context) *logan.Entry {
-
 	return ctx.Value(loggerKey).(*logan.Entry)
 }
 
@@ -71,4 +72,14 @@ func ConnectorProvider(c *connector.Connector) func(context.Context) context.Con
 
 func Connector(ctx context.Context) *connector.Connector {
 	return ctx.Value(connectorKey).(*connector.Connector)
+}
+
+func ConfigProvider(c config.Config) func(context.Context) context.Context {
+	return func(ctx context.Context) context.Context {
+		return context.WithValue(ctx, configKey, c)
+	}
+}
+
+func Config(ctx context.Context) config.Config {
+	return ctx.Value(configKey).(config.Config)
 }

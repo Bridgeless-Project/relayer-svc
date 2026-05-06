@@ -95,3 +95,21 @@ func parseTokenMetadata(data []byte) (*tokenMetadata, error) {
 
 	return &tokenMetadata, nil
 }
+
+func parseSignatureAndSigner(signatureHex, signerHex string) ([64]byte, byte, []byte, error) {
+	sigBytes, err := hexutil.Decode(signatureHex)
+	if err != nil || len(sigBytes) != 65 {
+		return [64]byte{}, 0, nil, errors.Wrap(err, "invalid signature")
+	}
+
+	var sigArray [64]byte
+	copy(sigArray[:], sigBytes[:64])
+	recoveryId := byte(sigBytes[64])
+
+	signerBytes, err := hexutil.Decode(signerHex)
+	if err != nil || len(signerBytes) != 33 {
+		return [64]byte{}, 0, nil, errors.Wrap(err, "invalid signer pubkey")
+	}
+
+	return sigArray, recoveryId, signerBytes, nil
+}

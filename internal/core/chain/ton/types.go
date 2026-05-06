@@ -17,4 +17,5 @@ const (
 	withdrawalNativeHashMethod = "nativeHash"
 	withdrawalJettonHashMethod = "jettonHash"
 	storeAddressMethod         = "storeAddress"
+	updateSignerHashMethod     = "updateSignerHash"
 )

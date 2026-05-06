@@ -76,6 +76,7 @@ type CheckWithdrawalResponse struct {
 	TransferData         *types.TransferData         `protobuf:"bytes,2,opt,name=transfer_data,json=transferData,proto3" json:"transfer_data,omitempty"`
 	WithdrawalStatus     types.WithdrawalStatus      `protobuf:"varint,3,opt,name=withdrawal_status,json=withdrawalStatus,proto3,enum=deposit.WithdrawalStatus" json:"withdrawal_status,omitempty"`
 	WithdrawalIdentifier *types.WithdrawalIdentifier `protobuf:"bytes,4,opt,name=withdrawal_identifier,json=withdrawalIdentifier,proto3" json:"withdrawal_identifier,omitempty"`
+	Recovery             *types.Recovery             `protobuf:"bytes,5,opt,name=recovery,proto3" json:"recovery,omitempty"`
 	unknownFields        protoimpl.UnknownFields
 	sizeCache            protoimpl.SizeCache
 }
@@ -138,21 +139,142 @@ func (x *CheckWithdrawalResponse) GetWithdrawalIdentifier() *types.WithdrawalIde
 	return nil
 }
 
+func (x *CheckWithdrawalResponse) GetRecovery() *types.Recovery {
+	if x != nil {
+		return x.Recovery
+	}
+	return nil
+}
+
+type GetWithdrawalsByStatusRequest struct {
+	state            protoimpl.MessageState `protogen:"open.v1"`
+	WithdrawalStatus types.WithdrawalStatus `protobuf:"varint,1,opt,name=withdrawal_status,json=withdrawalStatus,proto3,enum=deposit.WithdrawalStatus" json:"withdrawal_status,omitempty"`
+	Page             uint64                 `protobuf:"varint,2,opt,name=page,proto3" json:"page,omitempty"`
+	Limit            uint64                 `protobuf:"varint,3,opt,name=limit,proto3" json:"limit,omitempty"`
+	unknownFields    protoimpl.UnknownFields
+	sizeCache        protoimpl.SizeCache
+}
+
+func (x *GetWithdrawalsByStatusRequest) Reset() {
+	*x = GetWithdrawalsByStatusRequest{}
+	mi := &file_api_proto_msgTypes[2]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetWithdrawalsByStatusRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetWithdrawalsByStatusRequest) ProtoMessage() {}
+
+func (x *GetWithdrawalsByStatusRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_api_proto_msgTypes[2]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetWithdrawalsByStatusRequest.ProtoReflect.Descriptor instead.
+func (*GetWithdrawalsByStatusRequest) Descriptor() ([]byte, []int) {
+	return file_api_proto_rawDescGZIP(), []int{2}
+}
+
+func (x *GetWithdrawalsByStatusRequest) GetWithdrawalStatus() types.WithdrawalStatus {
+	if x != nil {
+		return x.WithdrawalStatus
+	}
+	return types.WithdrawalStatus(0)
+}
+
+func (x *GetWithdrawalsByStatusRequest) GetPage() uint64 {
+	if x != nil {
+		return x.Page
+	}
+	return 0
+}
+
+func (x *GetWithdrawalsByStatusRequest) GetLimit() uint64 {
+	if x != nil {
+		return x.Limit
+	}
+	return 0
+}
+
+type GetWithdrawalsByStatusResponse struct {
+	state         protoimpl.MessageState     `protogen:"open.v1"`
+	Withdrawal    []*CheckWithdrawalResponse `protobuf:"bytes,1,rep,name=withdrawal,proto3" json:"withdrawal,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetWithdrawalsByStatusResponse) Reset() {
+	*x = GetWithdrawalsByStatusResponse{}
+	mi := &file_api_proto_msgTypes[3]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetWithdrawalsByStatusResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetWithdrawalsByStatusResponse) ProtoMessage() {}
+
+func (x *GetWithdrawalsByStatusResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_api_proto_msgTypes[3]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetWithdrawalsByStatusResponse.ProtoReflect.Descriptor instead.
+func (*GetWithdrawalsByStatusResponse) Descriptor() ([]byte, []int) {
+	return file_api_proto_rawDescGZIP(), []int{3}
+}
+
+func (x *GetWithdrawalsByStatusResponse) GetWithdrawal() []*CheckWithdrawalResponse {
+	if x != nil {
+		return x.Withdrawal
+	}
+	return nil
+}
+
 var File_api_proto protoreflect.FileDescriptor
 
 const file_api_proto_rawDesc = "" +
 	"\n" +
 	"\tapi.proto\x12\x03api\x1a\x1cgoogle/api/annotations.proto\x1a\x1bgoogle/protobuf/empty.proto\x1a\x19google/protobuf/any.proto\x1a\rdeposit.proto\x1a.protoc-gen-openapiv2/options/annotations.proto\"5\n" +
 	"\x0eSubmitResponse\x12#\n" +
-	"\rwithdrawal_id\x18\x01 \x01(\tR\fwithdrawalId\"\xbc\x02\n" +
+	"\rwithdrawal_id\x18\x01 \x01(\tR\fwithdrawalId\"\xeb\x02\n" +
 	"\x17CheckWithdrawalResponse\x12I\n" +
 	"\x12deposit_identifier\x18\x01 \x01(\v2\x1a.deposit.DepositIdentifierR\x11depositIdentifier\x12:\n" +
 	"\rtransfer_data\x18\x02 \x01(\v2\x15.deposit.TransferDataR\ftransferData\x12F\n" +
 	"\x11withdrawal_status\x18\x03 \x01(\x0e2\x19.deposit.WithdrawalStatusR\x10withdrawalStatus\x12R\n" +
-	"\x15withdrawal_identifier\x18\x04 \x01(\v2\x1d.deposit.WithdrawalIdentifierR\x14withdrawalIdentifier2\xae\x02\n" +
+	"\x15withdrawal_identifier\x18\x04 \x01(\v2\x1d.deposit.WithdrawalIdentifierR\x14withdrawalIdentifier\x12-\n" +
+	"\brecovery\x18\x05 \x01(\v2\x11.deposit.RecoveryR\brecovery\"\x91\x01\n" +
+	"\x1dGetWithdrawalsByStatusRequest\x12F\n" +
+	"\x11withdrawal_status\x18\x01 \x01(\x0e2\x19.deposit.WithdrawalStatusR\x10withdrawalStatus\x12\x12\n" +
+	"\x04page\x18\x02 \x01(\x04R\x04page\x12\x14\n" +
+	"\x05limit\x18\x03 \x01(\x04R\x05limit\"^\n" +
+	"\x1eGetWithdrawalsByStatusResponse\x12<\n" +
+	"\n" +
+	"withdrawal\x18\x01 \x03(\v2\x1c.api.CheckWithdrawalResponseR\n" +
+	"withdrawal2\xc4\x03\n" +
 	"\x03API\x12Z\n" +
 	"\x10SubmitWithdrawal\x12\x1a.deposit.DepositIdentifier\x1a\x16.google.protobuf.Empty\"\x12\x82\xd3\xe4\x93\x02\f:\x01*\"\a/submit\x12{\n" +
-	"\x0fCheckWithdrawal\x12\x1a.deposit.DepositIdentifier\x1a\x1c.api.CheckWithdrawalResponse\".\x82\xd3\xe4\x93\x02(\x12&/check/{chain_id}/{tx_hash}/{tx_nonce}\x12N\n" +
+	"\x0fCheckWithdrawal\x12\x1a.deposit.DepositIdentifier\x1a\x1c.api.CheckWithdrawalResponse\".\x82\xd3\xe4\x93\x02(\x12&/check/{chain_id}/{tx_hash}/{tx_nonce}\x12\x93\x01\n" +
+	"\x16GetWithdrawalsByStatus\x12\".api.GetWithdrawalsByStatusRequest\x1a#.api.GetWithdrawalsByStatusResponse\"0\x82\xd3\xe4\x93\x02*\x12(/get/deposits/status/{withdrawal_status}\x12N\n" +
 	"\vCheckHealth\x12\x16.google.protobuf.Empty\x1a\x16.google.protobuf.Empty\"\x0f\x82\xd3\xe4\x93\x02\t\x12\a/healthB>Z<github.com/Bridgeless-Project/relayer-svc/internal/api/typesb\x06proto3"
 
 var (
@@ -167,32 +289,40 @@ func file_api_proto_rawDescGZIP() []byte {
 	return file_api_proto_rawDescData
 }
 
-var file_api_proto_msgTypes = make([]protoimpl.MessageInfo, 2)
+var file_api_proto_msgTypes = make([]protoimpl.MessageInfo, 4)
 var file_api_proto_goTypes = []any{
-	(*SubmitResponse)(nil),             // 0: api.SubmitResponse
-	(*CheckWithdrawalResponse)(nil),    // 1: api.CheckWithdrawalResponse
-	(*types.DepositIdentifier)(nil),    // 2: deposit.DepositIdentifier
-	(*types.TransferData)(nil),         // 3: deposit.TransferData
-	(types.WithdrawalStatus)(0),        // 4: deposit.WithdrawalStatus
-	(*types.WithdrawalIdentifier)(nil), // 5: deposit.WithdrawalIdentifier
-	(*emptypb.Empty)(nil),              // 6: google.protobuf.Empty
+	(*SubmitResponse)(nil),                 // 0: api.SubmitResponse
+	(*CheckWithdrawalResponse)(nil),        // 1: api.CheckWithdrawalResponse
+	(*GetWithdrawalsByStatusRequest)(nil),  // 2: api.GetWithdrawalsByStatusRequest
+	(*GetWithdrawalsByStatusResponse)(nil), // 3: api.GetWithdrawalsByStatusResponse
+	(*types.DepositIdentifier)(nil),        // 4: deposit.DepositIdentifier
+	(*types.TransferData)(nil),             // 5: deposit.TransferData
+	(types.WithdrawalStatus)(0),            // 6: deposit.WithdrawalStatus
+	(*types.WithdrawalIdentifier)(nil),     // 7: deposit.WithdrawalIdentifier
+	(*types.Recovery)(nil),                 // 8: deposit.Recovery
+	(*emptypb.Empty)(nil),                  // 9: google.protobuf.Empty
 }
 var file_api_proto_depIdxs = []int32{
-	2, // 0: api.CheckWithdrawalResponse.deposit_identifier:type_name -> deposit.DepositIdentifier
-	3, // 1: api.CheckWithdrawalResponse.transfer_data:type_name -> deposit.TransferData
-	4, // 2: api.CheckWithdrawalResponse.withdrawal_status:type_name -> deposit.WithdrawalStatus
-	5, // 3: api.CheckWithdrawalResponse.withdrawal_identifier:type_name -> deposit.WithdrawalIdentifier
-	2, // 4: api.API.SubmitWithdrawal:input_type -> deposit.DepositIdentifier
-	2, // 5: api.API.CheckWithdrawal:input_type -> deposit.DepositIdentifier
-	6, // 6: api.API.CheckHealth:input_type -> google.protobuf.Empty
-	6, // 7: api.API.SubmitWithdrawal:output_type -> google.protobuf.Empty
-	1, // 8: api.API.CheckWithdrawal:output_type -> api.CheckWithdrawalResponse
-	6, // 9: api.API.CheckHealth:output_type -> google.protobuf.Empty
-	7, // [7:10] is the sub-list for method output_type
-	4, // [4:7] is the sub-list for method input_type
-	4, // [4:4] is the sub-list for extension type_name
-	4, // [4:4] is the sub-list for extension extendee
-	0, // [0:4] is the sub-list for field type_name
+	4,  // 0: api.CheckWithdrawalResponse.deposit_identifier:type_name -> deposit.DepositIdentifier
+	5,  // 1: api.CheckWithdrawalResponse.transfer_data:type_name -> deposit.TransferData
+	6,  // 2: api.CheckWithdrawalResponse.withdrawal_status:type_name -> deposit.WithdrawalStatus
+	7,  // 3: api.CheckWithdrawalResponse.withdrawal_identifier:type_name -> deposit.WithdrawalIdentifier
+	8,  // 4: api.CheckWithdrawalResponse.recovery:type_name -> deposit.Recovery
+	6,  // 5: api.GetWithdrawalsByStatusRequest.withdrawal_status:type_name -> deposit.WithdrawalStatus
+	1,  // 6: api.GetWithdrawalsByStatusResponse.withdrawal:type_name -> api.CheckWithdrawalResponse
+	4,  // 7: api.API.SubmitWithdrawal:input_type -> deposit.DepositIdentifier
+	4,  // 8: api.API.CheckWithdrawal:input_type -> deposit.DepositIdentifier
+	2,  // 9: api.API.GetWithdrawalsByStatus:input_type -> api.GetWithdrawalsByStatusRequest
+	9,  // 10: api.API.CheckHealth:input_type -> google.protobuf.Empty
+	9,  // 11: api.API.SubmitWithdrawal:output_type -> google.protobuf.Empty
+	1,  // 12: api.API.CheckWithdrawal:output_type -> api.CheckWithdrawalResponse
+	3,  // 13: api.API.GetWithdrawalsByStatus:output_type -> api.GetWithdrawalsByStatusResponse
+	9,  // 14: api.API.CheckHealth:output_type -> google.protobuf.Empty
+	11, // [11:15] is the sub-list for method output_type
+	7,  // [7:11] is the sub-list for method input_type
+	7,  // [7:7] is the sub-list for extension type_name
+	7,  // [7:7] is the sub-list for extension extendee
+	0,  // [0:7] is the sub-list for field type_name
 }
 
 func init() { file_api_proto_init() }
@@ -206,7 +336,7 @@ func file_api_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_api_proto_rawDesc), len(file_api_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   2,
+			NumMessages:   4,
 			NumExtensions: 0,
 			NumServices:   1,
 		},
