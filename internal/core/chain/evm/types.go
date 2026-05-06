@@ -13,6 +13,8 @@ import (
 const (
 	withdrawERC20             = "withdrawERC20"
 	withdrawNative            = "withdrawNative"
+	withdrawERC20Merkelized   = "withdrawERC20Merkelized"
+	withdrawNativeMerkelized  = "withdrawNativeMerklelized"
 	notAvailableBlockReceipts = "the method eth_getBlockReceipts does not exist/is not available"
 )
 

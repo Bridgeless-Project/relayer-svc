@@ -1035,6 +1035,27 @@ func (_Bridge *BridgeTransactorSession) WithdrawNative(amount_ *big.Int, receive
 	return _Bridge.Contract.WithdrawNative(&_Bridge.TransactOpts, amount_, receiver_, txHash_, txNonce_, signatures_)
 }
 
+// WithdrawNativeMerkelized is a paid mutator transaction binding the contract method 0xfb53a90e.
+//
+// Solidity: function withdrawNativeMerkelized(uint256 amount_, address receiver_, bytes32 txHash_, uint256 txNonce_, bytes32[] merkleProof_, bytes[] signatures_) returns()
+func (_Bridge *BridgeTransactor) WithdrawNativeMerkelized(opts *bind.TransactOpts, amount_ *big.Int, receiver_ common.Address, txHash_ [32]byte, txNonce_ *big.Int, merkleProof_ [][32]byte, signatures_ [][]byte) (*types.Transaction, error) {
+	return _Bridge.contract.Transact(opts, "withdrawNativeMerkelized", amount_, receiver_, txHash_, txNonce_, merkleProof_, signatures_)
+}
+
+// WithdrawNativeMerkelized is a paid mutator transaction binding the contract method 0xfb53a90e.
+//
+// Solidity: function withdrawNativeMerkelized(uint256 amount_, address receiver_, bytes32 txHash_, uint256 txNonce_, bytes32[] merkleProof_, bytes[] signatures_) returns()
+func (_Bridge *BridgeSession) WithdrawNativeMerkelized(amount_ *big.Int, receiver_ common.Address, txHash_ [32]byte, txNonce_ *big.Int, merkleProof_ [][32]byte, signatures_ [][]byte) (*types.Transaction, error) {
+	return _Bridge.Contract.WithdrawNativeMerkelized(&_Bridge.TransactOpts, amount_, receiver_, txHash_, txNonce_, merkleProof_, signatures_)
+}
+
+// WithdrawNativeMerkelized is a paid mutator transaction binding the contract method 0xfb53a90e.
+//
+// Solidity: function withdrawNativeMerkelized(uint256 amount_, address receiver_, bytes32 txHash_, uint256 txNonce_, bytes32[] merkleProof_, bytes[] signatures_) returns()
+func (_Bridge *BridgeTransactorSession) WithdrawNativeMerkelized(amount_ *big.Int, receiver_ common.Address, txHash_ [32]byte, txNonce_ *big.Int, merkleProof_ [][32]byte, signatures_ [][]byte) (*types.Transaction, error) {
+	return _Bridge.Contract.WithdrawNativeMerkelized(&_Bridge.TransactOpts, amount_, receiver_, txHash_, txNonce_, merkleProof_, signatures_)
+}
+
 // Receive is a paid mutator transaction binding the contract receive function.
 //
 // Solidity: receive() payable returns()
