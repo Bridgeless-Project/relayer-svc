@@ -10,18 +10,18 @@ import (
 	"testing"
 )
 
-func TestEncodeDecode_DepositSpl(t *testing.T) {
+func TestEncodeDecode_DepositSplAndSwap(t *testing.T) {
 	fu := ag_gofuzz.New().NilChance(0)
 	for i := 0; i < 1; i++ {
-		t.Run("DepositSpl"+strconv.Itoa(i), func(t *testing.T) {
+		t.Run("DepositSplAndSwap"+strconv.Itoa(i), func(t *testing.T) {
 			{
-				params := new(DepositSpl)
+				params := new(DepositSplAndSwap)
 				fu.Fuzz(params)
 				params.AccountMetaSlice = nil
 				buf := new(bytes.Buffer)
 				err := encodeT(*params, buf)
 				ag_require.NoError(t, err)
-				got := new(DepositSpl)
+				got := new(DepositSplAndSwap)
 				err = decodeT(got, buf.Bytes())
 				got.AccountMetaSlice = nil
 				ag_require.NoError(t, err)
