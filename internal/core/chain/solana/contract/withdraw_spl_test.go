@@ -4,11 +4,10 @@ package contract
 
 import (
 	"bytes"
-	"strconv"
-	"testing"
-
 	ag_gofuzz "github.com/gagliardetto/gofuzz"
 	ag_require "github.com/stretchr/testify/require"
+	"strconv"
+	"testing"
 )
 
 func TestEncodeDecode_WithdrawSpl(t *testing.T) {
