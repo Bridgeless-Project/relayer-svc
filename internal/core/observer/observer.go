@@ -292,7 +292,7 @@ func (o *Observer) parseDepositsFromTxResults(txs []*abciTypes.ResponseDeliverTx
 		}
 		for _, msg := range msgs {
 			for _, event := range msg.Events {
-				if event.Type != eventDepositSubmitted && event.Type != eventSystemWithdrawalSubmitted {
+				if event.Type != eventDepositSubmitted && event.Type != eventSystemTransactionSubmitted {
 					continue
 				}
 
@@ -301,7 +301,7 @@ func (o *Observer) parseDepositsFromTxResults(txs []*abciTypes.ResponseDeliverTx
 					return nil, errors.Wrap(err, "failed to parse deposit")
 				}
 
-				if event.Type == eventSystemWithdrawalSubmitted {
+				if event.Type == eventSystemTransactionSubmitted {
 					deposit.WithdrawalChainId = o.systemChainId
 					deposit.IsSystem = true
 				}
