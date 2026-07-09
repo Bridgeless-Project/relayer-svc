@@ -3,6 +3,7 @@ package db
 import (
 	"fmt"
 	"time"
+
 	"gitlab.com/distributed_lab/kit/pgdb"
 
 	"github.com/Bridgeless-Project/relayer-svc/internal/types"
@@ -60,4 +61,7 @@ type Deposit struct {
 	// Fields for retry logic
 	RecoveryAttempts  int       `structs:"recovery_attempts" db:"recovery_attempts"`
 	RecoveryTimestamp time.Time `structs:"recovery_timestamp" db:"recovery_timestamp"`
+
+	// Field for commission/system deposits
+	IsSystem bool `structs:"-" db:"-"`
 }
