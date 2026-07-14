@@ -63,5 +63,5 @@ type Deposit struct {
 	RecoveryTimestamp time.Time `structs:"recovery_timestamp" db:"recovery_timestamp"`
 
 	// Field for commission/system deposits
-	IsSystem bool `structs:"-" db:"-"`
+	IsSystem bool `structs:"is_system" db:"is_system"`
 }

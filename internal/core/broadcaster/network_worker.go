@@ -32,6 +32,10 @@ func (b *Broadcaster) runWithdrawalNetworkWorker(
 				continue
 			}
 
+			if deposit.IsSystem {
+				continue
+			}
+
 			b.submitChan <- deposit
 		}
 	}

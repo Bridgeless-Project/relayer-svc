@@ -44,6 +44,8 @@ const (
 
 	depositRecoveryAttempts  = "recovery_attempts"
 	depositRecoveryTimestamp = "recovery_timestamp"
+
+	depositsIsSystem = "is_system"
 )
 
 type depositsQ struct {
@@ -150,6 +152,8 @@ func (d *depositsQ) Insert(deposit db.Deposit) error {
 
 			depositRecoveryAttempts:  deposit.RecoveryAttempts,
 			depositRecoveryTimestamp: deposit.RecoveryTimestamp,
+
+			depositsIsSystem: deposit.IsSystem,
 		})
 
 	if err := d.db.Exec(stmt); err != nil {
