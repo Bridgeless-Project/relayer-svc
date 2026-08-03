@@ -29,6 +29,7 @@ type Observer struct {
 	broadcaster   *broadcaster.Broadcaster
 	blockDelay    time.Duration
 	blockDistance uint64
+	systemChainId string
 }
 
 func New(client *http.HTTP, blocksDb db.BlocksQ, depositsDb db.DepositsQ, brcst *broadcaster.Broadcaster, logger *logan.Entry) *Observer {
@@ -59,6 +60,11 @@ func (o *Observer) WithBlockDelay(delay time.Duration) *Observer {
 
 func (o *Observer) WithBlockDistance(distance uint64) *Observer {
 	o.blockDistance = distance
+	return o
+}
+
+func (o *Observer) WithSystemChainId(chainId string) *Observer {
+	o.systemChainId = chainId
 	return o
 }
 
@@ -286,13 +292,18 @@ func (o *Observer) parseDepositsFromTxResults(txs []*abciTypes.ResponseDeliverTx
 		}
 		for _, msg := range msgs {
 			for _, event := range msg.Events {
-				if event.Type != eventDepositSubmitted {
+				if event.Type != eventDepositSubmitted && event.Type != eventSystemTransactionSubmitted {
 					continue
 				}
 
 				deposit, err := parseSubmittedDeposit(event.Attributes)
 				if err != nil {
 					return nil, errors.Wrap(err, "failed to parse deposit")
+				}
+
+				if event.Type == eventSystemTransactionSubmitted {
+					deposit.WithdrawalChainId = o.systemChainId
+					deposit.IsSystem = true
 				}
 
 				deposits = append(deposits, deposit)
