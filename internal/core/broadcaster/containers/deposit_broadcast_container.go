@@ -108,7 +108,7 @@ func (b *depositBroadcastContainer) Run(ctx context.Context) (*db.Deposit, error
 		return b.deposit, errors.Wrap(err, "failed to update withdrawal details")
 	}
 
-	b.deposit.WithdrawalStatus = postWithdrawalStatus(b.deposit)
+	b.deposit.WithdrawalStatus = b.deposit.PostWithdrawalStatus()
 	err = b.dbQ.UpdateStatus(b.deposit.DepositIdentifier, b.deposit.WithdrawalStatus)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to update deposit withdrawal status to submit")

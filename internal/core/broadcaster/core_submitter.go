@@ -25,17 +25,6 @@ func (b *Broadcaster) runCoreSubmitter(ctx context.Context) {
 				return
 			}
 
-			// system transactions have no transaction record on the core
-			// so there is no need for updating TxInfo
-			if deposit.IsSystem {
-				if err := b.depositsDbConn.UpdateStatus(deposit.DepositIdentifier,
-					internalTypes.WithdrawalStatus_WITHDRAWAL_STATUS_PROCESSED); err != nil {
-					logger.WithError(err).Errorf("error updating withdrawal status to processed for system deposit: %s",
-						deposit.String())
-				}
-				continue
-			}
-
 			submitTxPool = append(submitTxPool, deposit)
 			if len(submitTxPool) < int(b.submitBatchSize) {
 				continue

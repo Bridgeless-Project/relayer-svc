@@ -34,6 +34,14 @@ func (di *DepositIdentifier) String() string {
 	return fmt.Sprintf("%s/%s/%d", di.ChainId, di.TxHash, di.TxNonce)
 }
 
+func (deposit *Deposit) PostWithdrawalStatus() types.WithdrawalStatus {
+	if deposit.IsSystem {
+		return types.WithdrawalStatus_WITHDRAWAL_STATUS_PROCESSED
+	}
+
+	return types.WithdrawalStatus_WITHDRAWAL_STATUS_SUBMITTING_TO_CORE
+}
+
 type Deposit struct {
 	DepositIdentifier
 
