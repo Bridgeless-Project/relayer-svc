@@ -192,6 +192,7 @@ replace (
 	github.com/cosmos/iavl => github.com/cosmos/iavl v0.19.6
 	// bridge cosmos sdk protobuf fix
 	github.com/gogo/protobuf => github.com/regen-network/protobuf v1.3.3-alpha.regen.1
+	github.com/tdakkota/asciicheck v0.1.1 => github.com/golangci/asciicheck v0.1.1
 
 	// bridge cosmos sdk comebft change
 	github.com/tendermint/tendermint => github.com/cometbft/cometbft v0.34.29
