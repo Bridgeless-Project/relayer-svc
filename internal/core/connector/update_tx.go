@@ -23,6 +23,10 @@ func (c *Connector) UpdateTxInfo(ctx context.Context, deposits []*db.Deposit) er
 			continue
 		}
 
+		// TODO: get referralId from event to store into DB
+		// hack: event doesn't contain the referral id, so we need to get it from the deposit data
+		d.ReferralId = depositData.ReferralId
+
 		msg := bridgeTypes.NewMsgUpdateTransaction(c.account.CosmosAddress(), toTransaction(*d))
 		messages[i] = msg
 	}
