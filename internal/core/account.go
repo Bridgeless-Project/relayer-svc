@@ -9,7 +9,7 @@ import (
 )
 
 // TODO: Move to cfg
-const defaultHrp = "bridge"
+const defaultHrp = "undefi"
 
 type Account struct {
 	prv  *secp256k1.PrivKey
