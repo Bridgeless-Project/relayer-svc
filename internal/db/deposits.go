@@ -3,6 +3,7 @@ package db
 import (
 	"fmt"
 	"time"
+
 	"gitlab.com/distributed_lab/kit/pgdb"
 
 	"github.com/Bridgeless-Project/relayer-svc/internal/types"
@@ -33,6 +34,14 @@ func (di *DepositIdentifier) String() string {
 	return fmt.Sprintf("%s/%s/%d", di.ChainId, di.TxHash, di.TxNonce)
 }
 
+func (deposit *Deposit) PostWithdrawalStatus() types.WithdrawalStatus {
+	if deposit.IsSystem {
+		return types.WithdrawalStatus_WITHDRAWAL_STATUS_PROCESSED
+	}
+
+	return types.WithdrawalStatus_WITHDRAWAL_STATUS_SUBMITTING_TO_CORE
+}
+
 type Deposit struct {
 	DepositIdentifier
 
@@ -60,4 +69,7 @@ type Deposit struct {
 	// Fields for retry logic
 	RecoveryAttempts  int       `structs:"recovery_attempts" db:"recovery_attempts"`
 	RecoveryTimestamp time.Time `structs:"recovery_timestamp" db:"recovery_timestamp"`
+
+	// Field for commission/system deposits
+	IsSystem bool `structs:"is_system" db:"is_system"`
 }

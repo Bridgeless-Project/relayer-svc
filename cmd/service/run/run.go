@@ -122,6 +122,7 @@ func runService(ctx context.Context, cfg config.Config, catchUp, observerNeeded 
 				WithPollingInterval(cfg.ObserverPollingInterval()).
 				WithBlockDelay(cfg.BlockDelay()).
 				WithBlockDistance(blockDistance).
+				WithSystemChainId(cfg.SystemWithdrawalChainId()).
 				Run(ctx, startHeight), "error while running observer")
 		})
 	}
